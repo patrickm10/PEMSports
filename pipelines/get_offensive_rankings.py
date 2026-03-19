@@ -1,238 +1,146 @@
 """
-NFL Offensive Stats Analyzer
-Author: Patrick Mejia
-Date: 2025-06-11
+NFL Offensive Rankings orchestrator
+Builds standardized rank mappings and writes strict valid dataset.
 """
 
-from bs4 import BeautifulSoup
 import logging
-import polars as pl
-import requests
-import re
 import os
+import time
+from datetime import datetime
+import polars as pl
+from typing import Dict, Any
 
-def rename_duplicate_headers(headers):
-    """
-    Rename duplicate headers by keeping the first occurrence as-is,
-    and prefixing duplicates with 'R_'.
+from pipelines.constants import OFFENSIVE_POSITIONS
+from pipelines.scrapers.fantasypros import scrape_positional_stats
+from pipelines.transforms.player_stats import clean_player_data
+from pipelines.features.scoring import apply_scoring_features
 
-    Example:
-    ['PLAYER', 'ATT', 'YDS', 'ATT', 'YDS'] -> ['PLAYER', 'ATT', 'YDS', 'R_ATT', 'R_YDS', 'R_TD']
-    """
-    seen = set()
-    new_headers = []
-    for h in headers:
-        if h not in seen:
-            new_headers.append(h)
-            seen.add(h)
-        else:
-            new_headers.append(f"R_{h}")
-    return new_headers
+# Use our new production logger
+from pipelines.logger import get_pipeline_logger, PipelineTimer
 
-def clean_player_name(name: str) -> str:
-    """
-    Remove any team abbreviation in parentheses from player name.
-    E.g. "Josh Allen (BUF)" or "Josh Allen\n(BUF)" -> "Josh Allen"
-    """
-    if not isinstance(name, str):
-        logging.warning(f"Expected string for player name, got {type(name)}: {name}")
-        return name
-    clean_name = re.sub(r"\s*\(.*?\)", "", name)
+logger = get_pipeline_logger("offensive_pipeline")
+
+DEFAULT_TOP_N = 10
+START_YEAR = 2020
+END_YEAR = 2027
+OUTPUT_DIR = "data/official_rankings/position"
+ARCHIVE_DIR = "data/official_rankings/archive"
+
+# Expected strict schema columns
+EXPECTED_SCHEMA = [
+    "year", "player_id", "player_name", "team", "position",
+    "games_played", "fpts", "fpts_ppr", "fpts_per_game", "fpts_ppr_per_game"
+]
+
+def assert_schema_valid(df: pl.DataFrame, pos: str, year: int) -> pl.DataFrame:
+    """Strict execution boundaries. Loudly fails if data is corrupted."""
+    assert not df.is_empty(), f"{pos} {year} produced an empty dataframe."
     
-    return clean_name.strip()
+    missing_cols = [c for c in EXPECTED_SCHEMA if c not in df.columns]
+    assert not missing_cols, f"Missing strict columns in {pos} {year}: {missing_cols}"
+    
+    assert df["fpts"].is_not_null().all(), f"Found null FPTS in {pos} {year}."
+    assert df["fpts_ppr"].is_not_null().all(), f"Found null FPTS_PPR in {pos} {year}."
+    
+    # Return normalized ordering of strict columns
+    extra_cols = [c for c in df.columns if c not in EXPECTED_SCHEMA]
+    return df.select(EXPECTED_SCHEMA + extra_cols)
 
 def get_positional_rankings(position: str, year: int) -> pl.DataFrame:
     """
-    Fetches and processes NFL offensive rankings for a given position.
-
-    Args:
-        position (str): The position to fetch rankings for (e.g., 'QB', 'RB', 'WR').
-
-    Returns:
-        pl.DataFrame: A DataFrame containing the processed rankings.
+    Scrape, clean, and score offensive positional data.
     """
-    position = position.lower()
-    url = f"https://www.fantasypros.com/nfl/stats/{position}.php?scoring=PPR&year={year}"
-    print(url)
+    raw_df = scrape_positional_stats(position, year)
+    if raw_df.is_empty():
+        return raw_df
+
+    df = clean_player_data(raw_df, position, year)
+    df = apply_scoring_features(df, position)
     
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        table = soup.find('table', {'class': 'table'})
-        if not table:
-            logging.error(f"No data table found for position: {position}")
-            return pl.DataFrame()
+    # Fails loudly on schema mismatch
+    return assert_schema_valid(df, position, year)
 
-        headers = [th.text.strip() for th in table.find_all('th')]
+def get_top_rankings_data(df: pl.DataFrame, position: str, top_n: int = DEFAULT_TOP_N) -> Dict[str, Any]:
+    """Provide dynamically processed dictionary endpoint grouped top perfomers strictly"""
+    if df.is_empty() or "fpts_ppr" not in df.columns:
+        return {"position": position, "seasons": {}}
+        
+    ranked_df = (
+        df.filter(pl.col("fpts_ppr").is_not_null())
+        .with_columns([
+            pl.col("fpts_ppr").rank("dense", descending=True).over("year").alias("rank")
+        ])
+        .filter(pl.col("rank") <= top_n)
+        .sort(["year", "rank"])
+    )
+    
+    result = {"position": position, "seasons": {}}
+    years = ranked_df["year"].unique().sort(descending=True)
+    
+    for year in years:
+        year_data = ranked_df.filter(pl.col("year") == year)
+        players = []
+        for row in year_data.iter_rows(named=True):
+            players.append({
+                "rank": int(row["rank"]),
+                "player_id": row["player_id"],
+                "player_name": row["player_name"],
+                "team": row["team"] or "—",
+                "fpts_ppr": round(float(row["fpts_ppr"]), 1),
+                "fpts_ppr_per_game": round(float(row["fpts_ppr_per_game"]), 1)
+            })
+        result["seasons"][str(year)] = players
+        
+    return result
 
-        headers = rename_duplicate_headers(headers)
+def main() -> None:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
+    run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        player_data = []
-        for row in table.find("tbody").find_all("tr"):
-            cols = row.find_all("td")
-            if not cols:
+    with PipelineTimer("offensive_historical_rankings", logger):
+        for pos in OFFENSIVE_POSITIONS:
+            frames = []
+            for year in range(START_YEAR, END_YEAR):
+                try:
+                    df = get_positional_rankings(pos, year)
+                    if not df.is_empty():
+                        frames.append(df)
+                except AssertionError as e:
+                    logger.error("Data Quality Assertion Failed for %s %d: %s", pos, year, e)
+                    # Fail loudly on corrupted schema
+                    raise
+
+            if not frames:
+                logger.warning("No data generated for %s. Skipping save.", pos)
                 continue
 
-            player_info = []
-            for idx, col in enumerate(cols):
-                text = col.text.strip()
-                if idx == 1:
-                    text = clean_player_name(text)
-                player_info.append(text)
-            player_data.append(player_info)
+            combined = pl.concat(frames)
 
-        if not player_data:
-            logging.error(f"No player data found for position: {position}")
-            return pl.DataFrame()
-
-        if len(headers) != len(player_data[0]):
-            logging.error(f"Header length mismatch: {len(headers)} headers but {len(player_data[0])} player data columns")
-            return pl.DataFrame()
-
-    except Exception as e:
-        logging.error(f"Error fetching data for position {position}: {e}")
-        return pl.DataFrame()
-
-    df = pl.DataFrame(player_data, orient="row", schema=headers)
-    df = df.filter(pl.col("G")> "0")
-    
-    # Add year column for historical tracking
-    df = df.with_columns(pl.lit(year).alias("Year"))
-    
-    return df
-
-def calc_fantasy_ppr_points(df, week, position):
-    
-    """
-    Function to calculate fantasy points per reception (PPR) based on the scoring system.
-    Args:
-        df (DataFrame): A pandas DataFrame containing the player stats.
-        Returns:
-        df (DataFrame): A pandas DataFrame containing the player stats with PPR points.
-        week (int): The week number.
-        position (str): The position of the player.
-    """
-    # ESPN scoring system
-    qb_point_system = {
-        "YDS": 0.05,
-        "TD": 4,
-        "INT": -2,
-        #TODO: Add rushing stats when available
-        # "Rushing Yards": 0.1,
-        # "Rushing Touchdowns": 6,
-    }
-    rb_point_system = { 
-        "YDS": 0.1,
-        "TD": 6,
-        "REC": 1,
-        "REC_YDS": 0.1,
-        "REC": 6,
-        # "ATT": 0.1,
-    }
-    wr_point_system = {
-        "REC": 1,
-        "YDS": 0.1,
-        "TD": 6,
-    }
-    te_point_system = {
-        "REC": 1,
-        "YDS": 0.1,
-        "TD": 6,
-    }
-    k_point_system = {
-        "FGM": 3,
-        "Field Goals Missed": -1,
-        "XPM": 1,
-    }
-
-    # Calculate fantasy points for each player based on the scoring system and week
-    for index, row in df.iterrows():
-        if position == "QB":
-            points = (
-                row["YDS"] * qb_point_system["YDS"]
-                + row["TD"] * qb_point_system["TD"]
-                + row["INT"] * qb_point_system["INT"]
+            # Standard deterministic sort: Best seasons historically over fpts_ppr
+            combined = combined.sort(["year", "fpts_ppr"], descending=[False, True])
+            
+            # Paths
+            out_path = os.path.abspath(os.path.join(OUTPUT_DIR, f"{pos}_historical.csv"))
+            parquet_path = os.path.abspath(os.path.join(OUTPUT_DIR, f"{pos}_historical.parquet"))
+            archive_path = os.path.abspath(os.path.join(ARCHIVE_DIR, f"{pos}_historical_{run_timestamp}.csv"))
+            
+            # Write Standard State
+            combined.write_csv(out_path)
+            combined.write_parquet(parquet_path)
+            # Write Versioned Archive
+            combined.write_csv(archive_path)
+            
+            metrics = {
+                "position": pos,
+                "rows_processed": len(combined),
+                "output_path": out_path,
+                "archive_path": archive_path
+            }
+            logger.info(
+                f"Successfully persisted {len(combined)} {pos} records.", 
+                extra={"pipeline_metrics": metrics}
             )
-        elif position == "RB":
-            points = (
-                row["YDS"] * rb_point_system["YDS"]
-                + row["TD"] * rb_point_system["TD"]
-                + row["REC"] * rb_point_system["REC"]
-                + row["REC_YDS"] * rb_point_system["REC_YDS"]
-            )
-        elif position == "WR":
-            points = (
-                row["YDS"] * wr_point_system["YDS"]
-                + row["TD"] * wr_point_system["TD"]
-                + row["REC"] * wr_point_system["REC"]
-            )
-        elif position == "TE":
-            points = (
-                row["YDS"] * te_point_system["YDS"]
-                + row["TD"] * te_point_system["TD"]
-                + row["REC"] * te_point_system["REC"]
-            )
-        elif position == "K":
-            points = (
-                row.get("FGM", 0) * k_point_system.get("FGM", 0)
-                + row.get("Field Goals Missed", 0) * k_point_system.get("Field Goals Missed", 0)
-                + row.get("XPM", 0) * k_point_system.get("XPM", 0)
-            )
-        else:
-            points = 0
-
-        df.at[index, f"Week {week} Points"] = points
-
-    return df
-
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    # positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DL', 'LB', 'DB']
-    positions = ['QB', 'RB', 'WR', 'TE', 'K']
-    
-    # Create output directory if it doesn't exist
-    output_dir = "data/official_rankings/position"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Dictionary to store all data for each position
-    all_position_data = {pos: [] for pos in positions}
-
-    for year in range(2020, 2026):
-        print(f"Fetching rankings for year: {year}")
-        for pos in positions:
-            print(f"{pos} Rankings for {year}")
-            rankings_df = get_positional_rankings(pos, year)
-            if not rankings_df.is_empty():
-                logging.info(f"Successfully fetched {len(rankings_df)} records for position: {pos} in year: {year}")
-                print(f"{rankings_df}\n")
-                
-                # Add to our collection for this position
-                all_position_data[pos].append(rankings_df)
-                
-                # Write individual year CSV
-                # year_output_path = f"{output_dir}/{pos}_{year}.csv"
-                # rankings_df.write_csv(year_output_path)
-                # print(f"Saved {pos} {year} data to {year_output_path}")
-    
-    # Combine all years for each position and write historical CSV
-    for pos in positions:
-        if all_position_data[pos]:
-            # Concatenate all dataframes for this position
-            combined_df = pl.concat(all_position_data[pos])
-            
-            # Sort by year and then by rank/performance metric
-            if "RK" in combined_df.columns:
-                combined_df = combined_df.sort(["Year", "RK"])
-            else:
-                combined_df = combined_df.sort("Year")
-            
-            # Write historical data CSV
-            historical_output_path = f"{output_dir}/{pos}_historical.csv"
-            combined_df.write_csv(historical_output_path)
-            print(f"Saved {pos} historical data ({len(combined_df)} total records) to {historical_output_path}")
-            
-            logging.info(f"Completed processing for {pos}: {len(combined_df)} total records across all years")
-                
+    main()
