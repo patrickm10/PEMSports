@@ -5,8 +5,6 @@ Author: Patrick Mejia
 
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-import csv
 import logging
 from collections import Counter
 
