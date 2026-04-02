@@ -1,0 +1,86 @@
+"""
+NFL Weekly Rankings orchestrator — FantasyPros Scraper Integration.
+Builds standardized weekly rank mappings using FantasyPros stats.
+"""
+
+import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+import polars as pl
+from typing import List
+import concurrent.futures
+
+# Ensure 'src' is in sys.path for absolute imports like 'from pipelines...'
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from pipelines.constants import OFFENSIVE_POSITIONS
+from pipelines.logger import get_pipeline_logger, PipelineTimer
+from pipelines.transforms.get_new_nfl_data import get_fantasypros_data
+from pipelines.enrichment import enrich_weekly_stats
+
+logger = get_pipeline_logger("weekly_pipeline_fantasypros")
+
+# Range to process
+YEARS = [2020, 2021, 2022, 2023, 2024, 2025] # Regenerate 2020-2025
+WEEKS = list(range(1, 19))
+OUTPUT_DIR = "data/official_rankings/position"
+
+CORE_ENRICHMENT_COLS = [
+    "opponent", "stadium_name", "city", "state", "indoor_outdoor", "surface_type", "elevation",
+    "temp", "humidity", "wind", "game_result"
+]
+
+def main() -> None:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    with PipelineTimer("weekly_rankings_fantasypros", logger):
+        for pos in OFFENSIVE_POSITIONS + ["DST"]:
+            all_weeks_data = []
+            
+            def fetch_week(year, week):
+                try:
+                    df = get_fantasypros_data(pos, year, week=week)
+                    if not df.is_empty():
+                        df = df.with_columns(pl.lit(week, dtype=pl.Int64).alias("week"))
+                        return enrich_weekly_stats(df)
+                except Exception as e:
+                    logger.error(f"Failed to fetch {pos} for {year} week {week}: {e}")
+                return None
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                futures = []
+                for year in YEARS:
+                    for week in WEEKS:
+                        futures.append(executor.submit(fetch_week, year, week))
+                
+                for f in concurrent.futures.as_completed(futures):
+                    res = f.result()
+                    if res is not None:
+                        all_weeks_data.append(res)
+            
+            if not all_weeks_data:
+                logger.error(f"No weekly data fetched for position {pos}")
+                continue
+                
+            combined_df = pl.concat(all_weeks_data, how="diagonal")
+            
+            # Ensure core enrichment columns exist in case of empty weeks
+            for col in CORE_ENRICHMENT_COLS:
+                if col not in combined_df.columns:
+                    combined_df = combined_df.with_columns(pl.lit(None).alias(col))
+            
+            final_df = combined_df.sort(["year", "week", "fpts_ppr"], descending=[True, True, True])
+            
+            out_parquet = os.path.join(OUTPUT_DIR, f"{pos}_weekly.parquet")
+            out_csv = os.path.join(OUTPUT_DIR, f"{pos}_weekly.csv")
+            
+            final_df.write_parquet(out_parquet)
+            final_df.write_csv(out_csv)
+            logger.info("Saved %d records for %s Weekly (with enrichment)", len(final_df), pos)
+
+if __name__ == "__main__":
+    main()

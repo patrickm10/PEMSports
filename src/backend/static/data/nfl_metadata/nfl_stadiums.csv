@@ -1,0 +1,33 @@
+stadium_id,stadium_name,home_team_name,city,state,latitude,longitude,indoor_outdoor,surface_type,elevation,year_opened
+arizona_cardinals,State Farm Stadium,arizona_cardinals,Glendale,AZ,33.5275,-112.2625,Indoor,Turf,1070,2006
+atlanta_falcons,Mercedes-Benz Stadium,atlanta_falcons,Atlanta,GA,33.755,-84.4008,Indoor,Turf,1050,2017
+baltimore_ravens,M&T Bank Stadium,baltimore_ravens,Baltimore,MD,39.2779,-76.6227,Outdoor,Grass,10,1998
+buffalo_bills,Highmark Stadium,buffalo_bills,Orchard Park,NY,42.7738,-78.7868,Outdoor,Grass,600,1973
+carolina_panthers,Bank of America Stadium,carolina_panthers,Charlotte,NC,35.2258,-80.8528,Outdoor,Grass,748,1996
+chicago_bears,Soldier Field,chicago_bears,Chicago,IL,41.8623,-87.6167,Outdoor,Grass,595,1924
+cincinnati_bengals,Paycor Stadium,cincinnati_bengals,Cincinnati,OH,39.0954,-84.516,Outdoor,Turf,482,2000
+cleveland_browns,FirstEnergy Stadium,cleveland_browns,Cleveland,OH,41.5061,-81.6995,Outdoor,Grass,577,1999
+dallas_cowboys,AT&T Stadium,dallas_cowboys,Arlington,TX,32.7473,-97.0945,Indoor,Turf,639,2009
+denver_broncos,Empower Field at Mile High,denver_broncos,Denver,CO,39.7439,-105.0201,Outdoor,Turf,5280,2001
+detroit_lions,Ford Field,detroit_lions,Detroit,MI,42.34,-83.0456,Indoor,Turf,600,2002
+green_bay_packers,Lambeau Field,green_bay_packers,Green Bay,WI,44.5013,-88.0622,Outdoor,Grass,640,1957
+houston_texans,NRG Stadium,houston_texans,Houston,TX,29.6847,-95.4107,Indoor,Turf,50,2002
+indianapolis_colts,Lucas Oil Stadium,indianapolis_colts,Indianapolis,IN,39.7601,-86.1639,Indoor,Turf,700,2008
+jacksonville_jaguars,TIAA Bank Field,jacksonville_jaguars,Jacksonville,FL,30.3239,-81.6373,Outdoor,Grass,16,1995
+kansas_city_chiefs,GEHA Field at Arrowhead Stadium,kansas_city_chiefs,Kansas City,MO,39.049,-94.4839,Outdoor,Grass,1020,1972
+las_vegas_raiders,Allegiant Stadium,las_vegas_raiders,Las Vegas,NV,36.0908,-115.183,Indoor,Turf,2001,2020
+los_angeles_chargers,SoFi Stadium,los_angeles_chargers,Inglewood,CA,33.9535,-118.3392,Outdoor,Turf,100,2020
+los_angeles_rams,SoFi Stadium,los_angeles_rams,Inglewood,CA,33.9535,-118.3392,Outdoor,Turf,100,2020
+miami_dolphins,Hard Rock Stadium,miami_dolphins,Miami Gardens,FL,25.958,-80.238,Outdoor,Grass,7,1987
+minnesota_vikings,U.S. Bank Stadium,minnesota_vikings,Minneapolis,MN,44.974,-93.2581,Indoor,Turf,840,2016
+new_england_patriots,Gillette Stadium,new_england_patriots,Foxborough,MA,42.0909,-71.2643,Outdoor,Turf,289,2002
+new_orleans_saints,Caesars Superdome,new_orleans_saints,New Orleans,LA,29.9509,-90.0815,Indoor,Turf,3,1975
+new_york_giants,MetLife Stadium,new_york_giants,East Rutherford,NJ,40.8136,-74.0744,Outdoor,Turf,3,2010
+new_york_jets,MetLife Stadium,new_york_jets,East Rutherford,NJ,40.8136,-74.0744,Outdoor,Turf,3,2010
+philadelphia_eagles,Lincoln Financial Field,philadelphia_eagles,Philadelphia,PA,39.9008,-75.1675,Outdoor,Grass,30,2003
+pittsburgh_steelers,Acrisure Stadium,pittsburgh_steelers,Pittsburgh,PA,40.4468,-80.0158,Outdoor,Grass,730,2001
+san_francisco_49ers,Levi's Stadium,san_francisco_49ers,Santa Clara,CA,37.403,-121.9692,Outdoor,Grass,13,2014
+seattle_seahawks,Lumen Field,seattle_seahawks,Seattle,WA,47.5952,-122.3316,Outdoor,Turf,20,2002
+tampa_bay_buccaneers,Raymond James Stadium,tampa_bay_buccaneers,Tampa,FL,27.9759,-82.5033,Outdoor,Grass,26,1998
+tennessee_titans,Nissan Stadium,tennessee_titans,Nashville,TN,36.1665,-86.7713,Outdoor,Grass,476,1999
+washington_commanders,FedExField,washington_commanders,Landover,MD,38.9078,-76.8645,Outdoor,Grass,300,1997

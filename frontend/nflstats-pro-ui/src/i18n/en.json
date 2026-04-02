@@ -1,0 +1,58 @@
+{
+  "appTitle": "NFLStats Pro",
+  "tagline": "Next-Gen Performance Analytics",
+  "positions": {
+    "qb": "Quarterbacks",
+    "rb": "Running Backs",
+    "wr": "Wide Receivers",
+    "te": "Tight Ends",
+    "k": "Kickers",
+    "dst": "Defense / ST"
+  },
+  "columns": {
+    "rank": "Rank",
+    "week": "Week",
+    "player_name": "Player",
+    "team": "Team",
+    "games_played": "Games",
+    "fpts": "Fantasy Pts",
+    "fpts_ppr": "PPR Pts",
+    "fpts_per_game": "Pts/G",
+    "fpts_ppr_per_game": "PPR/G",
+    "yac": "YAC",
+    "targets": "Tgt",
+    "rec": "Rec",
+    "yds": "Yds",
+    "td": "TD",
+    "opponent": "Opp",
+    "stadium_name": "Stadium",
+    "city": "City",
+    "state": "State",
+    "indoor_outdoor": "Venue",
+    "surface_type": "Surface",
+    "elevation": "Elev",
+    "temp": "Temp°F",
+    "humidity": "Hum%",
+    "wind": "Wind",
+    "game_result": "W/L"
+  },
+  "filters": {
+    "searchPlaceholder": "Search by player, team...",
+    "season": "Season",
+    "allSeasons": "All Seasons",
+    "week": "Week",
+    "allWeeks": "All Weeks",
+    "viewMode": "View Mode",
+    "seasonMode": "Season Totals",
+    "weeklyMode": "Weekly Stats"
+  },
+  "actions": {
+    "downloadCsv": "Download CSV",
+    "retry": "Retry Request"
+  },
+  "states": {
+    "loading": "Analyzing strict schema datasets...",
+    "error": "Failed to retrieve rankings data.",
+    "empty": "No statistical data found matching these parameters."
+  }
+}

@@ -1,0 +1,225 @@
+year,player_id,player_name,team,position,games_played,fpts,fpts_ppr,fpts_per_game,fpts_ppr_per_game,rank,player,sack,int,fr,ff,def td,sfty,spc td,fpts/g,rost
+2020,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,16,151.0,0.0,9.44,0.0,1,Los Angeles Rams(LAR),53,14,8,12,4,1,0,9.4,54.2%
+2020,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,148.0,0.0,8.71,0.0,2,Pittsburgh Steelers(PIT),56,18,9,12,3,1,0,8.7,66.8%
+2020,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,16,145.0,0.0,9.06,0.0,3,Indianapolis Colts(IND),40,15,10,11,4,3,2,9.1,26.6%
+2020,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,16,141.0,0.0,8.81,0.0,4,Miami Dolphins(MIA),41,18,10,14,2,0,1,8.8,11.8%
+2020,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,16,141.0,0.0,8.81,0.0,5,Baltimore Ravens(BAL),39,10,12,22,3,2,1,8.8,39.4%
+2020,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,16,127.0,0.0,7.94,0.0,6,Washington Commanders(WAS),47,16,7,13,3,1,0,7.9,22.7%
+2020,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,16,126.0,0.0,7.88,0.0,7,New Orleans Saints(NO),45,18,8,6,1,1,0,7.9,42.6%
+2020,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,16,119.0,0.0,7.44,0.0,8,Tampa Bay Buccaneers(TB),48,15,10,15,1,1,0,7.4,36.7%
+2020,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,16,118.0,0.0,7.38,0.0,9,Buffalo Bills(BUF),38,15,11,14,3,0,1,7.4,55.1%
+2020,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,16,110.0,0.0,6.88,0.0,10,Arizona Cardinals(ARI),48,11,10,12,0,1,0,6.9,5.6%
+2020,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,16,108.0,0.0,6.75,0.0,11,New England Patriots(NE),24,18,4,5,2,0,2,6.8,78.4%
+2020,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,16,108.0,0.0,6.75,0.0,12,Kansas City Chiefs(KC),32,16,6,11,2,1,2,6.8,37.3%
+2020,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,16,105.0,0.0,6.56,0.0,13,Seattle Seahawks(SEA),46,14,8,12,0,3,0,6.6,88.9%
+2020,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,16,103.0,0.0,6.44,0.0,14,New York Giants(NYG),40,11,11,13,2,0,0,6.4,23.6%
+2020,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,16,103.0,0.0,6.44,0.0,15,Philadelphia Eagles(PHI),49,8,11,12,3,1,1,6.4,69.0%
+2020,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,16,99.0,0.0,6.19,0.0,16,Carolina Panthers(CAR),29,7,15,13,3,0,0,6.2,10.0%
+2020,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,16,97.0,0.0,6.06,0.0,17,Cleveland Browns(CLE),38,11,10,16,2,2,0,6.1,44.2%
+2020,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,16,94.0,0.0,5.88,0.0,18,Green Bay Packers(GB),41,11,7,11,2,1,0,5.9,42.8%
+2020,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,16,92.0,0.0,5.75,0.0,19,Chicago Bears(CHI),35,10,8,13,1,1,1,5.8,25.8%
+2020,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,16,90.0,0.0,5.62,0.0,20,San Francisco 49ers(SF),30,12,8,11,1,0,0,5.6,37.0%
+2020,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,16,78.0,0.0,4.88,0.0,21,Dallas Cowboys(DAL),31,10,12,13,2,0,1,4.9,23.4%
+2020,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,16,77.0,0.0,4.81,0.0,22,Denver Broncos(DEN),42,10,6,11,0,0,1,4.8,90.1%
+2020,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,16,76.0,0.0,4.75,0.0,23,Los Angeles Chargers(LAC),27,12,7,5,2,1,0,4.8,35.4%
+2020,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,16,72.0,0.0,4.5,0.0,24,Atlanta Falcons(ATL),29,12,9,17,1,0,0,4.5,20.5%
+2020,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,16,67.0,0.0,4.19,0.0,25,New York Jets(NYJ),31,10,9,17,1,1,0,4.2,8.6%
+2020,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,66.0,0.0,3.88,0.0,26,Tennessee Titans(TEN),19,15,8,11,2,0,1,3.9,16.9%
+2020,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,16,60.0,0.0,3.75,0.0,27,Minnesota Vikings(MIN),23,15,7,8,0,1,0,3.8,38.5%
+2020,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,16,54.0,0.0,3.38,0.0,28,Jacksonville Jaguars(JAC),18,12,5,8,1,0,2,3.4,51.6%
+2020,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,16,45.0,0.0,2.81,0.0,29,Cincinnati Bengals(CIN),17,11,6,10,0,0,1,2.8,8.8%
+2020,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,16,45.0,0.0,2.81,0.0,30,Houston Texans(HOU),34,3,6,9,1,0,0,2.8,89.3%
+2020,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,16,43.0,0.0,2.69,0.0,31,Las Vegas Raiders(LV),21,10,5,8,0,0,0,2.7,15.3%
+2020,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,16,35.0,0.0,2.19,0.0,32,Detroit Lions(DET),24,7,5,15,0,1,1,2.2,56.9%
+2021,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,185.0,0.0,10.88,0.0,1,Dallas Cowboys(DAL),41,26,8,13,6,0,3,10.9,23.4%
+2021,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,158.0,0.0,9.29,0.0,2,New England Patriots(NE),36,23,7,11,3,0,0,9.3,78.4%
+2021,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,155.0,0.0,9.12,0.0,3,Miami Dolphins(MIA),48,14,13,14,5,0,1,9.1,11.8%
+2021,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,151.0,0.0,8.88,0.0,4,Buffalo Bills(BUF),42,19,11,10,1,0,0,8.9,55.1%
+2021,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,145.0,0.0,8.53,0.0,5,New Orleans Saints(NO),46,18,7,12,2,0,0,8.5,42.6%
+2021,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,141.0,0.0,8.29,0.0,6,Tampa Bay Buccaneers(TB),47,17,12,15,2,0,0,8.3,36.7%
+2021,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,138.0,0.0,8.12,0.0,7,Indianapolis Colts(IND),33,19,14,17,1,1,2,8.1,26.6%
+2021,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,131.0,0.0,7.71,0.0,8,Kansas City Chiefs(KC),31,15,14,18,4,0,0,7.7,37.3%
+2021,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,126.0,0.0,7.41,0.0,9,Arizona Cardinals(ARI),41,13,14,20,2,0,0,7.4,5.6%
+2021,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,124.0,0.0,7.29,0.0,10,Minnesota Vikings(MIN),51,16,8,13,2,0,2,7.3,38.5%
+2021,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,123.0,0.0,7.24,0.0,11,Tennessee Titans(TEN),43,16,6,10,4,0,0,7.2,16.9%
+2021,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,121.0,0.0,7.12,0.0,12,Los Angeles Rams(LAR),50,19,6,13,0,0,1,7.1,54.2%
+2021,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,119.0,0.0,7.0,0.0,13,Denver Broncos(DEN),36,13,6,6,1,0,0,7.0,90.1%
+2021,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,118.0,0.0,6.94,0.0,14,San Francisco 49ers(SF),48,9,11,21,2,0,0,6.9,37.0%
+2021,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,117.0,0.0,6.88,0.0,15,Green Bay Packers(GB),39,18,8,9,2,0,0,6.9,42.8%
+2021,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,111.0,0.0,6.53,0.0,16,Philadelphia Eagles(PHI),29,12,4,11,5,0,0,6.5,69.0%
+2021,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,111.0,0.0,6.53,0.0,17,Pittsburgh Steelers(PIT),55,13,9,16,0,0,1,6.5,66.8%
+2021,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,108.0,0.0,6.35,0.0,18,Cincinnati Bengals(CIN),42,13,8,14,2,0,0,6.4,8.8%
+2021,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,105.0,0.0,6.18,0.0,19,Chicago Bears(CHI),49,8,8,12,2,1,1,6.2,25.8%
+2021,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,104.0,0.0,6.12,0.0,20,Cleveland Browns(CLE),43,13,6,12,2,0,0,6.1,44.2%
+2021,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,95.0,0.0,5.59,0.0,21,Seattle Seahawks(SEA),34,11,7,8,0,1,1,5.6,88.9%
+2021,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,92.0,0.0,5.41,0.0,22,Washington Commanders(WAS),38,11,7,9,2,0,1,5.4,22.7%
+2021,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,89.0,0.0,5.24,0.0,23,Carolina Panthers(CAR),39,9,7,11,0,1,1,5.2,10.0%
+2021,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,87.0,0.0,5.12,0.0,24,Houston Texans(HOU),32,17,8,15,1,1,1,5.1,89.3%
+2021,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,86.0,0.0,5.06,0.0,25,New York Giants(NYG),34,15,7,10,1,1,0,5.1,23.6%
+2021,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,85.0,0.0,5.0,0.0,26,Baltimore Ravens(BAL),34,9,6,8,2,0,0,5.0,39.4%
+2021,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,78.0,0.0,4.59,0.0,27,Los Angeles Chargers(LAC),35,11,10,18,1,0,1,4.6,35.4%
+2021,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,65.0,0.0,3.82,0.0,28,Las Vegas Raiders(LV),35,6,9,9,0,1,0,3.8,15.3%
+2021,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,65.0,0.0,3.82,0.0,29,Atlanta Falcons(ATL),18,12,8,10,2,1,0,3.8,20.5%
+2021,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,64.0,0.0,3.76,0.0,30,Jacksonville Jaguars(JAC),32,7,2,6,1,0,1,3.8,51.6%
+2021,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,58.0,0.0,3.41,0.0,31,New York Jets(NYJ),33,7,7,12,1,0,1,3.4,8.6%
+2021,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,58.0,0.0,3.41,0.0,32,Detroit Lions(DET),30,11,8,11,0,0,0,3.4,56.9%
+2022,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,186.0,0.0,10.94,0.0,1,New England Patriots(NE),54,19,11,15,7,0,1,10.9,78.4%
+2022,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,170.0,0.0,10.0,0.0,2,Dallas Cowboys(DAL),54,16,17,21,3,0,0,10.0,23.4%
+2022,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,163.0,0.0,9.59,0.0,3,San Francisco 49ers(SF),44,20,10,13,3,0,0,9.6,37.0%
+2022,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,154.0,0.0,9.06,0.0,4,Philadelphia Eagles(PHI),70,17,10,15,2,0,0,9.1,69.0%
+2022,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,152.0,0.0,8.94,0.0,5,Buffalo Bills(BUF),40,17,10,10,1,2,2,8.9,55.1%
+2022,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,139.0,0.0,8.18,0.0,6,Jacksonville Jaguars(JAC),35,14,13,16,4,0,0,8.2,51.6%
+2022,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,134.0,0.0,7.88,0.0,7,Baltimore Ravens(BAL),48,14,11,14,0,0,1,7.9,39.4%
+2022,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,121.0,0.0,7.12,0.0,8,Kansas City Chiefs(KC),55,11,9,11,2,1,0,7.1,37.3%
+2022,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,120.0,0.0,7.06,0.0,9,Washington Commanders(WAS),43,9,9,7,3,1,0,7.1,22.7%
+2022,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,118.0,0.0,6.94,0.0,10,Carolina Panthers(CAR),35,10,7,7,3,0,0,6.9,10.0%
+2022,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,118.0,0.0,6.94,0.0,11,New York Jets(NYJ),45,12,4,9,0,2,1,6.9,8.6%
+2022,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,117.0,0.0,6.88,0.0,12,Seattle Seahawks(SEA),45,14,11,15,1,0,1,6.9,88.9%
+2022,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,117.0,0.0,6.88,0.0,13,Green Bay Packers(GB),34,17,7,11,2,1,1,6.9,42.8%
+2022,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,116.0,0.0,6.82,0.0,14,Houston Texans(HOU),39,16,11,9,1,1,0,6.8,89.3%
+2022,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,116.0,0.0,6.82,0.0,15,Indianapolis Colts(IND),44,10,11,13,2,0,1,6.8,26.6%
+2022,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,115.0,0.0,6.76,0.0,16,New Orleans Saints(NO),48,7,7,11,1,0,0,6.8,42.6%
+2022,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,115.0,0.0,6.76,0.0,17,Cincinnati Bengals(CIN),30,13,11,13,1,0,0,6.8,8.8%
+2022,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,108.0,0.0,6.35,0.0,18,New York Giants(NYG),41,6,13,18,2,0,0,6.4,23.6%
+2022,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,107.0,0.0,6.29,0.0,19,Pittsburgh Steelers(PIT),40,20,3,9,1,0,0,6.3,66.8%
+2022,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,107.0,0.0,6.29,0.0,20,Miami Dolphins(MIA),40,8,6,14,2,1,1,6.3,11.8%
+2022,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,107.0,0.0,6.29,0.0,21,Cleveland Browns(CLE),34,11,9,10,3,0,1,6.3,44.2%
+2022,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,106.0,0.0,6.24,0.0,22,Minnesota Vikings(MIN),38,15,10,10,1,0,1,6.2,38.5%
+2022,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,106.0,0.0,6.24,0.0,23,Los Angeles Chargers(LAC),40,14,10,13,1,1,0,6.2,35.4%
+2022,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,105.0,0.0,6.18,0.0,24,Los Angeles Rams(LAR),38,16,6,9,1,0,0,6.2,54.2%
+2022,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,104.0,0.0,6.12,0.0,25,Tennessee Titans(TEN),39,14,6,11,1,0,0,6.1,16.9%
+2022,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,103.0,0.0,6.06,0.0,26,Tampa Bay Buccaneers(TB),44,10,10,14,1,0,0,6.1,36.7%
+2022,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,103.0,0.0,6.06,0.0,27,Arizona Cardinals(ARI),36,11,9,11,5,0,0,6.1,5.6%
+2022,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,102.0,0.0,6.0,0.0,28,Denver Broncos(DEN),36,15,8,15,0,1,0,6.0,90.1%
+2022,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,98.0,0.0,5.76,0.0,29,Detroit Lions(DET),39,12,10,12,1,1,1,5.8,56.9%
+2022,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,89.0,0.0,5.24,0.0,30,Atlanta Falcons(ATL),21,10,7,8,2,1,2,5.2,20.5%
+2022,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,77.0,0.0,4.53,0.0,31,Las Vegas Raiders(LV),27,6,7,10,3,0,0,4.5,15.3%
+2022,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,62.0,0.0,3.65,0.0,32,Chicago Bears(CHI),20,14,9,10,0,0,0,3.6,25.8%
+2023,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,178.0,0.0,10.47,0.0,1,Dallas Cowboys(DAL),46,17,9,14,6,1,1,10.5,23.4%
+2023,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,174.0,0.0,10.24,0.0,2,Baltimore Ravens(BAL),60,18,13,16,1,1,1,10.2,39.4%
+2023,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,159.0,0.0,9.35,0.0,3,Buffalo Bills(BUF),54,18,12,12,2,0,1,9.4,55.1%
+2023,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,157.0,0.0,9.24,0.0,4,Cleveland Browns(CLE),49,18,10,12,3,0,0,9.2,44.2%
+2023,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,157.0,0.0,9.24,0.0,5,New York Jets(NYJ),48,17,10,13,3,3,1,9.2,8.6%
+2023,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,152.0,0.0,8.94,0.0,6,Miami Dolphins(MIA),56,15,12,15,4,0,0,8.9,11.8%
+2023,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,146.0,0.0,8.59,0.0,7,Las Vegas Raiders(LV),46,13,9,13,5,1,0,8.6,15.3%
+2023,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,143.0,0.0,8.41,0.0,8,Pittsburgh Steelers(PIT),47,16,11,18,2,1,0,8.4,66.8%
+2023,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,143.0,0.0,8.41,0.0,9,New Orleans Saints(NO),34,18,11,8,2,0,1,8.4,42.6%
+2023,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,141.0,0.0,8.29,0.0,10,San Francisco 49ers(SF),48,22,6,10,1,1,0,8.3,37.0%
+2023,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,139.0,0.0,8.18,0.0,11,Indianapolis Colts(IND),51,15,9,16,4,1,1,8.2,26.6%
+2023,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,134.0,0.0,7.88,0.0,12,Kansas City Chiefs(KC),57,8,9,14,2,0,0,7.9,37.3%
+2023,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,133.0,0.0,7.82,0.0,13,Tampa Bay Buccaneers(TB),48,13,12,18,1,1,0,7.8,36.7%
+2023,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,131.0,0.0,7.71,0.0,14,New York Giants(NYG),34,18,13,15,3,0,1,7.7,23.6%
+2023,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,131.0,0.0,7.71,0.0,15,Houston Texans(HOU),46,14,10,13,1,0,2,7.7,89.3%
+2023,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,125.0,0.0,7.35,0.0,16,Minnesota Vikings(MIN),43,11,11,21,2,0,0,7.4,38.5%
+2023,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,120.0,0.0,7.06,0.0,17,Jacksonville Jaguars(JAC),40,16,11,11,2,0,0,7.1,51.6%
+2023,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,120.0,0.0,7.06,0.0,18,Chicago Bears(CHI),30,22,6,10,2,0,0,7.1,25.8%
+2023,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,118.0,0.0,6.94,0.0,19,Cincinnati Bengals(CIN),44,17,9,11,1,0,1,6.9,8.8%
+2023,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,118.0,0.0,6.94,0.0,20,Denver Broncos(DEN),42,11,15,17,1,1,1,6.9,90.1%
+2023,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,115.0,0.0,6.76,0.0,21,Green Bay Packers(GB),45,7,11,10,2,0,0,6.8,42.8%
+2023,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,112.0,0.0,6.59,0.0,22,Los Angeles Chargers(LAC),48,9,12,13,0,0,1,6.6,35.4%
+2023,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,110.0,0.0,6.47,0.0,23,New England Patriots(NE),36,10,8,13,1,1,1,6.5,78.4%
+2023,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,109.0,0.0,6.41,0.0,24,Seattle Seahawks(SEA),47,11,8,12,3,0,0,6.4,88.9%
+2023,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,107.0,0.0,6.29,0.0,25,Detroit Lions(DET),41,16,6,11,1,1,0,6.3,56.9%
+2023,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,100.0,0.0,5.88,0.0,26,Tennessee Titans(TEN),45,6,8,11,1,0,0,5.9,16.9%
+2023,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,100.0,0.0,5.88,0.0,27,Philadelphia Eagles(PHI),43,9,8,13,3,1,0,5.9,69.0%
+2023,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,99.0,0.0,5.82,0.0,28,Atlanta Falcons(ATL),42,8,8,18,1,1,0,5.8,20.5%
+2023,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,83.0,0.0,4.88,0.0,29,Los Angeles Rams(LAR),41,10,5,7,0,2,0,4.9,54.2%
+2023,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,71.0,0.0,4.18,0.0,30,Carolina Panthers(CAR),27,8,3,5,2,0,1,4.2,10.0%
+2023,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,65.0,0.0,3.82,0.0,31,Arizona Cardinals(ARI),33,11,6,4,1,0,0,3.8,5.6%
+2023,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,58.0,0.0,3.41,0.0,32,Washington Commanders(WAS),39,8,10,10,0,0,0,3.4,22.7%
+2024,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,179.0,0.0,10.53,0.0,1,Denver Broncos(DEN),63,15,9,12,5,2,0,10.5,90.1%
+2024,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,162.0,0.0,9.53,0.0,2,Minnesota Vikings(MIN),49,24,9,10,3,0,0,9.5,38.5%
+2024,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,148.0,0.0,8.71,0.0,3,Green Bay Packers(GB),45,17,14,15,1,0,0,8.7,42.8%
+2024,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,146.0,0.0,8.59,0.0,4,Pittsburgh Steelers(PIT),40,17,16,18,1,0,1,8.6,66.8%
+2024,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,139.0,0.0,8.18,0.0,5,Houston Texans(HOU),49,19,9,10,3,1,0,8.2,89.3%
+2024,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,136.0,0.0,8.0,0.0,6,Seattle Seahawks(SEA),45,13,5,14,4,1,1,8.0,88.9%
+2024,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,135.0,0.0,7.94,0.0,7,Philadelphia Eagles(PHI),41,13,13,18,1,0,0,7.9,69.0%
+2024,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,133.0,0.0,7.82,0.0,8,Buffalo Bills(BUF),39,16,16,17,3,1,0,7.8,55.1%
+2024,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,128.0,0.0,7.53,0.0,9,Los Angeles Chargers(LAC),46,15,6,8,1,0,0,7.5,35.4%
+2024,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,123.0,0.0,7.24,0.0,10,Detroit Lions(DET),37,16,8,11,1,0,1,7.2,56.9%
+2024,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,121.0,0.0,7.12,0.0,11,Chicago Bears(CHI),40,11,13,14,1,0,2,7.1,25.8%
+2024,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,120.0,0.0,7.06,0.0,12,Baltimore Ravens(BAL),54,12,5,12,2,0,0,7.1,39.4%
+2024,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,118.0,0.0,6.94,0.0,13,Los Angeles Rams(LAR),38,13,7,10,3,1,1,6.9,54.2%
+2024,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,111.0,0.0,6.53,0.0,14,Dallas Cowboys(DAL),52,13,9,16,1,0,3,6.5,23.4%
+2024,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,106.0,0.0,6.24,0.0,15,Kansas City Chiefs(KC),39,13,7,12,1,0,0,6.2,37.3%
+2024,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,104.0,0.0,6.12,0.0,16,Tampa Bay Buccaneers(TB),46,7,11,15,1,1,1,6.1,36.7%
+2024,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,104.0,0.0,6.12,0.0,17,Cincinnati Bengals(CIN),36,15,10,12,2,1,1,6.1,8.8%
+2024,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,101.0,0.0,5.94,0.0,18,Arizona Cardinals(ARI),41,9,8,16,0,2,1,5.9,5.6%
+2024,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,98.0,0.0,5.76,0.0,19,New Orleans Saints(NO),39,14,3,12,0,1,1,5.8,42.6%
+2024,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,97.0,0.0,5.71,0.0,20,Atlanta Falcons(ATL),31,12,6,12,4,1,0,5.7,20.5%
+2024,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,95.0,0.0,5.59,0.0,21,New York Jets(NYJ),43,7,10,14,0,0,1,5.6,8.6%
+2024,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,91.0,0.0,5.35,0.0,22,New York Giants(NYG),45,5,10,15,0,0,2,5.4,23.6%
+2024,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,91.0,0.0,5.35,0.0,23,Indianapolis Colts(IND),36,16,9,17,1,0,0,5.4,26.6%
+2024,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,90.0,0.0,5.29,0.0,24,Washington Commanders(WAS),43,7,10,12,1,0,0,5.3,22.7%
+2024,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,84.0,0.0,4.94,0.0,25,San Francisco 49ers(SF),37,11,6,11,1,0,1,4.9,37.0%
+2024,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,84.0,0.0,4.94,0.0,26,Miami Dolphins(MIA),35,10,6,7,0,0,0,4.9,11.8%
+2024,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,81.0,0.0,4.76,0.0,27,Cleveland Browns(CLE),41,4,8,11,1,1,1,4.8,44.2%
+2024,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,72.0,0.0,4.24,0.0,28,Tennessee Titans(TEN),32,11,6,10,0,2,0,4.2,16.9%
+2024,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,71.0,0.0,4.18,0.0,29,Las Vegas Raiders(LV),38,10,3,6,1,0,0,4.2,15.3%
+2024,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,71.0,0.0,4.18,0.0,30,Jacksonville Jaguars(JAC),34,6,3,5,1,0,1,4.2,51.6%
+2024,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,63.0,0.0,3.71,0.0,31,New England Patriots(NE),28,7,5,9,1,0,0,3.7,78.4%
+2024,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,41.0,0.0,2.41,0.0,32,Carolina Panthers(CAR),32,9,8,8,0,0,0,2.4,10.0%
+2025,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,179.0,0.0,10.53,0.0,1,Seattle Seahawks(SEA),47,18,7,7,3,0,4,10.5,88.9%
+2025,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,164.0,0.0,9.65,0.0,2,Houston Texans(HOU),47,19,10,12,4,0,0,9.6,89.3%
+2025,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,144.0,0.0,8.47,0.0,3,Jacksonville Jaguars(JAC),32,22,9,9,2,1,2,8.5,51.6%
+2025,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,143.0,0.0,8.41,0.0,4,Denver Broncos(DEN),68,10,4,7,1,0,1,8.4,90.1%
+2025,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,136.0,0.0,8.0,0.0,5,Los Angeles Rams(LAR),47,16,9,12,1,0,1,8.0,54.2%
+2025,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,136.0,0.0,8.0,0.0,6,Minnesota Vikings(MIN),49,8,13,16,2,0,0,8.0,38.5%
+2025,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,135.0,0.0,7.94,0.0,7,Philadelphia Eagles(PHI),42,12,9,12,1,0,2,7.9,69.0%
+2025,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,133.0,0.0,7.82,0.0,8,Cleveland Browns(CLE),53,11,7,14,4,0,0,7.8,44.2%
+2025,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,130.0,0.0,7.65,0.0,9,Pittsburgh Steelers(PIT),48,15,12,16,3,1,0,7.6,66.8%
+2025,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,127.0,0.0,7.47,0.0,10,New England Patriots(NE),35,10,9,9,2,1,3,7.5,78.4%
+2025,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,122.0,0.0,7.18,0.0,11,Atlanta Falcons(ATL),57,16,7,12,1,0,0,7.2,20.5%
+2025,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,118.0,0.0,6.94,0.0,12,New Orleans Saints(NO),45,10,10,12,3,0,0,6.9,42.6%
+2025,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,115.0,0.0,6.76,0.0,13,Chicago Bears(CHI),35,23,10,11,2,0,0,6.8,25.8%
+2025,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,111.0,0.0,6.53,0.0,14,Los Angeles Chargers(LAC),45,19,4,9,0,1,0,6.5,35.4%
+2025,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,110.0,0.0,6.47,0.0,15,Buffalo Bills(BUF),36,13,7,12,2,0,1,6.5,55.1%
+2025,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,103.0,0.0,6.06,0.0,16,Carolina Panthers(CAR),30,15,6,7,2,0,0,6.1,10.0%
+2025,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,99.0,0.0,5.82,0.0,17,Tampa Bay Buccaneers(TB),37,13,10,12,2,1,0,5.8,36.7%
+2025,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,99.0,0.0,5.82,0.0,18,Indianapolis Colts(IND),39,14,7,9,1,0,0,5.8,26.6%
+2025,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,97.0,0.0,5.71,0.0,19,Baltimore Ravens(BAL),30,11,9,11,2,0,0,5.7,39.4%
+2025,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,97.0,0.0,5.71,0.0,20,Detroit Lions(DET),49,13,6,15,0,1,1,5.7,56.9%
+2025,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,95.0,0.0,5.59,0.0,21,Miami Dolphins(MIA),39,9,11,10,0,0,1,5.6,11.8%
+2025,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,92.0,0.0,5.41,0.0,22,Kansas City Chiefs(KC),35,10,4,6,0,0,0,5.4,37.3%
+2025,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,87.0,0.0,5.12,0.0,23,Tennessee Titans(TEN),42,6,8,7,2,1,2,5.1,16.9%
+2025,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,79.0,0.0,4.65,0.0,24,Green Bay Packers(GB),36,7,7,7,0,0,0,4.6,42.8%
+2025,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,79.0,0.0,4.65,0.0,25,Cincinnati Bengals(CIN),35,13,7,11,1,0,1,4.6,8.8%
+2025,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,78.0,0.0,4.59,0.0,26,San Francisco 49ers(SF),20,6,10,10,1,0,0,4.6,37.0%
+2025,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,77.0,0.0,4.53,0.0,27,Arizona Cardinals(ARI),30,10,9,11,2,1,0,4.5,5.6%
+2025,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,77.0,0.0,4.53,0.0,28,New York Giants(NYG),39,9,6,10,1,0,1,4.5,23.6%
+2025,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,76.0,0.0,4.47,0.0,29,Washington Commanders(WAS),42,8,2,9,0,1,2,4.5,22.7%
+2025,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,75.0,0.0,4.41,0.0,30,Las Vegas Raiders(LV),37,8,8,10,0,1,0,4.4,15.3%
+2025,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,59.0,0.0,3.47,0.0,31,Dallas Cowboys(DAL),35,6,6,10,1,1,1,3.5,23.4%
+2025,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,47.0,0.0,2.76,0.0,32,New York Jets(NYJ),26,0,4,8,0,1,4,2.8,8.6%
+2026,d4607312465648d0e87b4653db7c0732,Seattle Seahawks(SEA),seattle_seahawks,DST,17,179.0,0.0,10.53,0.0,1,Seattle Seahawks(SEA),47,18,7,7,3,0,4,10.5,88.9%
+2026,04ca31bc73dde36a60949eb696e9abab,Houston Texans(HOU),houston_texans,DST,17,164.0,0.0,9.65,0.0,2,Houston Texans(HOU),47,19,10,12,4,0,0,9.6,89.3%
+2026,59b440031244d0cd4ece3b262ba323f4,Jacksonville Jaguars(JAC),jacksonville_jaguars,DST,17,144.0,0.0,8.47,0.0,3,Jacksonville Jaguars(JAC),32,22,9,9,2,1,2,8.5,51.6%
+2026,7d5b2ff7f1f83db2846fde6c285bf2f5,Denver Broncos(DEN),denver_broncos,DST,17,143.0,0.0,8.41,0.0,4,Denver Broncos(DEN),68,10,4,7,1,0,1,8.4,90.1%
+2026,f390ccdbc4adafcbe5c4473a14f10df9,Los Angeles Rams(LAR),los_angeles_rams,DST,17,136.0,0.0,8.0,0.0,5,Los Angeles Rams(LAR),47,16,9,12,1,0,1,8.0,54.2%
+2026,fc3930d752268438c0b00c5b99a13254,Minnesota Vikings(MIN),minnesota_vikings,DST,17,136.0,0.0,8.0,0.0,6,Minnesota Vikings(MIN),49,8,13,16,2,0,0,8.0,38.5%
+2026,bd04a53cee03c89c2a104a21d5430a31,Philadelphia Eagles(PHI),philadelphia_eagles,DST,17,135.0,0.0,7.94,0.0,7,Philadelphia Eagles(PHI),42,12,9,12,1,0,2,7.9,69.0%
+2026,6a1225aa3e240cdaad5c4c31b5340aa0,Cleveland Browns(CLE),cleveland_browns,DST,17,133.0,0.0,7.82,0.0,8,Cleveland Browns(CLE),53,11,7,14,4,0,0,7.8,44.2%
+2026,d3093b7189d2437947e634907e3fdc6e,Pittsburgh Steelers(PIT),pittsburgh_steelers,DST,17,130.0,0.0,7.65,0.0,9,Pittsburgh Steelers(PIT),48,15,12,16,3,1,0,7.6,66.8%
+2026,d55c2444941081f14f7c7d2040ee9c83,New England Patriots(NE),new_england_patriots,DST,17,127.0,0.0,7.47,0.0,10,New England Patriots(NE),35,10,9,9,2,1,3,7.5,78.4%
+2026,cab6c622d9f5bea0275fd0cca5fe8e05,Atlanta Falcons(ATL),atlanta_falcons,DST,17,122.0,0.0,7.18,0.0,11,Atlanta Falcons(ATL),57,16,7,12,1,0,0,7.2,20.5%
+2026,462b58efa30752aaa1dd4ffce5bb62ef,New Orleans Saints(NO),new_orleans_saints,DST,17,118.0,0.0,6.94,0.0,12,New Orleans Saints(NO),45,10,10,12,3,0,0,6.9,42.6%
+2026,ef8c253791bf57c7460e7ff5c0d02aae,Chicago Bears(CHI),chicago_bears,DST,17,115.0,0.0,6.76,0.0,13,Chicago Bears(CHI),35,23,10,11,2,0,0,6.8,25.8%
+2026,d8cdb4613f1f44528df1039fec78adf6,Los Angeles Chargers(LAC),los_angeles_chargers,DST,17,111.0,0.0,6.53,0.0,14,Los Angeles Chargers(LAC),45,19,4,9,0,1,0,6.5,35.4%
+2026,fb13990952aaa5261d3b441593e3c7a0,Buffalo Bills(BUF),buffalo_bills,DST,17,110.0,0.0,6.47,0.0,15,Buffalo Bills(BUF),36,13,7,12,2,0,1,6.5,55.1%
+2026,9368a9c9380402f4a90abdd13416728a,Carolina Panthers(CAR),carolina_panthers,DST,17,103.0,0.0,6.06,0.0,16,Carolina Panthers(CAR),30,15,6,7,2,0,0,6.1,10.0%
+2026,e090f6cfb3b7f2de690ac7eb194ce004,Tampa Bay Buccaneers(TB),tampa_bay_buccaneers,DST,17,99.0,0.0,5.82,0.0,17,Tampa Bay Buccaneers(TB),37,13,10,12,2,1,0,5.8,36.7%
+2026,ae2706c799f4d11f988d3bbd8436f0e7,Indianapolis Colts(IND),indianapolis_colts,DST,17,99.0,0.0,5.82,0.0,18,Indianapolis Colts(IND),39,14,7,9,1,0,0,5.8,26.6%
+2026,0f3269b41bd62299eb927d40d8b8770b,Baltimore Ravens(BAL),baltimore_ravens,DST,17,97.0,0.0,5.71,0.0,19,Baltimore Ravens(BAL),30,11,9,11,2,0,0,5.7,39.4%
+2026,eb0640ff8e9fa257e0987f928edfb5c5,Detroit Lions(DET),detroit_lions,DST,17,97.0,0.0,5.71,0.0,20,Detroit Lions(DET),49,13,6,15,0,1,1,5.7,56.9%
+2026,c8deee20acebac91ba7ca73b364fdbf8,Miami Dolphins(MIA),miami_dolphins,DST,17,95.0,0.0,5.59,0.0,21,Miami Dolphins(MIA),39,9,11,10,0,0,1,5.6,11.8%
+2026,989607c37bfb0917f725160a8172d9b3,Kansas City Chiefs(KC),kansas_city_chiefs,DST,17,92.0,0.0,5.41,0.0,22,Kansas City Chiefs(KC),35,10,4,6,0,0,0,5.4,37.3%
+2026,7bdb37560e35bb65c4f421b712ab7be5,Tennessee Titans(TEN),tennessee_titans,DST,17,87.0,0.0,5.12,0.0,23,Tennessee Titans(TEN),42,6,8,7,2,1,2,5.1,16.9%
+2026,176074cd856b0d778f35fd88babcd448,Green Bay Packers(GB),green_bay_packers,DST,17,79.0,0.0,4.65,0.0,24,Green Bay Packers(GB),36,7,7,7,0,0,0,4.6,42.8%
+2026,36ff7607a98d342588c0dfd657d3325b,Cincinnati Bengals(CIN),cincinnati_bengals,DST,17,79.0,0.0,4.65,0.0,25,Cincinnati Bengals(CIN),35,13,7,11,1,0,1,4.6,8.8%
+2026,ed1a1699f4c10489ece9142c910cc205,San Francisco 49ers(SF),san_francisco_49ers,DST,17,78.0,0.0,4.59,0.0,26,San Francisco 49ers(SF),20,6,10,10,1,0,0,4.6,37.0%
+2026,53dae6c5ecf727855a932b6a927750db,Arizona Cardinals(ARI),arizona_cardinals,DST,17,77.0,0.0,4.53,0.0,27,Arizona Cardinals(ARI),30,10,9,11,2,1,0,4.5,5.6%
+2026,495dc6107ab78e4ff0af0e67f7126eed,New York Giants(NYG),new_york_giants,DST,17,77.0,0.0,4.53,0.0,28,New York Giants(NYG),39,9,6,10,1,0,1,4.5,23.6%
+2026,f309a357a4d5c424c99c1e6f9b3a1b0c,Washington Commanders(WAS),washington_commanders,DST,17,76.0,0.0,4.47,0.0,29,Washington Commanders(WAS),42,8,2,9,0,1,2,4.5,22.7%
+2026,2cc8124847cc411d583c816fc0000486,Las Vegas Raiders(LV),las_vegas_raiders,DST,17,75.0,0.0,4.41,0.0,30,Las Vegas Raiders(LV),37,8,8,10,0,1,0,4.4,15.3%
+2026,bdd0eb98384d5c69092c756939ac4409,Dallas Cowboys(DAL),dallas_cowboys,DST,17,59.0,0.0,3.47,0.0,31,Dallas Cowboys(DAL),35,6,6,10,1,1,1,3.5,23.4%
+2026,ebea120bfa11f61de2e94ae994f22028,New York Jets(NYJ),new_york_jets,DST,17,47.0,0.0,2.76,0.0,32,New York Jets(NYJ),26,0,4,8,0,1,4,2.8,8.6%

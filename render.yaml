@@ -1,0 +1,29 @@
+# Render.com deployment blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy steps:
+#   1. Push this repo to GitHub
+#   2. Create a new Blueprint on Render and point it at this file
+#   3. Set the ALLOWED_ORIGINS env var to your Vercel frontend URL
+#      e.g. https://nflstats-pro-ui.vercel.app
+#
+# Data files:
+#   The CSV/Parquet data files in data/official_rankings/position/ must exist
+#   in the repo (they are committed). If you regenerate them locally, commit
+#   and push to trigger a new deploy.
+
+services:
+  - type: web
+    name: nflstats-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 1 --timeout 60 src.backend.main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        sync: false   # Set manually in Render dashboard: https://your-vercel-app.vercel.app
+    healthCheckPath: /health
+    autoDeploy: true

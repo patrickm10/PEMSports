@@ -1,0 +1,32 @@
+Player,Number,Position,Status,Height,Weight,Experience,College,Team,home_team_name
+Braelon Allen,"",RB,ACT,0,235,2,Wisconsin,NYJ,New York Jets
+Andrew Beck,47,RB,ACT,0,255,6,Texas,NYJ,New York Jets
+Irvin Charles,19,WR,ACT,0,219,3,"Indiana PA,  University of",NYJ,New York Jets
+Brady Cook,4,QB,ACT,0,215,1,Missouri,NYJ,New York Jets
+Malachi Corley,6,WR,ACT,0,215,2,Western Kentucky,NYJ,New York Jets
+Caden Davis,43,K,ACT,0,210,1,Mississippi,NYJ,New York Jets
+Isaiah Davis,32,RB,ACT,0,220,2,South Dakota State,NYJ,New York Jets
+Donovan Edwards,40,RB,ACT,0,212,1,Michigan,NYJ,New York Jets
+Zach Evans,38,RB,ACT,0,202,2,Mississippi,NYJ,New York Jets
+Justin Fields,7,QB,ACT,0,227,5,Ohio State,NYJ,New York Jets
+Xavier Gipson,3,WR,ACT,0,189,3,Stephen F. Austin State,NYJ,New York Jets
+Breece Hall,20,RB,ACT,0,217,4,Iowa State,NYJ,New York Jets
+Neal Johnson,86,TE,ACT,0,250,1,Louisiana,NYJ,New York Jets
+Tyler Johnson,16,WR,ACT,0,208,5,Minnesota,NYJ,New York Jets
+Zack Kuntz,88,TE,ACT,0,251,1,Old Dominion,NYJ,New York Jets
+Allen Lazard,10,WR,ACT,0,227,7,Iowa State,NYJ,New York Jets
+Adrian Martinez,15,QB,ACT,0,220,1,Kansas State,NYJ,New York Jets
+Harrison Mevis,"",K,ACT,0,243,1,Missouri,NYJ,New York Jets
+Dymere Miller,35,WR,ACT,0,184,1,Rutgers,NYJ,New York Jets
+Kene Nwangwu,34,RB,ACT,0,210,5,Iowa State,NYJ,New York Jets
+Jamaal Pritchett,36,WR,ACT,0,175,1,South Alabama,NYJ,New York Jets
+Josh Reynolds,83,WR,ACT,0,192,9,Texas A&M,NYJ,New York Jets
+Jeremy Ruckert,89,TE,ACT,0,250,4,Ohio State,NYJ,New York Jets
+Quentin Skinner,39,WR,ACT,0,195,1,Kansas,NYJ,New York Jets
+Stone Smartt,84,TE,ACT,0,226,4,Old Dominion,NYJ,New York Jets
+Arian Smith,82,WR,ACT,0,179,1,Georgia,NYJ,New York Jets
+Brandon Smith,87,WR,ACT,0,218,1,Iowa,NYJ,New York Jets
+Mason Taylor,"",TE,UDF,0,255,1,LSU,NYJ,New York Jets
+Tyrod Taylor,2,QB,ACT,0,217,15,Virginia Tech,NYJ,New York Jets
+Garrett Wilson,5,WR,ACT,0,183,4,Ohio State,NYJ,New York Jets
+Pokey Wilson,81,WR,ACT,0,175,1,Florida State,NYJ,New York Jets

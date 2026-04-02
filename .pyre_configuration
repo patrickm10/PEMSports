@@ -1,0 +1,8 @@
+{
+  "source_directories": ["."],
+  "site_package_search_strategy": "pep561",
+  "python_binary": "C:/Users/patri/NFLStatsAnalyzer/venv/Scripts/python.exe",
+  "search_path": [
+    "C:/Users/patri/NFLStatsAnalyzer/venv/Lib/site-packages"
+  ]
+}

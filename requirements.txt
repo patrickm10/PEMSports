@@ -1,0 +1,34 @@
+# API Server Dependencies — pinned for reproducible deploys
+# Generated: 2026-03-18
+#
+# Note: pandas is intentionally excluded. It is only used by
+# pipelines/get_weekly_rankings.py (a standalone ETL script, not part of
+# the API server). Install separately when running that script:
+#   pip install pandas==2.2.3
+
+# Web framework
+fastapi==0.116.0
+uvicorn[standard]==0.35.0
+gunicorn==23.0.0
+
+# Rate limiting
+slowapi==0.1.9
+
+# Data processing (API layer)
+polars==1.30.0
+duckdb==1.3.1
+
+# Data validation
+pydantic==2.11.7
+
+# Scraping (pipeline scripts only — included for run_pipelines.py)
+beautifulsoup4==4.12.3
+requests==2.32.3
+
+# Database (PostgreSQL — scaffolded)
+psycopg[binary]==3.2.4
+psycopg-pool==3.2.4
+
+# Config & templates
+python-dotenv==1.0.1
+jinja2==3.1.5
