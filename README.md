@@ -19,6 +19,7 @@ The platform follows a decoupled, data-centric architecture using a "Small Index
 ### 📂 Repository Organization
 ```text
 NFLStatsAnalyzer/
+<<<<<<< HEAD
 ├── data/                 # 🟢 GIT-TRACKED (Optimized Parquet)
 │   └── rankings/         # Position-centric consolidated Parquet files
 ├── data_local/           # 🔴 LOCAL-ONLY (Raw CSV Scrapes - .gitignored)
@@ -31,6 +32,53 @@ NFLStatsAnalyzer/
 │   │   └── data/         # DuckDB & Postgres implementations
 │   └── pipelines/        # Scrapers & Polars ETL
 └── tests/                # Comprehensive Pytest suite
+=======
+├── backend/
+│   ├── api/
+│   |    ├── routes.py/                   # Routing for dataframes
+│   ├── services/                         # Code for cleaning and loading data
+│   |    ├── k_service.py/
+│   |    ├── qb_service.py/
+│   |    ├── rb_service.py/
+│   |    ├── te_service.py/
+│   |    ├── wr_service.py/
+│   ├── utils/
+│   |    ├── file_loader.py/      
+│   ├── main.py                           # Main entry point for FastAPI
+├── data/
+│   ├── qb_weekly_stats/
+│   ├── rb_weekly_stats/
+│   ├── wr_weekly_stats/
+│   ├── te_weekly_stats/
+│   ├── official_stats/
+│   |   ├── official_qb_stats.csv/
+│   |   ├── official_rb_stats.csv/
+│   |   ├── official_te_stats.csv/
+│   |   ├── official_wr_stats.csv/
+│   |   ├── official_k_stats.csv/
+│   ├── nfl_metadata/
+├── pipelines/
+│   ├── get_nfl_schedule.py
+│   ├── get_weekly_stats.py
+│   ├── get_offensive_rankings.py
+│   ├── get_defensive_rankings.py
+├── frontend/
+│   ├── src/
+│   |    ├── App.jsx
+│   |    ├── App.css
+│   ├── public/
+│   |    ├── package.json
+├── season_scripts/
+│   ├── get_adp_stats.py
+│   ├── get_career_stats.py
+│   ├── get_roster_per_team.py
+├── analytics/
+│   ├── chatbot.py
+│   ├── draft_calculator.py
+│   ├── nlp_model.py (in progress)
+├── README.md
+├── requirements.txt
+>>>>>>> c1f405538b6e91996c9e4435cfc5b8da10fc6803
 ```
 
 ---

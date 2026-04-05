@@ -1,0 +1,33 @@
+team_name,stadium_name,indoor_outdoor,surface_type,elevation,weather_impact,year_opened
+Arizona Cardinals,State Farm Stadium,Indoor,Turf,1070,No,2006
+Atlanta Falcons,Mercedes-Benz Stadium,Indoor,Turf,1050,No,2017
+Baltimore Ravens,M&T Bank Stadium,Outdoor,Grass,10,Yes,1998
+Buffalo Bills,Highmark Stadium,Outdoor,Grass,600,Yes,1973
+Carolina Panthers,Bank of America Stadium,Outdoor,Grass,748,Yes,1996
+Chicago Bears,Soldier Field,Outdoor,Grass,595,Yes,1924
+Cincinnati Bengals,Paycor Stadium,Outdoor,Turf,482,Yes,2000
+Cleveland Browns,FirstEnergy Stadium,Outdoor,Grass,577,Yes,1999
+Dallas Cowboys,AT&T Stadium,Indoor,Turf,639,No,2009
+Denver Broncos,Empower Field at Mile High,Outdoor,Turf,5280,Yes,2001
+Detroit Lions,Ford Field,Indoor,Turf,600,No,2002
+Green Bay Packers,Lambeau Field,Outdoor,Grass,640,Yes,1957
+Houston Texans,NRG Stadium,Indoor,Turf,50,No,2002
+Indianapolis Colts,Lucas Oil Stadium,Indoor,Turf,700,No,2008
+Jacksonville Jaguars,TIAA Bank Field,Outdoor,Grass,16,Yes,1995
+Kansas City Chiefs,GEHA Field at Arrowhead Stadium,Outdoor,Grass,1020,Yes,1972
+Las Vegas Raiders,Allegiant Stadium,Indoor,Turf,2001,No,2020
+Los Angeles Chargers,SoFi Stadium,Outdoor,Turf,100,Yes,2020
+Los Angeles Rams,SoFi Stadium,Outdoor,Turf,100,Yes,2020
+Miami Dolphins,Hard Rock Stadium,Outdoor,Grass,7,Yes,1987
+Minnesota Vikings,U.S. Bank Stadium,Indoor,Turf,840,No,2016
+New England Patriots,Gillette Stadium,Outdoor,Turf,289,Yes,2002
+New Orleans Saints,Caesars Superdome,Indoor,Turf,3,No,1975
+New York Giants,MetLife Stadium,Outdoor,Turf,3,Yes,2010
+New York Jets,MetLife Stadium,Outdoor,Turf,3,Yes,2010
+Philadelphia Eagles,Lincoln Financial Field,Outdoor,Grass,30,Yes,2003
+Pittsburgh Steelers,Acrisure Stadium,Outdoor,Grass,730,Yes,2001
+San Francisco 49ers,Levi's Stadium,Outdoor,Grass,13,Yes,2014
+Seattle Seahawks,Lumen Field,Outdoor,Turf,20,Yes,2002
+Tampa Bay Buccaneers,Raymond James Stadium,Outdoor,Grass,26,Yes,1998
+Tennessee Titans,Nissan Stadium,Outdoor,Grass,476,Yes,1999
+Washington Commanders,FedExField,Outdoor,Grass,300,Yes,1997
