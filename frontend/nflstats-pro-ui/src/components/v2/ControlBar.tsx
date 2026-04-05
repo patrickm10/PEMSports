@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Calendar, Hash, Users } from 'lucide-react';
+import { Search, Calendar, Hash, Users, User, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../../contexts/AuthContext';
+import { LoginModal } from './Auth/LoginModal';
 
 interface ControlBarProps {
   viewMode: 'season' | 'weekly';
@@ -22,6 +24,9 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
   totalPlayers,
 }) => {
+  const { user, logout } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-slate-900/30 backdrop-blur-xl border border-slate-800/40 rounded-2xl">
       <div className="flex items-center gap-3 flex-wrap">
@@ -101,7 +106,8 @@ export const ControlBar: React.FC<ControlBarProps> = ({
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-3 flex-1 max-w-sm min-w-[200px]">
+      {/* Search and Auth Context */}
+      <div className="flex items-center gap-3 flex-1 max-w-lg min-w-[200px] justify-end">
         <div className="relative flex-1 group">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
           <input
@@ -112,7 +118,38 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all placeholder:text-slate-600"
           />
         </div>
+
+        {/* User / Login Trigger */}
+        {user ? (
+          <div className="relative group/auth">
+            <button className="flex items-center gap-2 p-1 pl-3 pr-2 rounded-xl bg-slate-950/40 border border-white/[0.04] text-xs font-semibold text-slate-300 hover:text-white transition-colors">
+              <span className="truncate max-w-[100px]">{user.email.split('@')[0]}</span>
+              <div className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg">
+                <User className="w-3.5 h-3.5" />
+              </div>
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-48 py-1 rounded-xl bg-slate-800 border border-slate-700 shadow-xl opacity-0 invisible group-hover/auth:opacity-100 group-hover/auth:visible transition-all z-20">
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-slate-700/50 transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowLogin(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap"
+          >
+            <User className="w-3.5 h-3.5" />
+            Sign In
+          </button>
+        )}
       </div>
+
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
   );
 };

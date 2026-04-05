@@ -23,17 +23,22 @@ logger = logging.getLogger(__name__)
 # Connection string: postgresql://[user[:password]@][host][:port]/[dbname]
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/nflstats")
 
-# Global pool instance
 _pool: Optional[AsyncConnectionPool] = None
-
+_db_connected: bool = False
 
 async def get_pool() -> AsyncConnectionPool:
     """Return the global connection pool, initializing it if necessary."""
     global _pool
     if _pool is None:
         logger.info("Initializing PostgreSQL connection pool...")
-        _pool = AsyncConnectionPool(conninfo=DATABASE_URL, open=False)
-        await _pool.open()
+        # Use a short timeout so that local dev without DB falls back immediately
+        _pool = AsyncConnectionPool(conninfo=DATABASE_URL, open=False, timeout=2.0)
+        try:
+            await _pool.open(timeout=2.0)
+        except Exception as e:
+            logger.warning("Failed to open connection pool: %s", e)
+            _pool = None
+            raise
     return _pool
 
 
@@ -47,11 +52,12 @@ async def get_db_connection() -> AsyncGenerator[psycopg.AsyncConnection, None]:
 
 async def close_db():
     """Shutdown the connection pool."""
-    global _pool
+    global _pool, _db_connected
     if _pool:
         logger.info("Closing PostgreSQL connection pool...")
         await _pool.close()
         _pool = None
+        _db_connected = False
 
 
 # ── Future Schema (Scaffolded) ────────────────────────────────────────────────
@@ -71,6 +77,7 @@ CREATE TABLE IF NOT EXISTS data_refresh_log (
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -86,12 +93,20 @@ CREATE TABLE IF NOT EXISTS saved_comparisons (
 
 async def init_db():
     """Create initial schema if it doesn't exist."""
+    global _db_connected
     try:
         async with get_db_connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(CREATE_SCHEMA_SQL)
             await conn.commit()
             logger.info("Successfully initialized PostgreSQL schema.")
+            _db_connected = True
     except Exception as e:
         logger.warning("PostgreSQL initialization skipped/failed: %s", e)
         logger.info("Running without PostgreSQL support (common in development).")
+        _db_connected = False
+
+
+def is_db_connected() -> bool:
+    """Check if the global connection pool is active for fallback branching."""
+    return _db_connected

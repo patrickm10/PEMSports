@@ -13,6 +13,7 @@ import { RankingsTableV2 } from './components/v2/RankingsTableV2';
 import { ControlBar } from './components/v2/ControlBar';
 import { StatsSummary } from './components/v2/StatsSummary';
 import { PlayerDetail } from './components/PlayerDetail';
+import { AuthProvider } from './contexts/AuthContext';
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
@@ -110,53 +111,55 @@ export default function App() {
   }
 
   return (
-    <DashboardV2
-      activePosition={activeTab}
-      onPositionChange={handleTabChange}
-      isDarkMode={true}
-    >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            {activeTab.toUpperCase()} Performance
-            <span className="text-blue-500 ml-2">Analytics</span>
-          </h1>
-          <p className="text-slate-400 mt-1.5 text-sm font-medium">
-            {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · Powered by DuckDB
-          </p>
-        </header>
+    <AuthProvider>
+      <DashboardV2
+        activePosition={activeTab}
+        onPositionChange={handleTabChange}
+        isDarkMode={true}
+      >
+        <div className="space-y-6">
+          <header>
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              {activeTab.toUpperCase()} Performance
+              <span className="text-blue-500 ml-2">Analytics</span>
+            </h1>
+            <p className="text-slate-400 mt-1.5 text-sm font-medium">
+              {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · Powered by DuckDB
+            </p>
+          </header>
 
-        <ControlBar
-          viewMode={viewMode}
-          setViewMode={handleViewModeChange}
-          selectedYear={selectedYear}
-          setSelectedYear={setSelectedYear}
-          availableYears={availableYears}
-          selectedWeek={selectedWeek}
-          setSelectedWeek={setSelectedWeek}
-          availableWeeks={availableWeeks}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          totalPlayers={filteredData.length}
+          <ControlBar
+            viewMode={viewMode}
+            setViewMode={handleViewModeChange}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            availableYears={availableYears}
+            selectedWeek={selectedWeek}
+            setSelectedWeek={setSelectedWeek}
+            availableWeeks={availableWeeks}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            totalPlayers={filteredData.length}
+          />
+
+          <StatsSummary data={filteredData} isLoading={isLoading} />
+
+          <RankingsTableV2
+            data={filteredData}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            onRowClick={setSelectedPlayer}
+            activeTab={activeTab}
+            isLoading={isLoading}
+          />
+        </div>
+
+        <PlayerDetail
+          player={selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
         />
-
-        <StatsSummary data={filteredData} isLoading={isLoading} />
-
-        <RankingsTableV2
-          data={filteredData}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          onRowClick={setSelectedPlayer}
-          activeTab={activeTab}
-          isLoading={isLoading}
-        />
-      </div>
-
-      <PlayerDetail
-        player={selectedPlayer}
-        onClose={() => setSelectedPlayer(null)}
-      />
-    </DashboardV2>
+      </DashboardV2>
+    </AuthProvider>
   );
 }

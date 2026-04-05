@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 from typing import List
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -34,7 +35,9 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from backend.api.ranking_routes import router as rankings_router
+from backend.api.auth_routes import router as auth_router
 from backend.core.health import check_health
+from backend.data.postgres import init_db, close_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +48,17 @@ logger = logging.getLogger(__name__)
 
 # Rate limiting is initialized in backend/core/limiter.py
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize Postgres schema & connection pool
+    await init_db()
+    
+    yield
+    
+    # Shutdown: Close connection pool
+    await close_db()
+
+
 # ── Application ───────────────────────────────────────────────────────────────
 app = FastAPI(
     title="NFL Stats Analyzer API",
@@ -52,6 +66,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -109,7 +124,8 @@ def root(request: Request):
     return {"message": "NFL Stats Analyzer API", "version": "1.0.0", "docs": "/docs"}
 
 
-# Versioned router — canonical path for all new clients
+# Versioned routers
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 
 # Backwards-compatible alias — keeps existing frontend/consumers working

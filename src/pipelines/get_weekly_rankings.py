@@ -25,9 +25,10 @@ from pipelines.enrichment import enrich_weekly_stats
 logger = get_pipeline_logger("weekly_pipeline_fantasypros")
 
 # Range to process
-YEARS = [2020, 2021, 2022, 2023, 2024, 2025] # Regenerate 2020-2025
+YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 WEEKS = list(range(1, 19))
-OUTPUT_DIR = "data/official_rankings/position"
+OUTPUT_DIR = Path("data/rankings")
+LOCAL_RAW_DIR = Path("data_local/raw_scrapes")
 
 CORE_ENRICHMENT_COLS = [
     "opponent", "stadium_name", "city", "state", "indoor_outdoor", "surface_type", "elevation",
@@ -35,7 +36,8 @@ CORE_ENRICHMENT_COLS = [
 ]
 
 def main() -> None:
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    LOCAL_RAW_DIR.mkdir(parents=True, exist_ok=True)
     
     with PipelineTimer("weekly_rankings_fantasypros", logger):
         for pos in OFFENSIVE_POSITIONS + ["DST"]:
@@ -46,7 +48,13 @@ def main() -> None:
                     df = get_fantasypros_data(pos, year, week=week)
                     if not df.is_empty():
                         df = df.with_columns(pl.lit(week, dtype=pl.Int64).alias("week"))
-                        return enrich_weekly_stats(df)
+                        df = enrich_weekly_stats(df)
+                        
+                        # Save raw CSV for backup
+                        csv_name = f"{pos}_{year}_W{week}.csv"
+                        df.write_csv(LOCAL_RAW_DIR / csv_name)
+                        
+                        return df
                 except Exception as e:
                     logger.error(f"Failed to fetch {pos} for {year} week {week}: {e}")
                 return None
@@ -68,19 +76,19 @@ def main() -> None:
                 
             combined_df = pl.concat(all_weeks_data, how="diagonal")
             
-            # Ensure core enrichment columns exist in case of empty weeks
+            # Ensure core enrichment columns exist
             for col in CORE_ENRICHMENT_COLS:
                 if col not in combined_df.columns:
                     combined_df = combined_df.with_columns(pl.lit(None).alias(col))
             
             final_df = combined_df.sort(["year", "week", "fpts_ppr"], descending=[True, True, True])
             
-            out_parquet = os.path.join(OUTPUT_DIR, f"{pos}_weekly.parquet")
-            out_csv = os.path.join(OUTPUT_DIR, f"{pos}_weekly.csv")
-            
+            out_parquet = OUTPUT_DIR / f"{pos}_weekly.parquet"
             final_df.write_parquet(out_parquet)
-            final_df.write_csv(out_csv)
-            logger.info("Saved %d records for %s Weekly (with enrichment)", len(final_df), pos)
+            
+            logger.info("Saved consolidated %s Weekly to %s", pos, out_parquet)
 
 if __name__ == "__main__":
     main()
+
+

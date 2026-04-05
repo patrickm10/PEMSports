@@ -33,8 +33,10 @@ logger = logging.getLogger(__name__)
 # query_engine.py lives at src/backend/data/query_engine.py
 # → .parent = data/ → .parent = backend/ → .parent = src/ → .parent = project root
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DATA_DIR = _PROJECT_ROOT / "data" / "official_rankings" / "position"
+_DATA_DIR = _PROJECT_ROOT / "data" / "rankings"
 _METADATA_DIR = _PROJECT_ROOT / "data" / "nfl_metadata"
+_LOCAL_DATA_DIR = _PROJECT_ROOT / "data_local" / "raw_scrapes"
+
 import threading
 
 _thread_local = threading.local()
@@ -55,30 +57,41 @@ def _get_registered_views():
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _resolve_data_path(position_upper: str, suffix: str = "historical") -> Path:
-    """Return the best available data file for a position. Parquet > CSV."""
-    parquet = _DATA_DIR / f"{position_upper}_{suffix}.parquet"
+    """
+    Return the best available data file for a position.
+    1. Tracked Parquet (data/rankings/{POS}_{SUFFIX}.parquet)
+    2. Local CSV fallback (data_local/raw_scrapes/{POS}_*.csv)
+    """
+    # Standardize 'historical' to 'seasonal' for our new naming convention
+    type_suffix = "weekly" if suffix == "weekly" else "seasonal"
+    
+    parquet = _DATA_DIR / f"{position_upper.upper()}_{type_suffix}.parquet"
     if parquet.exists():
         return parquet
 
-    csv_file = _DATA_DIR / f"{position_upper}_{suffix}.csv"
-    logger.info("Resolving data path for %s %s: Parquet exists? %s, CSV exists? %s. Path: %s", position_upper, suffix, parquet.exists(), csv_file.exists(), csv_file)
-    if csv_file.exists():
-        return csv_file
+    # Fallback to Local CSV
+    csv_pattern = f"{position_upper.upper()}_*_{type_suffix}.csv"
+    local_csvs = list(_LOCAL_DATA_DIR.glob(csv_pattern))
+    if local_csvs:
+        return local_csvs[0]
 
     raise FileNotFoundError(
-        f"No {suffix} data file for {position_upper}. "
-        f"Run the appropriate pipeline to generate it."
+        f"No {type_suffix} data found for {position_upper}. "
+        f"Checked: {parquet}"
     )
 
 
 def _make_source_expr(data_path: Path) -> str:
     """Build a DuckDB source expression for a data file."""
     path_str = str(data_path).replace("\\", "/")
+    
     if data_path.suffix == ".parquet":
-        # Parquet is significantly faster for large analytical queries
         return f"read_parquet('{path_str}')"
+        
     # Fallback to CSV
     return f"read_csv_auto('{path_str}', header=true, ignore_errors=true)"
+
+
 
 
 def _serialize_rows(df) -> list[dict[str, Any]]:
