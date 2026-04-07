@@ -1,10 +1,13 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { RankingsApi } from '../api/rankingsApi';
-import type { SortField, SortOrder } from '../models/Ranking';
+import type { Ranking, SortField, SortOrder } from '../models/Ranking';
+
 
 /**
  * Fetches weekly player rankings for a specific position and week.
  */
+import { PlayerStatsListSchema } from '../v3/schemas/player';
+
 export function useWeeklyRankings(
   position: string, 
   year: string, 
@@ -14,7 +17,12 @@ export function useWeeklyRankings(
 ) {
   const result = useQuery({
     queryKey: ['weekly-rankings', position, year, week],
-    queryFn: ({ signal }) => RankingsApi.fetchWeeklyRankings(position, year, week, signal),
+    queryFn: async ({ signal }) => {
+      const data = await RankingsApi.fetchWeeklyRankings(position, year, week, signal);
+      // V3 HARDNESS: Validate data integrity at the ingestion boundary
+      return PlayerStatsListSchema.parse(data) as unknown as Ranking[];
+    },
+
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,

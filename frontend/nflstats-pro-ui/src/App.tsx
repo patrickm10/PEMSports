@@ -8,12 +8,13 @@ import { useWeeklyRankings } from './hooks/useWeeklyRankings';
 import { useWeeks } from './hooks/useWeeks';
 
 import { LandingPage } from './components/v2/LandingPage';
-import { DashboardV2 } from './components/v2/DashboardV2';
-import { RankingsTableV2 } from './components/v2/RankingsTableV2';
+import { VirtualizedGrid } from './components/VirtualizedGrid';
 import { ControlBar } from './components/v2/ControlBar';
 import { StatsSummary } from './components/v2/StatsSummary';
 import { PlayerDetail } from './components/PlayerDetail';
 import { AuthProvider } from './contexts/AuthContext';
+
+import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
@@ -25,7 +26,6 @@ export default function App() {
   const [sortBy, setSortBy] = useState<SortField>('fpts_ppr');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
-
 
   // Seasons — cached separately
   const { data: rawYears = [] } = useSeasons(activeTab);
@@ -68,28 +68,19 @@ export default function App() {
     sortOrder
   );
 
-  const activeQuery = viewMode === 'season' ? seasonQuery : weeklyQuery;
+  const activeQuery = (viewMode === 'season' ? seasonQuery : weeklyQuery) as any;
   const { data: sortedData = [], isLoading } = activeQuery;
 
   // Client-side search filter
   const filteredData = useMemo(() => {
     if (!searchQuery) return sortedData;
     const q = searchQuery.toLowerCase();
-    return sortedData.filter(
+    return (sortedData as Ranking[]).filter(
       (p) =>
         p.player_name.toLowerCase().includes(q) ||
         p.team.toLowerCase().includes(q),
     );
   }, [sortedData, searchQuery]);
-
-  const handleSort = (field: SortField) => {
-    if (sortBy === field) {
-      setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-  };
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
@@ -97,6 +88,7 @@ export default function App() {
     setSortOrder('desc');
     setSelectedPlayer(null);
   };
+
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
@@ -112,19 +104,23 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <DashboardV2
+      <ResponsiveDock
         activePosition={activeTab}
         onPositionChange={handleTabChange}
-        isDarkMode={true}
+        rightPane={
+          <PlayerDetail
+            player={selectedPlayer}
+            onClose={() => setSelectedPlayer(null)}
+          />
+        }
       >
         <div className="space-y-6">
           <header>
-            <h1 className="text-3xl font-extrabold tracking-tight">
-              {activeTab.toUpperCase()} Performance
-              <span className="text-blue-500 ml-2">Analytics</span>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white italic">
+              {activeTab.toUpperCase()} <span className="text-[#38bdf8]">PERFORMANCE</span>
             </h1>
-            <p className="text-slate-400 mt-1.5 text-sm font-medium">
-              {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · Powered by DuckDB
+            <p className="text-slate-500 mt-1.5 text-xs font-bold tracking-widest uppercase">
+              {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
             </p>
           </header>
 
@@ -144,22 +140,14 @@ export default function App() {
 
           <StatsSummary data={filteredData} isLoading={isLoading} />
 
-          <RankingsTableV2
-            data={filteredData}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            onRowClick={setSelectedPlayer}
-            activeTab={activeTab}
-            isLoading={isLoading}
-          />
+          <div className="bg-[#1e293b4d] rounded-2xl border border-[#ffffff0a] overflow-hidden shadow-2xl">
+            <VirtualizedGrid 
+              data={filteredData} 
+              onRowClick={setSelectedPlayer}
+            />
+          </div>
         </div>
-
-        <PlayerDetail
-          player={selectedPlayer}
-          onClose={() => setSelectedPlayer(null)}
-        />
-      </DashboardV2>
+      </ResponsiveDock>
     </AuthProvider>
   );
 }

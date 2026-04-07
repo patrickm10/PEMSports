@@ -20,8 +20,6 @@ interface RankingsTableV2Props {
 
 const STICKY_COLUMNS: ReadonlySet<SortField> = new Set<SortField>(['rank', 'player_name']);
 
-
-
 /** Enriched metadata columns — always present (NULL placeholders in seasonal) */
 const ENRICHED_METADATA: SortField[] = [
   'opponent', 'stadium_name', 'city', 'state',
@@ -201,7 +199,7 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
       );
     }
 
-    // Player name — standalone branch, no fallthrough
+    // Player name
     if (col === 'player_name') {
       return <span className="font-semibold text-slate-100 text-sm truncate">{value as string}</span>;
     }
@@ -245,7 +243,7 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
     }
 
     // Strings / nulls
-    return <span className="text-sm text-slate-400">{value !== null && value !== undefined ? String(value) : '—'}</span>;
+    return <span className={cn("text-sm", col === 'player_name' ? "text-slate-100" : "text-slate-400")}>{value !== null && value !== undefined ? String(value) : '—'}</span>;
   };
 
   // ── Loading State ─────────────────────────────────────────────
@@ -273,22 +271,23 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
       ref={parentRef}
       className="bg-slate-900/30 backdrop-blur-xl border border-slate-800/40 rounded-2xl shadow-2xl relative overflow-auto scroll-smooth custom-scrollbar h-[750px]"
     >
-      <div className="min-w-max">
-        {/* ── Column Group Header ────────────────────────────────── */}
-        <div className="sticky top-0 z-40 border-b border-white/[0.03]">
-          <div className="flex bg-slate-950/80 backdrop-blur-md">
+      <div className="min-w-max mx-auto">
+        {/* ── Column Group Header Ribbon ─────────────────────────── */}
+        <div className="sticky top-0 z-40 border-b border-white/[0.04] bg-slate-950/40 backdrop-blur-xl">
+          <div className="flex h-10">
             {columnGroups.map((group) => {
               const groupWidth = group.columns.length;
               return (
                 <div
                   key={group.label}
-                  className="flex items-center justify-center border-r border-white/[0.03] last:border-r-0"
+                  className="flex items-center justify-center border-r border-white/[0.04] last:border-r-0 relative group/ribbon overflow-hidden"
                   style={{
                     flex: groupWidth,
                     minWidth: group.columns.reduce((sum, c) => sum + getColMin(c), 0),
                   }}
                 >
-                  <span className={cn("text-[10px] font-semibold uppercase tracking-[0.15em] py-2", group.accent)}>
+                  <div className={cn("absolute inset-0 opacity-5", group.accent?.replace('text-', 'bg-'))} />
+                  <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] relative z-10", group.accent)}>
                     {group.label}
                   </span>
                 </div>
@@ -308,9 +307,12 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
               onClick={() => onSort(key)}
               style={getStickyStyle(key)}
               className={cn(
-                "px-3 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer hover:text-slate-200 transition-colors flex items-center justify-center gap-1.5 select-none",
+                "px-3 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer hover:text-slate-200 transition-colors flex items-center gap-1.5 select-none",
                 STICKY_COLUMNS.has(key) && "bg-slate-900/98 shadow-[2px_0_8px_-2px_rgba(0,0,0,0.4)]",
-                sortBy === key && "text-blue-400"
+                sortBy === key && "text-blue-400",
+                (key === 'player_name' || key === 'stadium_name' || key === 'city') ? "justify-start" :
+                (key === 'fpts_ppr' || key === 'fpts_ppr_per_game') ? "justify-end text-right" :
+                "justify-center"
               )}
             >
               {t[key] || key}
@@ -350,11 +352,14 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
                 className={cn(
-                  "group cursor-pointer border-b border-white/[0.03] transition-colors duration-150",
+                  "group cursor-pointer border-b border-white/[0.03] transition-all duration-150 relative",
                   isEven ? "bg-transparent" : "bg-white/[0.01]",
-                  "hover:bg-blue-500/[0.04]"
+                  "hover:bg-blue-600/[0.06] hover:translate-x-0.5"
                 )}
               >
+                {/* Row Accent Bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-top z-20" />
+
                 {columns.map((col) => {
                   const value = (row as any)[col];
                   const isSticky = STICKY_COLUMNS.has(col);
@@ -365,9 +370,12 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
                       key={col}
                       style={sticky}
                       className={cn(
-                        "px-3 flex items-center justify-center transition-colors",
+                        "px-3 flex items-center transition-colors",
                         isSticky && "bg-slate-950/90 group-hover:bg-slate-900/95 shadow-[2px_0_8px_-2px_rgba(0,0,0,0.3)]",
-                        !isSticky && isEven ? "" : !isSticky ? "bg-white/[0.01]" : "",
+                        !isSticky && (isEven ? "bg-transparent" : "bg-white/[0.01]"),
+                        (col === 'player_name' || col === 'stadium_name' || col === 'city') ? "justify-start text-left" :
+                        (col === 'fpts_ppr' || col === 'fpts_ppr_per_game' || typeof value === 'number') ? "justify-end text-right" :
+                        "justify-center"
                       )}
                     >
                       {formatCell(col, value, virtualRow.index)}

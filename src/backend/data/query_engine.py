@@ -152,27 +152,32 @@ def _ensure_view(position_upper: str) -> str:
     try:
         source_cols_df = _get_conn().execute(f"SELECT * FROM {source} LIMIT 0").fetchdf()
         physical_cols = list(source_cols_df.columns)
-    except Exception:
+    except Exception as e:
+        logger.warning("Could not introspect source columns for %s: %s", source, e)
         physical_cols = []
 
+    # Case-insensitive check for 'rank' to avoid duplicate column errors
     exclude_cols = [f'"{c}"' for c in physical_cols if c.lower() == 'rank']
     exclude_clause = f" EXCLUDE ({', '.join(exclude_cols)})" if exclude_cols else ""
 
-    _get_conn().execute(f"""
-        CREATE OR REPLACE VIEW {view_name} AS
-        SELECT
-            s.*{exclude_clause},
-            ROW_NUMBER() OVER (
-                PARTITION BY s.year
-                ORDER BY
-                    TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST,
-                    TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST
-            ) AS rank
-        FROM {source} s
-    """)
-
-    _get_registered_views().add(view_name)
-    logger.info("Registered DuckDB view: %s → %s", view_name, data_path.name)
+    try:
+        _get_conn().execute(f"""
+            CREATE OR REPLACE VIEW {view_name} AS
+            SELECT
+                s.*{exclude_clause},
+                ROW_NUMBER() OVER (
+                    PARTITION BY s.year
+                    ORDER BY
+                        TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST,
+                        TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST
+                ) AS rank
+            FROM {source} s
+        """)
+        _get_registered_views().add(view_name)
+        logger.info("Registered DuckDB view: %s → %s", view_name, data_path.name)
+    except Exception as e:
+        logger.error("Failed to register view %s: %s", view_name, e)
+        raise
     return view_name
 
 

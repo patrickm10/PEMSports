@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { LoginCredentials, RegisterCredentials, AuthResponse, UserProfile } from '../models/Auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL 
@@ -11,21 +10,34 @@ export const authApi = {
     formData.append('username', credentials.email);
     formData.append('password', credentials.password);
 
-    const response = await axios.post<AuthResponse>(`${API_BASE}/token`, formData, {
+    const response = await fetch(`${API_BASE}/token`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
     });
-    return response.data;
+    if (!response.ok) throw new Error('Login failed');
+    return response.json();
   },
 
   register: async (credentials: RegisterCredentials): Promise<UserProfile> => {
-    const response = await axios.post<UserProfile>(`${API_BASE}/register`, credentials);
-    return response.data;
+    const response = await fetch(`${API_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    if (!response.ok) throw new Error('Registration failed');
+    return response.json();
   },
 
   getProfile: async (token: string): Promise<UserProfile> => {
-    const response = await axios.get<UserProfile>(`${API_BASE}/me`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const response = await fetch(`${API_BASE}/me`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
-    return response.data;
+    if (!response.ok) throw new Error('Failed to fetch profile');
+    return response.json();
   }
 };

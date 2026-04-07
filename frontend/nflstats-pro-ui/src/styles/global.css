@@ -1,27 +1,20 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-primary: #020617;        /* Midnight Slate background */
-  --bg-secondary: #0f172a;      /* Card background */
+  /* Midnight Slate Core Palette */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
   --bg-glass: rgba(15, 23, 42, 0.7);
-  --bg-glass-hover: rgba(30, 41, 59, 0.8);
   
+  --primary: #38bdf8;
+  --primary-glow: rgba(56, 189, 248, 0.2);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --accent: #3b82f6;            /* Primary blue */
-  --accent-hover: #60a5fa;
-  --danger: #ef4444;
-  
-  --border-glass: rgba(255, 255, 255, 0.1);
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-  
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-main: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --font-main: 'Outfit', sans-serif;
+  --glass-blur: blur(12px);
 }
 
 * {
@@ -30,75 +23,78 @@
   padding: 0;
 }
 
-body {
-  font-family: var(--font-main);
-  background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15), transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.1), transparent 40%);
-  color: var(--text-primary);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-/* App Shell Layout */
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.main-content {
-  flex: 1;
-  max-width: 1600px;
+html, body, #root {
+  height: 100%;
   width: 100%;
-  margin: 0 auto;
-  padding: 3rem 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Glass Header */
-.premium-header {
+/* Glassmorphism primitives */
+.glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-glass);
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* High-Density Virtualized Grid */
+.analysis-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.analysis-grid th {
   position: sticky;
   top: 0;
-  z-index: 50;
-}
-
-.brand .logo-text {
-  font-size: 1.5rem;
+  z-index: 20;
+  background: var(--bg-secondary);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
 }
 
-.brand span {
-  color: var(--accent);
+.analysis-grid td {
+  padding: 10px 16px;
+  font-size: 0.825rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  white-space: nowrap;
 }
 
-.brand .tagline {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: #020617;
 }
 
-/* Glass Controls */
-.control-deck {
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  box-shadow: var(--shadow-glass);
+.analysis-grid th.sticky-col {
+  z-index: 30;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 .tab-navigation {

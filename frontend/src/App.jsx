@@ -22,6 +22,11 @@ const App = () => {
         { id: "dst", label: "Defense/ST" },
     ];
 
+    const selectedYearRef = React.useRef(selectedYear);
+    useEffect(() => {
+        selectedYearRef.current = selectedYear;
+    }, [selectedYear]);
+
     // 1. Fetch available seasons for the selected position
     useEffect(() => {
         const fetchSeasons = async () => {
@@ -34,7 +39,8 @@ const App = () => {
                 // Default to the most recent season if not set or not available
                 if (years.length > 0) {
                     const latest = years[0].toString();
-                    if (!selectedYear || !years.includes(parseInt(selectedYear))) {
+                    const currentYear = selectedYearRef.current;
+                    if (!currentYear || !years.includes(parseInt(currentYear))) {
                         setSelectedYear(latest);
                     }
                 }

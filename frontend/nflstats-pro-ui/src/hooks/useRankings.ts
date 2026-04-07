@@ -13,6 +13,8 @@ import type { Ranking, SortField, SortOrder } from '../models/Ranking';
  *   does NOT include sortBy/sortOrder because sorting doesn't change the
  *   fetched dataset, only its presentation order.
  */
+import { PlayerStatsListSchema } from '../v3/schemas/player';
+
 export function useRankings(
   position: string,
   year: string,
@@ -21,7 +23,11 @@ export function useRankings(
 ) {
   const query = useQuery<Ranking[], Error>({
     queryKey: ['rankings', position, year],
-    queryFn: ({ signal }) => RankingsApi.fetchRankings(position, year, signal),
+    queryFn: async ({ signal }) => {
+      const data = await RankingsApi.fetchRankings(position, year, signal);
+      // V3 HARDNESS: Validate data integrity at the ingestion boundary
+      return PlayerStatsListSchema.parse(data) as unknown as Ranking[];
+    },
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,

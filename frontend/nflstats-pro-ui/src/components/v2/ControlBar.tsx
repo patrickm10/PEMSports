@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Calendar, Hash, Users, User, LogOut } from 'lucide-react';
+import { Search, Calendar, Hash, Users, User, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoginModal } from './Auth/LoginModal';
@@ -31,7 +31,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
     <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-slate-900/30 backdrop-blur-xl border border-slate-800/40 rounded-2xl">
       <div className="flex items-center gap-3 flex-wrap">
         {/* View Toggle */}
-        <div className="flex bg-slate-950/60 p-1 rounded-xl border border-white/[0.04]">
+        <div className="flex bg-slate-950/60 p-1 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20">
           {(['season', 'weekly'] as const).map((mode) => (
             <button
               key={mode}
@@ -55,18 +55,24 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           ))}
         </div>
 
+        {/* Separator */}
+        <div className="w-px h-6 bg-white/[0.04] mx-1 hidden sm:block" />
+
         {/* Year Select */}
-        <div className="flex items-center gap-2 bg-slate-950/40 pl-3 pr-1 py-1.5 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
+        <div className="flex items-center gap-2 bg-slate-950/40 pl-3 pr-2 py-1.5 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors relative">
           <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" />
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer py-1 pr-2 appearance-none"
-          >
-            {availableYears.map(year => (
-              <option key={year} value={year.toString()} className="bg-slate-900 text-slate-200">{year}</option>
-            ))}
-          </select>
+          <div className="relative flex items-center pr-1">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer py-1 pr-6 appearance-none z-10"
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year.toString()} className="bg-slate-900 text-slate-200">{year}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none group-hover:text-slate-400 transition-colors" />
+          </div>
         </div>
 
         {/* Week Select (Conditional) */}
@@ -79,17 +85,20 @@ export const ControlBar: React.FC<ControlBarProps> = ({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="flex items-center gap-2 bg-slate-950/40 pl-3 pr-1 py-1.5 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
+              <div className="flex items-center gap-2 bg-slate-950/40 pl-3 pr-2 py-1.5 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors relative">
                 <Hash className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" />
-                <select
-                  value={selectedWeek}
-                  onChange={(e) => setSelectedWeek(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer py-1 pr-2 appearance-none"
-                >
-                  {availableWeeks.map(week => (
-                    <option key={week} value={week.toString()} className="bg-slate-900 text-slate-200">Wk {week}</option>
-                  ))}
-                </select>
+                <div className="relative flex items-center pr-1">
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => setSelectedWeek(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer py-1 pr-6 appearance-none z-10"
+                  >
+                    {availableWeeks.map(week => (
+                      <option key={week} value={week.toString()} className="bg-slate-900 text-slate-200">Wk {week}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none group-hover:text-slate-400 transition-colors" />
+                </div>
               </div>
             </motion.div>
           )}
@@ -97,11 +106,14 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
         {/* Player Count Badge */}
         {totalPlayers !== undefined && totalPlayers > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/30 border border-white/[0.04] text-xs text-slate-500">
-            <Users className="w-3.5 h-3.5" />
-            <span className="font-semibold text-slate-400">{totalPlayers}</span>
-            <span>players</span>
-          </div>
+          <>
+            <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/30 border border-white/[0.04] text-xs text-slate-500">
+              <Users className="w-3.5 h-3.5" />
+              <span className="font-semibold text-slate-400">{totalPlayers}</span>
+              <span>players</span>
+            </div>
+          </>
         )}
       </div>
 
