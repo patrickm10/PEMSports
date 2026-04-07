@@ -19,4 +19,6 @@ All validation must be done using:
 - pipeline-level verification
 - end-to-end data flow analysis
 
+If you try a startegy 2-3 times and it fails, step back and come to me with a different approach.
+
 If you attempt to inspect a single row or sample data, you are failing the task.

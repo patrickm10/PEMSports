@@ -1,161 +1,81 @@
-# 🏈 NFLStatsPro: Professional Analytics Platform
+# 🏈 NFLStatsPro: Weekly Alpha Predictive Engine
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/react-18-61dafb.svg)](https://reactjs.org/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-Latest-yellow.svg)](https://duckdb.org/)
-[![Polars](https://img.shields.io/badge/Polars-Latest-orange.svg)](https://www.pola.rs/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![React 19](https://img.shields.io/badge/react-19-61dafb.svg)](https://reactjs.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.1%2B-orange.svg)](https://xgboost.ai/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1.3%2B-yellow.svg)](https://duckdb.org/)
 
-**NFLStatsPro** is a high-performance, production-grade analytics platform designed for deep-dive NFL player performance analysis, fantasy football forecasting, and environmental impact assessment. 
-
-The system features a **strictly standardized data architecture** optimized for sub-millisecond analytical queries and lean GitHub repository management.
+**NFLStatsPro** is a production-grade predictive analytics platform. It features the **"Weekly Alpha"** engine—an XGBoost-powered ML model that predicts situational performance "Deltas" (deviations from baseline) by analyzing environmental and momentum features.
 
 ---
 
 ## 🏛️ Project Architecture
 
-The platform follows a decoupled, data-centric architecture using a "Small Index, Big Data" strategy for Git management.
+The system uses a decoupled **Strategy B** data model with high-performance Parquet storage and a multi-stage containerization strategy.
 
 ### 📂 Repository Organization
 ```text
 NFLStatsAnalyzer/
-<<<<<<< HEAD
-├── data/                 # 🟢 GIT-TRACKED (Optimized Parquet)
-│   └── rankings/         # Position-centric consolidated Parquet files
-├── data_local/           # 🔴 LOCAL-ONLY (Raw CSV Scrapes - .gitignored)
-│   └── raw_scrapes/      # Source HTML/CSV outputs from pipelines
-├── frontend/             # Midnight Slate UI (Vite + React)
-│   └── nflstats-pro-ui/  # Main dashboard application
-├── src/
-│   ├── backend/          # FastAPI REST API & Analytical Engines
-│   │   ├── api/          # Route handlers & Auth
-│   │   └── data/         # DuckDB & Postgres implementations
-│   └── pipelines/        # Scrapers & Polars ETL
-└── tests/                # Comprehensive Pytest suite
-=======
-├── backend/
-│   ├── api/
-│   |    ├── routes.py/                   # Routing for dataframes
-│   ├── services/                         # Code for cleaning and loading data
-│   |    ├── k_service.py/
-│   |    ├── qb_service.py/
-│   |    ├── rb_service.py/
-│   |    ├── te_service.py/
-│   |    ├── wr_service.py/
-│   ├── utils/
-│   |    ├── file_loader.py/      
-│   ├── main.py                           # Main entry point for FastAPI
-├── data/
-│   ├── qb_weekly_stats/
-│   ├── rb_weekly_stats/
-│   ├── wr_weekly_stats/
-│   ├── te_weekly_stats/
-│   ├── official_stats/
-│   |   ├── official_qb_stats.csv/
-│   |   ├── official_rb_stats.csv/
-│   |   ├── official_te_stats.csv/
-│   |   ├── official_wr_stats.csv/
-│   |   ├── official_k_stats.csv/
-│   ├── nfl_metadata/
-├── pipelines/
-│   ├── get_nfl_schedule.py
-│   ├── get_weekly_stats.py
-│   ├── get_offensive_rankings.py
-│   ├── get_defensive_rankings.py
-├── frontend/
-│   ├── src/
-│   |    ├── App.jsx
-│   |    ├── App.css
-│   ├── public/
-│   |    ├── package.json
-├── season_scripts/
-│   ├── get_adp_stats.py
-│   ├── get_career_stats.py
-│   ├── get_roster_per_team.py
-├── analytics/
-│   ├── chatbot.py
-│   ├── draft_calculator.py
-│   ├── nlp_model.py (in progress)
-├── README.md
-├── requirements.txt
->>>>>>> c1f405538b6e91996c9e4435cfc5b8da10fc6803
+├── data/                 # 🟢 Optimized Parquet Store
+│   ├── rankings/         # Consolidated historical positional datasets
+│   └── forecasts/        # 🔮 ML Alpha Forecasts (Smart Projections)
+├── docker-compose.yml    # 🐳 Production Orchestration (API + DB)
+├── src/                  # 🛠️ System Core
+│   ├── backend/          # FastAPI Engine (CORS & HTTPS Hardened)
+│   │   ├── api/          # Predictive & Impact routes
+│   │   ├── data/         # Portable Repository Pattern (Postgres + local)
+│   │   └── models/       # Pydantic 2.0 Data Models
+│   └── pipelines/        # 🧠 ML Feature Store & XGBoost Orchestrator
+└── frontend/             # Midnight Slate Dashboard (React + Framer Motion)
 ```
 
 ---
 
-## ⚡ Core Technical Stack
+## ⚡ Technical Stack
 
--   **Query Engine**: [DuckDB](https://duckdb.org/) for in-memory analytical processing.
--   **ETL Pipeline**: [Polars](https://www.pola.rs/) for lightning-fast data transformation.
--   **Backend**: [FastAPI](https://fastapi.tiangolo.com/) with JWT-based OAuth2 authentication.
--   **Frontend**: [React 18](https://reactjs.org/) + Vite with TanStack Virtual for high-performance data rendering.
--   **Database**: **PostgreSQL** for user sessions and state management (with graceful local fallback).
-
----
-
-## 📅 Data Strategy & Reproducibility
-
-### Strict Separation of Concerns
-To maintain a clean GitHub footprint while preserving raw history, we split storage:
-1.  **Tracked Parquet (`data/rankings/`)**: Only optimized, consolidated Parquet files are committed to Git. This provides 10x better compression than CSV and native DuckDB speed.
-2.  **Ignored Raw Data (`data_local/`)**: All individual week/position CSV scrapes are kept locally for reproducibility but excluded from Git to prevent repository bloat.
-
-### Reproducing Data
-The pipelines are idempotent and designed for incremental growth.
-```powershell
-# Standardize Weekly Rankings (2020-2025)
-$env:PYTHONPATH="src"
-python src/pipelines/get_weekly_rankings.py
-
-# Standardize Seasonal Totals
-$env:PYTHONPATH="src"
-python src/pipelines/get_full_season_rankings.py
-```
+-   **Predictive Modeling**: [XGBoost](https://xgboost.ai/) Regressors with [SHAP](https://shap.readthedocs.io/) for explainable AI insights.
+-   **Storage Engine**: [DuckDB](https://duckdb.org/) for joining historical stats with ML forecasts in sub-milliseconds.
+-   **ETL & Features**: [Polars](https://www.pola.rs/) for 3-game rolling momentum and situational feature engineering.
+-   **Infrastructure**: [Docker](https://www.docker.com/) multi-stage builds with [PostgreSQL](https://www.postgresql.org/) for persistent CRUD insights.
+-   **UI/UX**: [React 19](https://reactjs.org/) + [Framer Motion](https://www.framer.com/motion/) for premium "Pro Insights" visualizations.
 
 ---
 
 ## 🚀 Getting Started
 
-### Backend Setup
-1. **Environment**: Python 3.10+
-2. **Install Dependencies**: `pip install -r requirements.txt`
-3. **Configure Settings**: `cp .env.example .env` (Add `DATABASE_URL` and `JWT_SECRET`)
-4. **Launch Server**: `uvicorn src.backend.main:app --reload`
+### 🐳 Docker Deployment (Recommended)
+Launch the entire platform including the hardened API and Postgres database:
+```powershell
+# Requires Docker Desktop
+docker compose up --build -d
+```
 
-### Frontend Setup
-1. **Environment**: Node.js 18+
-2. **Setup**: `cd frontend/nflstats-pro-ui && npm install`
-3. **Run**: `npm run dev`
+### 🧠 ML Pipeline Execution
+Generate the latest Alpha Forecasts from the Strategy B Parquet store:
+```powershell
+$env:PYTHONPATH="src"
+python src/pipelines/ml_orchestrator.py
+```
 
 ---
 
 ## 📈 Analytical Endpoints
 
--   **Health Audit**: `GET /health` (Verifies presence of all core positional assets)
--   **Seasonal Rankings**: `GET /api/v1/rankings/{pos}?year={year}`
--   **Weekly Rankings**: `GET /api/v1/rankings/{pos}/weekly?year={year}&week={week}`
--   **Impact Splits**: `GET /api/v1/rankings/{pos}/impact/{player_id}?metric_type=surface`
-
----
-
-## 🛠️ Testing & Verification
-
-Comprehensive testing is implemented via `pytest`. All query resolution and auth flows are validated before deployment.
-
-```powershell
-$env:PYTHONPATH="src"
-pytest tests/test_query_engine.py  # Validates DuckDB resolution & Parquet integrity
-pytest tests/test_auth_routes.py   # Validates JWT & Postgres flows
-```
+-   **Alpha Forecasts**: `GET /api/v1/rankings/{pos}/weekly?year=2024&week=13`
+    *   Returns `smart_projection`, `predicted_alpha`, and `insight_flags`.
+-   **Pro Insights**: Explainable AI view via the **ProInsightsDrawer** UI.
+-   **Health Audit**: `GET /health` (Verifies Strategy B & Forecasting assets).
 
 ---
 
 ## 📜 Roadmap
 - [x] **Strategy B Refactor**: Position-centric Parquet consolidation.
-- [x] **Strict Cleanup**: Git index sanitization for all legacy CSVs.
-- [ ] **Predictive Modeling**: Integrating ML-based projection layers.
-- [ ] **CI/CD Deployment**: Automated Parquet validation on GitHub Actions.
+- [x] **Weekly Alpha Engine**: XGBoost + SHAP predictive layer.
+- [x] **Containerization**: Hardened Docker + Postgres infrastructure.
+- [/] **2025 Seasonal Hardening**: Aggregating weekly totals into seasonal stats.
+- [ ] **Vegas Automation**: Real-time Betting API integration (Spread/OU).
+- [ ] **Situational Notes**: Persistent user-saved situational CRUD.
 
 ---
-*Internal use only. NFLStatsPro 2026.*
-
+*Internal use only. NFLStatsPro 2026. Data Audit Verified: Apr 6 2026.*

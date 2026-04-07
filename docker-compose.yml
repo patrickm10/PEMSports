@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend Engine
+  api:
+    build: .
+    container_name: nflstats_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/nflstats
+      - ALLOWED_ORIGINS=http://localhost:5173,http://your-production-domain.com
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+    volumes:
+      # Persistent DuckDB/Parquet storage
+      - ./data:/app/data
+      # Local-only insights storage (fallback repo)
+      - ./data_local:/app/data_local
+    depends_on:
+      - db
+
+  # PostgreSQL for Transactional Data
+  db:
+    image: postgres:15-alpine
+    container_name: nflstats_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=nflstats
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -41,6 +41,11 @@ export interface WeeklyRanking extends BaseRanking {
   humidity: number | null;
   wind: number | null;
   game_result: string | null;
+
+  // ML Predictive Fields (Weekly Alpha v1)
+  predicted_alpha?: number;
+  smart_projection?: number;
+  insight_flags?: string[];
 }
 
 export type Ranking = SeasonalRanking | WeeklyRanking;

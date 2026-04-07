@@ -1,24 +1,27 @@
-# Use an official Python runtime as a parent image
+# Multi-stage build for production-grade FastAPI + DuckDB
+# Stage 1: Build dependencies
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Stage 2: Final Runtime Image
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PORT 8000
-ENV PYTHONPATH=/app/src
-
-# Set work directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed dependencies from builder
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
 
-# Copy project
+# Copy application code
 COPY . .
 
-# Expose port
+# Expose FastAPI port
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "src.backend.main:app"]
+# Volume for persistent DuckDB/Parquet storage
+VOLUME ["/app/data"]
+
+CMD ["uvicorn", "src.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,5 +1,5 @@
 import polars as pl
-from services.position_helper import load_and_rank, reorder_columns
+from backend.services.position_helper import load_and_rank, reorder_columns
 
 POSITION = "qb"
 EXTRA_STATS = [

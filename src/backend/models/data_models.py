@@ -49,6 +49,11 @@ class WeeklyRankingRecord(BaseRankingRecord):
     humidity: Optional[float] = None
     wind: Optional[float] = None
 
+    # ML Predictive Fields (Weekly Alpha v1)
+    predicted_alpha: Optional[float] = None
+    smart_projection: Optional[float] = None
+    insight_flags: Optional[List[str]] = None
+
 
 class PaginationParams(BaseModel):
     limit: int = Field(default=200, ge=1, le=1000)
@@ -59,6 +64,7 @@ class HealthResponse(BaseModel):
     status: str
     data_files_found: int
     positions_available: List[str]
+    model_forecasts_ready: bool
 
 
 

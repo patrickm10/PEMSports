@@ -87,6 +87,11 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# Force HTTPS in production
+if os.getenv("ENVIRONMENT") == "production":
+    from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+    app.add_middleware(HTTPSRedirectMiddleware)
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Print all incoming API calls and responses to the console for real-time visibility."""

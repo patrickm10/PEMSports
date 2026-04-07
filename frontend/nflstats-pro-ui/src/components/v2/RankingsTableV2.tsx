@@ -56,6 +56,10 @@ function buildColumnGroups(columns: SortField[]): ColumnGroup[] {
   const conditions = columns.filter(c => ENRICHED_METADATA.includes(c));
   if (conditions.length) groups.push({ label: 'Game Conditions', columns: conditions, accent: 'text-amber-400/60' });
 
+  // Predictive (Weekly Alpha)
+  const predictive = columns.filter(c => ['smart_projection', 'predicted_alpha'].includes(c));
+  if (predictive.length) groups.push({ label: 'Alpha Analytics', columns: predictive, accent: 'text-purple-400/80' });
+
   return groups;
 }
 
@@ -80,6 +84,7 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
       'rank',
       ...(isWeekly ? ['week' as SortField] : []),
       'player_name', 'team',
+      ...(isWeekly ? ['smart_projection' as SortField, 'predicted_alpha' as SortField] : []),
     ];
     const scoring: SortField[] = isWeekly 
       ? ['fpts_ppr', 'fpts_ppr_per_game'] 
@@ -140,6 +145,8 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
       case 'rec': return 64;
       case 'yds': return 72;
       case 'td': return 56;
+      case 'smart_projection': return 110;
+      case 'predicted_alpha': return 90;
       default: return 80;
     }
   };
@@ -228,11 +235,35 @@ export const RankingsTableV2: React.FC<RankingsTableV2Props> = ({
     }
 
     // PPR highlight
-    if (col === 'fpts_ppr' || col === 'fpts_ppr_per_game') {
+    if (col === 'fpts_ppr' || col === 'fpts_ppr_per_game' || col === 'smart_projection') {
       return (
-        <span className="text-blue-400 font-bold text-sm">
+        <span className={cn(
+          "font-bold text-sm",
+          col === 'smart_projection' ? "text-purple-400" : "text-blue-400"
+        )}>
           {typeof value === 'number' ? value.toFixed(1) : (String(value ?? '—'))}
         </span>
+      );
+    }
+
+    // Alpha Delta with Arrows
+    if (col === 'predicted_alpha') {
+      const alpha = typeof value === 'number' ? value : 0;
+      const isPos = alpha >= 0;
+      return (
+        <div className="flex items-center gap-1.5">
+          <span className={cn("font-bold text-sm", isPos ? "text-emerald-400" : "text-rose-400")}>
+            {isPos ? '+' : ''}{alpha.toFixed(1)}
+          </span>
+          {alpha !== 0 && (
+            <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }}>
+              {isPos 
+                ? <ChevronUp size={14} className="text-emerald-400" />
+                : <ChevronDown size={14} className="text-rose-400" />
+              }
+            </motion.div>
+          )}
+        </div>
       );
     }
 

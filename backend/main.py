@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.api.routes import router as api_router
+from backend.api.v1.rankings import router as v1_router
 
 app = FastAPI(title="NFL Stats Analyzer API")
 
@@ -21,7 +22,7 @@ def read_root():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +33,8 @@ static_path = Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 
-# Mount API routes
+# Mount API routes — V1 takes precedence over legacy
+app.include_router(v1_router, prefix="/api/v1/rankings", tags=["rankings"])
 app.include_router(api_router, prefix="/api")
 
 if __name__ == "__main__":

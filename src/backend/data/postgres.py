@@ -89,6 +89,17 @@ CREATE TABLE IF NOT EXISTS saved_comparisons (
     comparison_json JSONB NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Player situational insights (Weekly Alpha CRUD)
+CREATE TABLE IF NOT EXISTS player_insights (
+    id SERIAL PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL,
+    year INTEGER NOT NULL,
+    week INTEGER NOT NULL,
+    insight_text TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(player_id, year, week)
+);
 """
 
 async def init_db():

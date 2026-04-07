@@ -59,7 +59,7 @@ export const StatsSummary: React.FC<StatsSummaryProps> = ({ data, isLoading }) =
       icon: Crown,
       label: 'Top Performer',
       value: stats.topPlayer.player_name,
-      subValue: `${stats.topPlayer.fpts_ppr.toFixed(1)} PPR`,
+      subValue: `${(stats.topPlayer.fpts_ppr ?? 0).toFixed(1)} PPR`,
       accent: 'text-amber-400',
       iconBg: 'bg-amber-500/10 border-amber-500/20',
     },

@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 # → .parent = data/ → .parent = backend/ → .parent = src/ → .parent = project root
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _DATA_DIR = _PROJECT_ROOT / "data" / "rankings"
+_FORECAST_DIR = _PROJECT_ROOT / "data" / "forecasts"
 _METADATA_DIR = _PROJECT_ROOT / "data" / "nfl_metadata"
 _LOCAL_DATA_DIR = _PROJECT_ROOT / "data_local" / "raw_scrapes"
 
@@ -158,15 +159,26 @@ def _ensure_view(position_upper: str) -> str:
     exclude_cols = [f'"{c}"' for c in physical_cols if c.lower() == 'rank']
     exclude_clause = f" EXCLUDE ({', '.join(exclude_cols)})" if exclude_cols else ""
 
+    # Dynamic ordering: prefer fpts_ppr, then fpts (case-insensitive)
+    source_cols = {c.lower() for c in physical_cols}
+    order_expr = "TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST" # Default
+    if "fpts_ppr" in source_cols:
+        order_expr = "TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST, " + order_expr
+    elif "fpts" in source_cols:
+        order_expr = "TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST"
+    else:
+        # Fallback to any column containing 'fpts'
+        fpts_col = next((c for c in physical_cols if "fpts" in c.lower()), None)
+        if fpts_col:
+            order_expr = f'TRY_CAST(s."{fpts_col}" AS DOUBLE) DESC NULLS LAST'
+
     _get_conn().execute(f"""
         CREATE OR REPLACE VIEW {view_name} AS
         SELECT
             s.*{exclude_clause},
             ROW_NUMBER() OVER (
                 PARTITION BY s.year
-                ORDER BY
-                    TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST,
-                    TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST
+                ORDER BY {order_expr}
             ) AS rank
         FROM {source} s
     """)
@@ -264,6 +276,18 @@ def _ensure_weekly_view(position_upper: str) -> str:
     exclude_cols = [f'"{c}"' for c in physical_cols if c.lower() == 'rank']
     exclude_clause = f" EXCLUDE ({', '.join(exclude_cols)})" if exclude_cols else ""
 
+    # Dynamic ordering: prefer fpts_ppr, then fpts (case-insensitive)
+    order_expr = "TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST" # Default
+    if "fpts_ppr" in source_cols:
+        order_expr = "TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST, " + order_expr
+    elif "fpts" in source_cols:
+        order_expr = "TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST"
+    else:
+        # Fallback to any column containing 'fpts'
+        fpts_col = next((c for c in physical_cols if "fpts" in c.lower()), None)
+        if fpts_col:
+            order_expr = f'TRY_CAST(s."{fpts_col}" AS DOUBLE) DESC NULLS LAST'
+
     # Dynamically add NULL placeholders only for columns NOT already in source.
     null_placeholders = []
     for col_name in sorted(MATCHUP_COLS):
@@ -275,17 +299,34 @@ def _ensure_weekly_view(position_upper: str) -> str:
 
     extra_cols = (",\n            " + ",\n            ".join(null_placeholders) + ",") if null_placeholders else ","
 
+    # ML Forecast Join Logic
+    forecast_path = _FORECAST_DIR / f"{position_upper.lower()}_alpha.parquet"
+    forecast_join = ""
+    forecast_cols = (
+        ",\n            f.predicted_alpha,\n            f.smart_projection,\n"
+        "            string_split(f.insight_flags, ',') AS insight_flags"
+    )
+    
+    if forecast_path.exists():
+        f_path_str = str(forecast_path).replace("\\", "/")
+        forecast_join = f"LEFT JOIN read_parquet('{f_path_str}') f ON s.player_id = f.player_id AND s.year = f.year AND s.week = f.week"
+    else:
+        forecast_cols = (
+            ",\n            CAST(NULL AS DOUBLE) AS predicted_alpha,\n"
+            "            CAST(NULL AS DOUBLE) AS smart_projection,\n"
+            "            CAST([] AS VARCHAR[]) AS insight_flags"
+        )
+
     _get_conn().execute(f"""
         CREATE OR REPLACE VIEW {view_name} AS
         SELECT
-            s.*{exclude_clause}{extra_cols}
+            s.*{exclude_clause}{extra_cols}{forecast_cols},
             ROW_NUMBER() OVER (
                 PARTITION BY s.year, s.week
-                ORDER BY
-                    TRY_CAST(s.fpts_ppr AS DOUBLE) DESC NULLS LAST,
-                    TRY_CAST(s.fpts AS DOUBLE) DESC NULLS LAST
+                ORDER BY {order_expr}
             ) AS rank
         FROM {source} s
+        {forecast_join}
     """)
 
     _get_registered_views().add(view_name)

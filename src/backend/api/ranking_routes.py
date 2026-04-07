@@ -54,10 +54,12 @@ def api_get_rankings(
     """
     try:
         data = get_rankings(pos, year=year, limit=limit, offset=offset)
+        if not data:
+            raise HTTPException(status_code=500, detail="Data empty for position")
         # Optimized: Direct JSONResponse bypasses Pydantic's slow validation loop for large lists
         return JSONResponse(content=data)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
@@ -92,9 +94,11 @@ def api_get_weekly_rankings(
     """
     try:
         data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
+        if not data:
+            raise HTTPException(status_code=500, detail="Data empty for position")
         return JSONResponse(content=data)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
@@ -130,6 +134,8 @@ def get_all_weekly_rankings(
     """Alias for /rankings/{pos}/weekly."""
     try:
         data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
+        if not data:
+            raise HTTPException(status_code=500, detail="Data empty for position")
         return JSONResponse(content=data)
     except Exception as exc:
         logger.exception("Error in get_all_weekly_rankings")
@@ -178,14 +184,14 @@ def get_player_rankings_csv(
     try:
         data = get_rankings(pos, year=year, limit=1000, offset=0)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Unexpected error in get_player_rankings_csv(%s)", pos)
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
     if not data:
-        raise HTTPException(status_code=404, detail="No data available for export.")
+        raise HTTPException(status_code=500, detail="No data available for export.")
 
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=data[0].keys())

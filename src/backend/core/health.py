@@ -16,31 +16,40 @@ logger = logging.getLogger(__name__)
 
 # health.py is at src/backend/core/health.py → project root is 4 parents up
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DATA_DIR = _PROJECT_ROOT / "data" / "official_rankings" / "position"
-POSITIONS = ["qb", "rb", "wr", "te", "k", "dst"]
+# Strategy B Consolidated Store
+_DATA_DIR = _PROJECT_ROOT / "data" / "rankings"
+_FORECAST_DIR = _PROJECT_ROOT / "data" / "forecasts"
+POSITIONS = ["qb", "rb", "wr", "te"]
 
 
 def check_health() -> HealthResponse:
     """
-    Validate data files exist and return structured health payload.
-    Does NOT load data — just checks file presence. Fast enough for
-    high-frequency polling.
+    Validate Strategy B Parquet files and ML Forecasts exist.
     """
     available: list[str] = []
+    forecasts: list[str] = []
 
     for pos in POSITIONS:
-        # Prefer Parquet, fall back to CSV
-        parquet = _DATA_DIR / f"{pos.upper()}_historical.parquet"
-        csv_file = _DATA_DIR / f"{pos.upper()}_historical.csv"
-        if parquet.exists() or csv_file.exists():
+        # Check Strategy B Store (Consolidated Parquet)
+        parquet = _DATA_DIR / f"{pos.upper()}_weekly.parquet"
+        if parquet.exists():
             available.append(pos)
+        
+        # Check Weekly Alpha Forecasts
+        forecast = _FORECAST_DIR / f"{pos.lower()}_alpha.parquet"
+        if forecast.exists():
+            forecasts.append(pos)
 
-    status = "healthy" if available else "degraded"
-    if not available:
-        logger.error("Health check: no data files found in %s", _DATA_DIR)
+    # Health status based on core data availability
+    status = "healthy" if len(available) == len(POSITIONS) else "degraded"
+    
+    # Informative logging for container monitoring
+    if status == "degraded":
+        logger.warning(f"Health: only {len(available)}/{len(POSITIONS)} core data files found.")
 
     return HealthResponse(
         status=status,
         data_files_found=len(available),
         positions_available=available,
+        model_forecasts_ready=len(forecasts) == len(POSITIONS)
     )

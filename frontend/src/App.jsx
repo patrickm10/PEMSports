@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
+import ErrorBoundary from "./ErrorBoundary";
 
 const API_BASE = "http://localhost:8000/api";
+const APP_VERSION = 1;
 
 const App = () => {
     const [activeTab, setActiveTab] = useState("qb");
@@ -12,6 +14,23 @@ const App = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [sortConfig, setSortConfig] = useState({ key: "Rank", direction: "ascending" });
+
+    // State Validation Layer
+    useEffect(() => {
+        const validateState = () => {
+            try {
+                const savedVersion = localStorage.getItem("nfl_app_version");
+                if (savedVersion && parseInt(savedVersion) < APP_VERSION) {
+                    console.warn("Version mismatch. Resetting state.");
+                    localStorage.clear();
+                }
+                localStorage.setItem("nfl_app_version", APP_VERSION.toString());
+            } catch (e) {
+                console.error("State validation failed:", e);
+            }
+        };
+        validateState();
+    }, []);
 
     const positions = [
         { id: "qb", label: "Quarterbacks" },
@@ -115,99 +134,101 @@ const App = () => {
     };
 
     return (
-        <div className="app-shell">
-            <header className="premium-header">
-                <div className="brand">
-                    <h1 className="logo-text">NFL<span>Analyzer</span></h1>
-                    <p className="tagline">Next-Gen Performance Analytics</p>
-                </div>
-                
-                <nav className="tab-navigation">
-                    {positions.map(pos => (
-                        <button 
-                            key={pos.id}
-                            className={`tab-link ${activeTab === pos.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(pos.id)}
-                        >
-                            {pos.label}
-                        </button>
-                    ))}
-                </nav>
-            </header>
-
-            <main className="main-content">
-                <section className="control-deck">
-                    <div className="control-group">
-                        <label>Season</label>
-                        <select 
-                            value={selectedYear} 
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                            className="glass-select"
-                        >
-                            {availableYears.map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
+        <ErrorBoundary>
+            <div className="app-shell">
+                <header className="premium-header">
+                    <div className="brand">
+                        <h1 className="logo-text">NFL<span>Analyzer</span></h1>
+                        <p className="tagline">Next-Gen Performance Analytics</p>
                     </div>
+                    
+                    <nav className="tab-navigation">
+                        {positions.map(pos => (
+                            <button 
+                                key={pos.id}
+                                className={`tab-link ${activeTab === pos.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(pos.id)}
+                            >
+                                {pos.label}
+                            </button>
+                        ))}
+                    </nav>
+                </header>
 
-                    <div className="control-group search">
-                        <input 
-                            type="text" 
-                            placeholder="Search player or team..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="glass-input"
-                        />
-                    </div>
-                </section>
+                <main className="main-content">
+                    <section className="control-deck">
+                        <div className="control-group">
+                            <label>Season</label>
+                            <select 
+                                value={selectedYear} 
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                                className="glass-select"
+                            >
+                                {availableYears.map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                {error && <div className="error-toast">{error}</div>}
+                        <div className="control-group search">
+                            <input 
+                                type="text" 
+                                placeholder="Search player or team..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="glass-input"
+                            />
+                        </div>
+                    </section>
 
-                <div className="data-surface">
-                    {loading ? (
-                        <div className="shimmer-loader">Analyzing Season Data...</div>
-                    ) : filteredData.length > 0 ? (
-                        <div className="table-overflow">
-                            <table className="premium-table">
-                                <thead>
-                                    <tr>
-                                        {Object.keys(data[0] || {}).map(key => (
-                                            <th key={key} onClick={() => handleSort(key)} className="sortable">
-                                                {formatHeader(key)}
-                                                {sortConfig.key === key && (
-                                                    <span className="sort-indicator">
-                                                        {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                                                    </span>
-                                                )}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredData.map((row, idx) => (
-                                        <tr key={idx} className="table-row">
-                                            {Object.keys(data[0]).map(key => (
-                                                <td key={key} data-label={formatHeader(key)}>
-                                                    {row[key]}
-                                                </td>
+                    {error && <div className="error-toast">{error}</div>}
+
+                    <div className="data-surface">
+                        {loading ? (
+                            <div className="shimmer-loader">Analyzing Season Data...</div>
+                        ) : filteredData.length > 0 ? (
+                            <div className="table-overflow">
+                                <table className="premium-table">
+                                    <thead>
+                                        <tr>
+                                            {Object.keys(data[0] || {}).map(key => (
+                                                <th key={key} onClick={() => handleSort(key)} className="sortable">
+                                                    {formatHeader(key)}
+                                                    {sortConfig.key === key && (
+                                                        <span className="sort-indicator">
+                                                            {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                                                        </span>
+                                                    )}
+                                                </th>
                                             ))}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="empty-state">
-                            <p>No data found for the selected criteria.</p>
-                        </div>
-                    )}
-                </div>
-            </main>
+                                    </thead>
+                                    <tbody>
+                                        {filteredData.map((row, idx) => (
+                                            <tr key={idx} className="table-row">
+                                                {Object.keys(data[0]).map(key => (
+                                                    <td key={key} data-label={formatHeader(key)}>
+                                                        {row[key]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="empty-state">
+                                <p>No data found for the selected criteria.</p>
+                            </div>
+                        )}
+                    </div>
+                </main>
 
-            <footer className="simple-footer">
-                <p>&copy; 2026 NFL Stats Analyzer. All rights reserved.</p>
-            </footer>
-        </div>
+                <footer className="simple-footer">
+                    <p>&copy; 2026 NFL Stats Analyzer. All rights reserved. (v{APP_VERSION})</p>
+                </footer>
+            </div>
+        </ErrorBoundary>
     );
 };
 
