@@ -16,6 +16,7 @@ import logging
 from typing import Any, Optional, List, Dict
 
 from backend.core.cache import cache
+from backend.core.exceptions import NoDataForFilterError
 from backend.data.query_engine import (
     query_rankings,
     query_seasons,
@@ -23,6 +24,7 @@ from backend.data.query_engine import (
     query_available_weeks,
     query_player_impact_metrics,
     query_team_defense_stats,
+    get_player_full_profile as query_player_full_profile,
 )
 
 logger = logging.getLogger(__name__)
@@ -144,3 +146,29 @@ def get_defense_stats(position: Any) -> list[dict[str, Any]]:
     data = query_team_defense_stats(position)
     cache.set(cache_key, data, ttl=3600)  # 1 hour cache
     return data
+
+
+def get_player_full_profile(
+    position: Any,
+    player_id: str,
+    year: int,
+) -> Dict[str, Any]:
+    """Season + weekly game logs for one player/position/year (DuckDB single query)."""
+    pos_key = str(position).lower().strip()
+    cache_key = f"profile:v2:{pos_key}:{player_id}:{year}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    raw = query_player_full_profile(player_id, year, pos_key)
+    if raw is None:
+        raise NoDataForFilterError("No seasonal data for that player and year.")
+
+    out: Dict[str, Any] = {
+        "position": pos_key,
+        "year": year,
+        "player_id": player_id,
+        **raw,
+    }
+    cache.set(cache_key, out, ttl=300)
+    return out

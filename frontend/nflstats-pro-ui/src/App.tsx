@@ -63,6 +63,14 @@ export default function App() {
   const validYearInput = isYearValid ? selectedYear : '';
   const validWeekInput = isWeekValid ? selectedWeek : '';
 
+  /** Season year on the clicked row (weekly grid rows carry `year` for this filter). */
+  const profileYear = useMemo(() => {
+    if (!selectedPlayer) return '';
+    const y = (selectedPlayer as { year?: number }).year;
+    if (y == null || Number.isNaN(Number(y))) return validYearInput;
+    return String(Math.floor(Number(y)));
+  }, [selectedPlayer, validYearInput]);
+
   // Rankings queries — sortBy/sortOrder preserved for API compatibility but
   // sorting itself is now owned by TanStack Table inside VirtualizedGrid.
   const seasonQuery = useRankings(activeTab, validYearInput, sortBy, sortOrder);
@@ -197,9 +205,13 @@ export default function App() {
       </ResponsiveDock>
 
       <AnimatePresence>
-        {selectedPlayer && (
+        {selectedPlayer && profileYear && (
           <PlayerDetail
-            player={selectedPlayer}
+            key={`${selectedPlayer.player_id}-${profileYear}`}
+            playerId={selectedPlayer.player_id}
+            position={activeTab}
+            year={profileYear}
+            snapshot={selectedPlayer}
             onClose={() => setSelectedPlayer(null)}
           />
         )}

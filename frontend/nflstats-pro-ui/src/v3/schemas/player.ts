@@ -60,3 +60,19 @@ export type WeeklyStats = z.infer<typeof WeeklyStatsSchema>;
 export const PlayerStatsSchema = z.union([WeeklyStatsSchema, SeasonalStatsSchema]);
 export const PlayerStatsListSchema = z.array(PlayerStatsSchema);
 export type PlayerStats = z.infer<typeof PlayerStatsSchema>;
+
+const LooseStatsRowSchema = z.record(z.string(), z.unknown());
+
+/** Full profile payload from `GET /rankings/{pos}/players/{id}/profile`. */
+export const PlayerProfileResponseSchema = z.object({
+  position: z.string(),
+  year: z.coerce.number(),
+  player_id: z.string(),
+  season: SeasonalStatsSchema.passthrough(),
+  /** Weekly rows vary by position; avoid strict zod to prevent parse failures on edge rows. */
+  weekly_games: z.array(LooseStatsRowSchema),
+  /** All seasons for this player (newest first), each with seasonal `rank`. */
+  season_history: z.array(LooseStatsRowSchema).default([]),
+});
+
+export type PlayerProfileResponse = z.infer<typeof PlayerProfileResponseSchema>;

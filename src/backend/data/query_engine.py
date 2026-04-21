@@ -18,6 +18,7 @@ The global handler in `main.py` maps these to HTTP responses.
 """
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
@@ -35,6 +36,9 @@ from backend.core.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Mirrors scripts/bake_db.py POSITIONS — used to validate dynamic table names.
+_ALLOWED_PROFILE_POSITIONS = frozenset({"qb", "rb", "wr", "te", "k", "dst"})
 
 # Resolve paths — __file__ is under src/backend/data/, so four parents = repo root.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -280,6 +284,132 @@ def query_player_profile(player_id: str, position: str) -> Optional[dict[str, An
         context=f"{table} (profile)",
     )
     return {"seasons": seasons} if seasons else None
+
+
+def get_player_full_profile(
+    player_id: str,
+    year: int,
+    position: str,
+) -> Optional[dict[str, Any]]:
+    """Single-query seasonal row (with rank) + weekly game logs for one season.
+
+    Tables are `{position}_seasonal` and `{position}_weekly` (bake_db). Rank uses
+    the same window as `query_rankings`. Weekly rows are ordered by week.
+
+    Returns:
+        ``{"season": dict, "weekly_games": list[dict], "season_history": list[dict]}``
+        or ``None`` if the player has no seasonal row for that year.
+
+        ``season_history`` is every seasonal row for ``player_id`` (all years),
+        each with ``rank`` for that year, newest year first.
+    """
+    pos = position.lower().strip()
+    if pos not in _ALLOWED_PROFILE_POSITIONS:
+        raise QueryEngineError(f"Invalid position for profile query: {position!r}")
+
+    st = f"{pos}_seasonal"
+    wt = f"{pos}_weekly"
+    yr = float(year)
+
+    sql = f"""
+    WITH ranked_season AS (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (
+                PARTITION BY year
+                ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
+            ) AS rank
+        FROM {st}
+        WHERE year = ?
+    ),
+    season_row AS (
+        SELECT * FROM ranked_season WHERE player_id = ?
+    ),
+    week_rows AS (
+        SELECT * FROM {wt}
+        WHERE player_id = ? AND year = ?
+    ),
+    week_sorted AS (
+        SELECT * FROM week_rows ORDER BY week
+    ),
+    ranked_all_years AS (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (
+                PARTITION BY year
+                ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
+            ) AS rank
+        FROM {st}
+        WHERE player_id = ?
+    ),
+    all_seasons_sorted AS (
+        SELECT * FROM ranked_all_years ORDER BY year DESC
+    )
+    SELECT
+        (SELECT json(s) FROM season_row s LIMIT 1) AS season_json,
+        COALESCE(
+            (SELECT json_group_array(json(t)) FROM week_sorted t),
+            CAST('[]' AS JSON)
+        ) AS weekly_json,
+        COALESCE(
+            (SELECT json_group_array(json(t)) FROM all_seasons_sorted t),
+            CAST('[]' AS JSON)
+        ) AS season_history_json
+    """
+
+    rows = _execute(
+        sql,
+        [yr, player_id, player_id, yr, player_id],
+        context=f"{st}+{wt} (full_profile)",
+    )
+    if not rows:
+        return None
+
+    raw_season = rows[0].get("season_json")
+    raw_weekly = rows[0].get("weekly_json")
+    raw_history = rows[0].get("season_history_json")
+    if raw_season is None or (isinstance(raw_season, str) and raw_season in ("", "null")):
+        return None
+
+    season_obj: Any
+    if isinstance(raw_season, str):
+        season_obj = json.loads(raw_season)
+    else:
+        season_obj = raw_season
+
+    weekly_obj: Any
+    if isinstance(raw_weekly, str):
+        weekly_obj = json.loads(raw_weekly)
+    else:
+        weekly_obj = raw_weekly
+
+    if not isinstance(season_obj, dict):
+        raise QueryEngineError("Unexpected seasonal payload shape from profile query.")
+
+    weekly_list = weekly_obj if isinstance(weekly_obj, list) else list(weekly_obj or [])
+
+    history_obj: Any
+    if isinstance(raw_history, str):
+        history_obj = json.loads(raw_history)
+    else:
+        history_obj = raw_history
+    history_list = history_obj if isinstance(history_obj, list) else list(history_obj or [])
+
+    # Normalize NaN from JSON (should be rare) for consistency with _serialize_rows
+    def _nan_fix(obj: Any) -> Any:
+        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+            return None
+        if isinstance(obj, dict):
+            return {k: _nan_fix(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_nan_fix(v) for v in obj]
+        return obj
+
+    return {
+        "season": _nan_fix(season_obj),
+        "weekly_games": _nan_fix(weekly_list),
+        "season_history": _nan_fix(history_list),
+    }
 
 
 def invalidate_view(position: str, weekly: bool = False) -> None:

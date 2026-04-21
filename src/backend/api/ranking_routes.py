@@ -20,7 +20,7 @@ import io
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 from backend.core.exceptions import NoDataForFilterError
@@ -29,6 +29,7 @@ from backend.services.ranking_service import (
     get_available_seasons,
     get_available_weeks,
     get_defense_stats,
+    get_player_full_profile,
     get_player_impact,
     get_rankings,
     get_weekly_rankings,
@@ -37,6 +38,16 @@ from backend.services.ranking_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+_ALLOWED_POSITIONS = frozenset({"qb", "rb", "wr", "te", "k", "dst"})
+
+
+def _require_valid_position(pos: str) -> str:
+    """Normalize and validate `pos` against baked DuckDB table prefixes."""
+    p = pos.lower().strip()
+    if p not in _ALLOWED_POSITIONS:
+        raise HTTPException(status_code=422, detail="Invalid position")
+    return p
 
 
 @router.get("/debug-test")
@@ -89,6 +100,20 @@ def get_position_weeks(
 ):
     """Returns available weeks for the given position, optionally filtered by year."""
     return get_available_weeks(pos, year=year)
+
+
+@router.get("/rankings/{pos}/players/{player_id}/profile")
+@limiter.limit("60/minute")
+def api_get_player_profile(
+    request: Request,
+    pos: str,
+    player_id: str,
+    year: int = Query(..., ge=2018, le=2030, description="Season year"),
+):
+    """Seasonal totals (with rank) and all weekly game logs for one player and year."""
+    pos_key = _require_valid_position(pos)
+    data = get_player_full_profile(pos_key, player_id, year)
+    return JSONResponse(content=data)
 
 
 @router.get("/weekly-rankings")

@@ -192,7 +192,7 @@ function rankTier(rank: unknown, total: number): 'elite' | 'solid' | undefined {
   return undefined;
 }
 
-function PlayerAvatar({
+export function PlayerAvatar({
   row,
   imgClassName,
 }: {

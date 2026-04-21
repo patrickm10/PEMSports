@@ -111,4 +111,16 @@ export const RankingsApi = {
     const response = await fetchWithRetry(url.toString());
     return response.json();
   },
+
+  async fetchPlayerProfile(
+    position: string,
+    playerId: string,
+    year: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    const url = new URL(`${API_BASE}/rankings/${position}/players/${encodeURIComponent(playerId)}/profile`);
+    url.searchParams.set('year', year);
+    const response = await fetchWithRetry(url.toString(), signal);
+    return response.json();
+  },
 };

@@ -57,15 +57,15 @@ const FEATURES = [
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] relative overflow-hidden px-6 text-center">
+    <div className="relative flex min-h-screen flex-col items-center overflow-x-hidden bg-[#020617] px-6 pb-32 pt-16 text-center sm:px-8 sm:pb-40 sm:pt-20">
       {/* Decorative Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="pointer-events-none absolute left-1/2 top-[12%] h-[400px] w-[min(800px,110vw)] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[120px]" />
       
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="relative z-10 flex flex-col items-center max-w-4xl"
+        className="relative z-10 flex w-full max-w-4xl flex-col items-center"
       >
         {/* Logo Badge */}
         <motion.div 
@@ -79,7 +79,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         {/* Hero Title */}
         <motion.h1 
           variants={itemVariants}
-          className="text-6xl md:text-8xl font-black tracking-tight leading-[0.9] text-white italic mb-8"
+          className="mb-8 text-center text-5xl font-black italic leading-[1.02] tracking-tight text-white sm:text-6xl md:text-8xl md:leading-[0.95]"
         >
           ANALYTICS <span className="text-sky-500">REDEFINED</span>
         </motion.h1>
@@ -87,7 +87,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         {/* Hero Subtitle */}
         <motion.p 
           variants={itemVariants}
-          className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl leading-relaxed"
+          className="mb-12 max-w-2xl px-1 text-center text-base leading-relaxed text-slate-400 sm:text-lg md:text-xl"
         >
           The world's most advanced NFL data exploration suite. 
           Harness the power of DuckDB to visualize high-density performance metrics in real-time.
@@ -108,13 +108,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         {/* Features Grid */}
         <motion.div 
           variants={itemVariants}
-          className="grid md:grid-cols-3 gap-8 mt-24 text-left"
+          className="mt-20 grid w-full max-w-5xl gap-8 sm:mt-24 md:grid-cols-3 md:gap-6 lg:gap-8"
         >
           {FEATURES.map((feature) => (
-            <div key={feature.title} className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-xl transition-colors hover:border-slate-700">
-              <feature.icon className={`${feature.color} mb-4`} size={24} />
-              <h3 className="text-white font-bold mb-2 uppercase tracking-wide">{feature.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
+            <div
+              key={feature.title}
+              className="flex flex-col items-center rounded-2xl border border-slate-800/50 bg-slate-900/40 p-7 text-center backdrop-blur-xl transition-colors hover:border-slate-700 sm:p-8"
+            >
+              <feature.icon className={`${feature.color} mb-4 shrink-0`} size={24} aria-hidden />
+              <h3 className="mb-2 text-center text-sm font-bold uppercase tracking-wide text-white sm:text-base">
+                {feature.title}
+              </h3>
+              <p className="text-center text-sm leading-relaxed text-slate-500">{feature.description}</p>
             </div>
           ))}
         </motion.div>
@@ -125,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2 }}
-        className="absolute bottom-10 text-[10px] font-bold text-slate-600 tracking-[0.4em] uppercase"
+        className="pointer-events-none mt-auto w-full px-4 pb-8 pt-12 text-center text-[10px] font-bold uppercase tracking-[0.35em] text-slate-600 sm:absolute sm:bottom-8 sm:left-0 sm:pb-0 sm:pt-0"
       >
         Verified Analytical Kernel &copy; 2025
       </motion.footer>
