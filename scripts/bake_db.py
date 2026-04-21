@@ -2,8 +2,9 @@
 Bake Script: Compiles Parquet Data Lake into a Persistent DuckDB Serving Layer.
 Solves PlainSkip errors and optimizes for cloud hosting.
 
-Multi-year history is preserved as long as each `data/rankings/*_{weekly,seasonal}.parquet`
-file contains multiple `year` values; the API does not cap seasons at the DuckDB layer.
+Multi-year history: every `data/rankings/*.parquet` matching
+`{POS}_{weekly|seasonal}.parquet` or `{POS}_{YYYY}_{weekly|seasonal}.parquet`
+is merged into the serving table for that position (DuckDB unions files by name).
 
 Column Strategy: Dynamic discovery with blacklist pruning.
 Instead of a static whitelist (which silently drops performance metrics like
@@ -11,8 +12,9 @@ YDS, TD, CMP, ATT, etc.), we read ALL columns from the source Parquet and
 exclude only known artifacts (_right join suffixes, raw scrape duplicates).
 """
 import duckdb
-from pathlib import Path
 import logging
+import re
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bake_db")
@@ -22,6 +24,13 @@ DATA_DIR = PROJECT_ROOT / "data" / "rankings"
 DB_PATH = PROJECT_ROOT / "data" / "nfl_stats.db"
 
 POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"]
+
+# Files under data/rankings/: legacy combined `{POS}_weekly.parquet` or per-year
+# `{POS}_{YYYY}_weekly.parquet` (same for seasonal).
+_RANKING_PARQUET = re.compile(
+    r"^(?P<pos>QB|RB|WR|TE|K|DST)_(?:(?P<year>\d{4})_)?(?P<kind>weekly|seasonal)\.parquet$",
+    re.IGNORECASE,
+)
 
 # Columns excluded from all tables.
 # Rank: computed dynamically via ROW_NUMBER() in query_engine.
@@ -34,6 +43,9 @@ KNOWN_STRING = {
     "opponent", "stadium_name", "city", "state", "indoor_outdoor",
     "surface_type", "game_result",
 }
+
+# Filter dimensions: INTEGER in DuckDB (not DOUBLE from TRY_CAST) for `year = ?` / indexes.
+KNOWN_INT = {"year", "week"}
 
 # Position-Specific Mapping Matrix: Unified names for the Serving Layer.
 # Maps [Parquet Name] -> [Database Column Name]
@@ -68,6 +80,42 @@ MAPPING_MATRIX = {
         "SFTY": "safety", "SPC TD": "st_td"
     }
 }
+
+
+def _collect_ranking_parquet_groups() -> dict[tuple[str, str], list[Path]]:
+    """
+    Glob `data/rankings/*.parquet` and group paths by (UPPER position, weekly|seasonal).
+
+    Unmatched files are logged and skipped (so stray parquet does not break the bake).
+    """
+    groups: dict[tuple[str, str], list[Path]] = {}
+    for p in sorted(DATA_DIR.glob("*.parquet")):
+        m = _RANKING_PARQUET.match(p.name)
+        if not m:
+            logger.warning("Skipping unrecognized parquet (expected *_{weekly,seasonal}.parquet): %s", p.name)
+            continue
+        pos = m.group("pos").upper()
+        kind = m.group("kind").lower()
+        groups.setdefault((pos, kind), []).append(p.resolve())
+
+    # Stable merge order: optional year in filename, then path
+    def sort_key(path: Path) -> tuple[int, str]:
+        mm = _RANKING_PARQUET.match(path.name)
+        y = int(mm.group("year")) if mm and mm.group("year") else 0
+        return (y, str(path).lower())
+
+    for key in groups:
+        groups[key].sort(key=sort_key)
+    return groups
+
+
+def _sql_read_parquet_union(paths: list[Path]) -> str:
+    """DuckDB read_parquet over one or more files, aligning columns across years."""
+    parts: list[str] = []
+    for p in paths:
+        s = str(p).replace("\\", "/").replace("'", "''")
+        parts.append(f"'{s}'")
+    return f"read_parquet([{', '.join(parts)}], union_by_name=true)"
 
 
 def _discover_and_build(conn: duckdb.DuckDBPyConnection, parquet_path: Path, pos: str) -> tuple[list[str], str]:
@@ -118,6 +166,8 @@ def _discover_and_build(conn: duckdb.DuckDBPyConnection, parquet_path: Path, pos
         elif out_name in KNOWN_STRING:
             # Metadata strings
             exprs.append(f'"{c}" AS "{out_name}"')
+        elif out_name in KNOWN_INT:
+            exprs.append(f'TRY_CAST("{c}" AS INTEGER) AS "{out_name}"')
         else:
             # All performance metrics & numeric metadata (temp, wind, fpts)
             # TRY_CAST to DOUBLE ensures schema stability for the frontend
@@ -133,18 +183,19 @@ def bake():
 
     conn = duckdb.connect(str(DB_PATH))
 
+    groups = _collect_ranking_parquet_groups()
+
     for pos in POSITIONS:
         # 1. Weekly Data
-        weekly_parquet = DATA_DIR / f"{pos}_weekly.parquet"
-        if weekly_parquet.exists():
-            logger.info(f"Baking {pos} Weekly...")
-            path_str = str(weekly_parquet).replace("\\", "/")
-
-            columns, select_stmt = _discover_and_build(conn, weekly_parquet, pos)
+        weekly_paths = groups.get((pos, "weekly"), [])
+        if weekly_paths:
+            logger.info("Baking %s Weekly from %d parquet file(s): %s", pos, len(weekly_paths), weekly_paths)
+            columns, select_stmt = _discover_and_build(conn, weekly_paths[0], pos)
+            from_src = _sql_read_parquet_union(weekly_paths)
 
             conn.execute(
                 f"CREATE TABLE {pos.lower()}_weekly AS "
-                f"SELECT {select_stmt} FROM read_parquet('{path_str}')"
+                f"SELECT {select_stmt} FROM {from_src}"
             )
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_lookup ON {pos.lower()}_weekly (year, week)")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_player ON {pos.lower()}_weekly (player_id)")
@@ -153,16 +204,15 @@ def bake():
             logger.info(f"  -> {pos} Weekly: {row_count} rows, {len(columns)} columns")
 
         # 2. Seasonal Data
-        seasonal_parquet = DATA_DIR / f"{pos}_seasonal.parquet"
-        if seasonal_parquet.exists():
-            logger.info(f"Baking {pos} Seasonal...")
-            path_str = str(seasonal_parquet).replace("\\", "/")
-
-            columns, select_stmt = _discover_and_build(conn, seasonal_parquet, pos)
+        seasonal_paths = groups.get((pos, "seasonal"), [])
+        if seasonal_paths:
+            logger.info("Baking %s Seasonal from %d parquet file(s): %s", pos, len(seasonal_paths), seasonal_paths)
+            columns, select_stmt = _discover_and_build(conn, seasonal_paths[0], pos)
+            from_src = _sql_read_parquet_union(seasonal_paths)
 
             conn.execute(
                 f"CREATE TABLE {pos.lower()}_seasonal AS "
-                f"SELECT {select_stmt} FROM read_parquet('{path_str}')"
+                f"SELECT {select_stmt} FROM {from_src}"
             )
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_seasonal_lookup ON {pos.lower()}_seasonal (year)")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_seasonal_player ON {pos.lower()}_seasonal (player_id)")
@@ -173,6 +223,7 @@ def bake():
     # Final schema audit
     logger.info("--- Bake Audit ---")
     tables = conn.execute("SHOW TABLES").fetchall()
+    table_names = {t[0] for t in tables}
     for t in tables:
         count = conn.execute(f"SELECT COUNT(*) FROM {t[0]}").fetchone()[0]
         cols = [d[0] for d in conn.execute(f"SELECT * FROM {t[0]} LIMIT 0").description]
@@ -180,6 +231,15 @@ def bake():
             f"Table {t[0]:<20}: {count:>6} rows | {len(cols):>2} cols -> "
             f"{', '.join(cols[:10])}{'...' if len(cols) > 10 else ''}"
         )
+
+    for sample in ("qb_weekly", "qb_seasonal"):
+        if sample in table_names:
+            types = conn.execute(
+                "SELECT column_name, data_type FROM information_schema.columns "
+                f"WHERE table_name = '{sample}' AND column_name IN ('year', 'week') "
+                "ORDER BY column_name"
+            ).fetchall()
+            logger.info("Filter columns (%s): %s", sample, types)
 
     conn.close()
     logger.info(
