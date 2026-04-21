@@ -21,7 +21,8 @@ function Stop-Services {
             foreach ($conn in $connections) {
                 try {
                     $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue
-                    if ($proc) {
+                    # Check if process exists and is not System Idle (0) or System (4)
+                    if ($proc -and $proc.Id -ne 0 -and $proc.Id -ne 4) {
                         Write-Host "Killing process $($proc.Name) (PID: $($proc.Id)) on port $port" -ForegroundColor Cyan
                         Stop-Process -Id $proc.Id -Force
                     }
@@ -42,15 +43,16 @@ function Start-Services {
     
     # Start Backend
     Write-Host "Launching Backend (FastAPI) on port 8000..." -ForegroundColor Cyan
-    $env:PYTHONPATH="src"
-    Start-Process python -ArgumentList "-m backend.main" -WindowStyle Normal
+    # Launch via cmd /k to keep the window open so errors are visible, mapping PYTHONPATH beforehand.
+    Start-Process cmd -ArgumentList "/k `"set PYTHONPATH=src && python -m backend.main`"" -WindowStyle Normal
     
     # Wait for backend to warm up
     Start-Sleep -Seconds 3
     
     # Start Frontend
     Write-Host "Launching Frontend (Vite) on port 5173..." -ForegroundColor Cyan
-    Start-Process npm -ArgumentList "run dev --prefix frontend/nflstats-pro-ui" -WindowStyle Normal
+    # npm on Windows is actually npm.cmd. Start-Process fails silently if not executed via cmd natively.
+    Start-Process cmd -ArgumentList "/k `"npm run dev --prefix frontend/nflstats-pro-ui`"" -WindowStyle Normal
     
     Write-Host "Services launched. Check browser at http://localhost:5173" -ForegroundColor Green
 }

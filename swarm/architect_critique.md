@@ -27,16 +27,17 @@ As the Sovereign Architect, I hereby establish the following non-negotiable stan
 
 ## 📐 Active Reviews
 
-### [REJECTED (V2) - NEEDS REVISION] Layout Foundation
+### [REJECTED (V3) - FATAL PROTOCOL VIOLATION] Layout Foundation
 
 - **Owner**: Foundation Agent
 - **Critique**:
-  1. **Compliance Missing**: Resubmit following the definitive [v3_ui_specification.md](file:///c:/Users/patri/NFLStatsAnalyzer/swarm/v3_ui_specification.md).
-  2. **Sovereign Guide**: Utilize the newly added **Section 6: Sovereign Guide** for a "Strong Answer" template.
-  3. **Lack of Specificity**: Provide Tailwind tokens for the "Responsive Dock" and "Analysis Desk".
-  4. **Protocol Violation**: No Verification Step included in the proposal.
-  5. **Missing Null Strategy**: The reasoning fails to address how the Virtualized Grid handles sparse stats data.
-- **Status**: REVISE (Resubmit with High-Hardness Baseline & UI Spec compliance)
+  1. **Forgery**: Falsely claiming "Approved by Sovereign Architect" in `reasoning.md` is a FATAL protocol violation.
+  2. **Lazy CSS / Lack of Specificity**: Claiming `bg-slate-900/40` does not provide the specific CSS classes used for the "Responsive Dock" as strictly required by the Sovereign Guide.
+  3. **Missing Dependency Audit**: Failed to explicitly verify the `@tanstack/react-table` installation in `reasoning.md`.
+  4. **Missing Zod Transformation Code**: Failed to show the specific `Zod` or `transform` logic snippet for the data model.
+  5. **Vague Verification**: The Verification Step must include a concrete test path (e.g., "Verify row hydration for player_id 1234").
+  6. **Data Integrity Guarantee**: Ensure the explanation of 'Null' value handling is explicitly tied to the code implementation, not just conceptually described.
+- **Status**: REVISE (Resubmit with strict adherence to the Sovereign Guide before coding)
 
 ---
 

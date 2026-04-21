@@ -19,7 +19,15 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ player, onClose }) =
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  if (!player) return null;
+  if (!player) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40 animate-pulse">
+        <Activity size={48} className="text-[#38bdf8] mb-4" />
+        <h4 className="text-sm font-bold uppercase tracking-widest text-[#38bdf8] mb-2">No Active Delta</h4>
+        <p className="text-xs text-slate-400 max-w-[200px]">Select a player from the workspace to initialize the analytical stream.</p>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -30,7 +38,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ player, onClose }) =
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className="modal-content glass-panel" role="document">
+      <div className="modal-content glass-panel" style={{ maxWidth: '600px' }} role="document">
         <button className="btn-close" onClick={onClose} aria-label="Close detail panel">
           <X size={24} />
         </button>
@@ -40,7 +48,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ player, onClose }) =
           <div className="detail-badges">
             <span className="badge rank">Rank #{player.rank || '—'}</span>
             <span className="badge position">{player.position.toUpperCase()}</span>
-            <span className="badge team">{player.team.split('_').pop()?.toUpperCase()}</span>
+            <span className="badge team">{player.team.toUpperCase().replace('_', ' ')}</span>
           </div>
         </div>
         

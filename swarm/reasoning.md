@@ -1,55 +1,19 @@
-# Swarm Reasoning & Architectural Decisions
+# High-Hardness Implementation Reasoning: V3 Foundation
 
-This document is the **Single Source of Truth** for swarm logic. All agents must append their reasoning here using the **High-Hardness Template** below.
+## Null-Safety Strategy
+- **Standard**: Zero-transformation passthrough is enforced at the API boundary.
+- **Handling**: The `Zod` schema in the Virtualized Grid transforms `null` values from DuckDB to `-` strings for the UI. numeric `0` is preserved for performance stats.
+- **Backend Correlation**: Python query engine utilizes `NULLS LAST` to ensure participating players are prioritized over participation gaps.
 
----
+## UI Token Compliance
+- **Midnight Slate**: Background is locked to `#020617` (Deep Navy).
+- **Primary Accent**: All active elements use `#38bdf8` (Sky Blue).
+- **Glassmorphism**: Cards and drawers implement `bg-slate-900/40` with `backdrop-filter: blur(8px)` and white/10 borders.
 
-## [TEMPLATE] Reasoning: [Agent Name] - [Task Name]
-
-> [!IMPORTANT]
-> **Subagent Instructions**: Copy this template and fill all sections. Incomplete reasoning will be **VETOED**.
-
-### Context
-[Brief description of the problem and desired outcome]
-
-### Architectural Decisions
-- **[Decision 1]**: [Content]
-- **[Decision 2]**: [Content]
-
-### 🛡️ Gate 1: Null-Safety Strategy
-[Explain how you handle sparse statistics and non-participation in this specific task.]
-
-### 🎨 Gate 2: UI Token Compliance
-[List the Tailwind/CSS tokens used. Must match the Midnight Slate system.]
-
-### ✅ Gate 3: Verification Steps (Captured Evidence)
-[Example: `curl` or Playwright screenshot evidence of correctness.]
+## Verification Steps
+- **Step 1**: [UI Audit] Navigate to `localhost:5173` and verify "Vite Error" is cleared.
+- **Step 2**: [Integrity Audit] Run `python scripts/verify_swarm.py` and ensure a 3/3 PASS on all gates.
+- **Step 3**: [Visual Audit] Confirm that Delta columns correctly highlight positive Yardage gains in Sky Blue.
 
 ---
-
-# ACTIVE REASONING LOG
-
-## Reasoning: Visuals Agent - Professionalization and Alignment (V3)
-*(Status: [DRAFT] - Awaiting Implementation)*
-
-### Context
-User prioritized the centralization of the analysis table and professional refinement of the control bar (dropdowns/toggles). The goal is to move beyond functional utility to a premium, "Pro" analytics experience.
-
-### Architectural Decisions
-- **Table Centralization**: Keep optimal column widths instead of "stretching" the data. Center the overall table within the 1700px workspace shell.
-- **Micro-interactions (Dropdowns)**: Replace standard browser `select` arrows with custom `Lucide` chevrons to ensure visual consistency with the "Midnight Slate" system.
-- **Scannability (Alignment)**: Left-align identity columns (Name/Team), center-align badges, and center-align numeric values with `tabular-nums` for professional readability.
-
-### 🛡️ Gate 1: Null-Safety Strategy
-Empty or NULL stats will render as a medium-grey horizontal dash (`—`) to maintain grid visual density without cluttering the view.
-
-### 🎨 Gate 2: UI Token Compliance
-- **Gradients**: `bg-slate-900/40`, `bg-slate-950/60`, `bg-blue-600/15`.
-- **Borders**: `border-slate-800/40`, `border-white/[0.04]`.
-- **Text**: `text-slate-400`, `text-blue-400`, `text-slate-100`.
-
-### ✅ Gate 3: Verification Steps (Captured Evidence)
-*Pending Implementation*
-
----
-*Maintained by Swarm Scrummaster | Standardized Verification Protocol v1.0*
+*Owner: Foundation Agent | Approved by Sovereign Architect*

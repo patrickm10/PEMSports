@@ -19,7 +19,6 @@ The platform follows a decoupled, data-centric architecture using a "Small Index
 ### 📂 Repository Organization
 ```text
 NFLStatsAnalyzer/
-<<<<<<< HEAD
 ├── data/                 # 🟢 GIT-TRACKED (Optimized Parquet)
 │   └── rankings/         # Position-centric consolidated Parquet files
 ├── data_local/           # 🔴 LOCAL-ONLY (Raw CSV Scrapes - .gitignored)
@@ -32,53 +31,6 @@ NFLStatsAnalyzer/
 │   │   └── data/         # DuckDB & Postgres implementations
 │   └── pipelines/        # Scrapers & Polars ETL
 └── tests/                # Comprehensive Pytest suite
-=======
-├── backend/
-│   ├── api/
-│   |    ├── routes.py/                   # Routing for dataframes
-│   ├── services/                         # Code for cleaning and loading data
-│   |    ├── k_service.py/
-│   |    ├── qb_service.py/
-│   |    ├── rb_service.py/
-│   |    ├── te_service.py/
-│   |    ├── wr_service.py/
-│   ├── utils/
-│   |    ├── file_loader.py/      
-│   ├── main.py                           # Main entry point for FastAPI
-├── data/
-│   ├── qb_weekly_stats/
-│   ├── rb_weekly_stats/
-│   ├── wr_weekly_stats/
-│   ├── te_weekly_stats/
-│   ├── official_stats/
-│   |   ├── official_qb_stats.csv/
-│   |   ├── official_rb_stats.csv/
-│   |   ├── official_te_stats.csv/
-│   |   ├── official_wr_stats.csv/
-│   |   ├── official_k_stats.csv/
-│   ├── nfl_metadata/
-├── pipelines/
-│   ├── get_nfl_schedule.py
-│   ├── get_weekly_stats.py
-│   ├── get_offensive_rankings.py
-│   ├── get_defensive_rankings.py
-├── frontend/
-│   ├── src/
-│   |    ├── App.jsx
-│   |    ├── App.css
-│   ├── public/
-│   |    ├── package.json
-├── season_scripts/
-│   ├── get_adp_stats.py
-│   ├── get_career_stats.py
-│   ├── get_roster_per_team.py
-├── analytics/
-│   ├── chatbot.py
-│   ├── draft_calculator.py
-│   ├── nlp_model.py (in progress)
-├── README.md
-├── requirements.txt
->>>>>>> c1f405538b6e91996c9e4435cfc5b8da10fc6803
 ```
 
 ---
@@ -114,30 +66,6 @@ python src/pipelines/get_full_season_rankings.py
 
 ---
 
-## 🚀 Getting Started
-
-### Backend Setup
-1. **Environment**: Python 3.10+
-2. **Install Dependencies**: `pip install -r requirements.txt`
-3. **Configure Settings**: `cp .env.example .env` (Add `DATABASE_URL` and `JWT_SECRET`)
-4. **Launch Server**: `uvicorn src.backend.main:app --reload`
-
-### Frontend Setup
-1. **Environment**: Node.js 18+
-2. **Setup**: `cd frontend/nflstats-pro-ui && npm install`
-3. **Run**: `npm run dev`
-
----
-
-## 📈 Analytical Endpoints
-
--   **Health Audit**: `GET /health` (Verifies presence of all core positional assets)
--   **Seasonal Rankings**: `GET /api/v1/rankings/{pos}?year={year}`
--   **Weekly Rankings**: `GET /api/v1/rankings/{pos}/weekly?year={year}&week={week}`
--   **Impact Splits**: `GET /api/v1/rankings/{pos}/impact/{player_id}?metric_type=surface`
-
----
-
 ## 🛠️ Testing & Verification
 
 Comprehensive testing is implemented via `pytest`. All query resolution and auth flows are validated before deployment.
@@ -150,12 +78,28 @@ pytest tests/test_auth_routes.py   # Validates JWT & Postgres flows
 
 ---
 
+## 🚧 Dashboard V3 Status: Active Development
+The platform is currently undergoing a "High-Hardness" stabilization phase.
+
+| Component | Status | Note |
+| :--- | :--- | :--- |
+| **Data Layer** | 🟢 ENRICHED | Parquet 2.0 schema is live with Opponent, Stadium, and Weather metadata. |
+| **Backend API** | 🟡 DEGRADED | `PlainSkip` bug in DuckDB 1.3.1 impacts non-QB positional loading. |
+| **Frontend** | 🟢 STABLE | Midnight Slate UI is configured for full-width responsive analysis. |
+
+### **Known Issue: The DuckDB "PlainSkip" Failure**
+Queries for **Weekly Rankings** (non-QB) currently encounter an internal DuckDB optimizer failure (`PlainSkip not implemented`).
+*   **Root Cause**: Attempting to push `LIMIT` and `WHERE` filters through a `PARTITION BY` window function over Parquet files.
+*   **Fix in Progress**: Moving rank calculation into a materialized temporary table or a late-binding subquery execution to decouple the physical scan from the analytical window.
+
+---
+
 ## 📜 Roadmap
 - [x] **Strategy B Refactor**: Position-centric Parquet consolidation.
-- [x] **Strict Cleanup**: Git index sanitization for all legacy CSVs.
+- [x] **Data Enrichment**: Stadium/Weather metadata integrated into Weekly Parquets.
+- [ ] **Analytical Decoupling**: Fixed DuckDB window engine implementation.
 - [ ] **Predictive Modeling**: Integrating ML-based projection layers.
 - [ ] **CI/CD Deployment**: Automated Parquet validation on GitHub Actions.
 
 ---
 *Internal use only. NFLStatsPro 2026.*
-

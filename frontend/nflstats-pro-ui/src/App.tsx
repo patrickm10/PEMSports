@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
 
 import type { Ranking, SortField, SortOrder } from './models/Ranking';
 
@@ -78,7 +79,7 @@ export default function App() {
     return (sortedData as Ranking[]).filter(
       (p) =>
         p.player_name.toLowerCase().includes(q) ||
-        p.team.toLowerCase().includes(q),
+        (p.team?.toLowerCase() || "").includes(q),
     );
   }, [sortedData, searchQuery]);
 
@@ -107,14 +108,8 @@ export default function App() {
       <ResponsiveDock
         activePosition={activeTab}
         onPositionChange={handleTabChange}
-        rightPane={
-          <PlayerDetail
-            player={selectedPlayer}
-            onClose={() => setSelectedPlayer(null)}
-          />
-        }
       >
-        <div className="space-y-6">
+        <div className="w-full px-[10%] space-y-6">
           <header>
             <h1 className="text-3xl font-extrabold tracking-tight text-white italic">
               {activeTab.toUpperCase()} <span className="text-[#38bdf8]">PERFORMANCE</span>
@@ -144,10 +139,20 @@ export default function App() {
             <VirtualizedGrid 
               data={filteredData} 
               onRowClick={setSelectedPlayer}
+              viewMode={viewMode}
             />
           </div>
         </div>
       </ResponsiveDock>
+
+      <AnimatePresence>
+        {selectedPlayer && (
+          <PlayerDetail
+            player={selectedPlayer}
+            onClose={() => setSelectedPlayer(null)}
+          />
+        )}
+      </AnimatePresence>
     </AuthProvider>
   );
 }

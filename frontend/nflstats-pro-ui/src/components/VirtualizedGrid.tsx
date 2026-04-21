@@ -17,9 +17,10 @@ function cn(...inputs: ClassValue[]) {
 interface VirtualizedGridProps {
   data: any[];
   onRowClick?: (row: any) => void;
+  viewMode?: 'season' | 'weekly';
 }
 
-export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowClick }) => {
+export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowClick, viewMode = 'season' }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -28,19 +29,74 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
     
     const keys = Object.keys(data[0]);
     
-    return keys.map((key) => ({
+    // 1. Filtering Logic
+    let filteredKeys = keys.filter(k => ![
+      'player_id', 
+      'player', // Hide the "Josh Allen (BUF)" version
+      'position',
+      'fpts_ppr', 
+      'fpts_ppr_per_game'
+    ].includes(k));
+
+    if (viewMode === 'weekly') {
+      filteredKeys = filteredKeys.filter(k => ![
+        'games_played', 
+        'week', 
+        'fpts_per_game',
+        'year',
+        'season'
+      ].includes(k));
+    }
+
+    // 2. Base Order: Rank first, then Player Name
+    const leadKeys: string[] = [];
+    if (filteredKeys.includes('rank')) leadKeys.push('rank');
+    if (filteredKeys.includes('player_name')) leadKeys.push('player_name');
+    if (filteredKeys.includes('fpts')) leadKeys.push('fpts');
+    
+    let remainingKeys = filteredKeys.filter(k => !leadKeys.includes(k));
+
+    // 3. Metadata Reordering: Matchup context group, year, team, games_played BEFORE rost
+    const matchupGroup = [
+      'opponent', 'stadium_name', 'city', 'state', 'indoor_outdoor', 'surface_type', 
+      'elevation', 'temp', 'humidity', 'wind', 'game_result'
+    ].filter(k => remainingKeys.includes(k));
+    
+    const metaGroup = ['team', ...matchupGroup, 'year', 'games_played'].filter(k => remainingKeys.includes(k));
+    
+    const rostIndex = remainingKeys.indexOf('rost');
+    
+    if (rostIndex !== -1) {
+      const preRost = remainingKeys.slice(0, rostIndex).filter(k => !metaGroup.includes(k));
+      const postRost = remainingKeys.slice(rostIndex).filter(k => !metaGroup.includes(k));
+      remainingKeys = [...preRost, ...metaGroup, ...postRost];
+    }
+
+    const finalKeys = [...leadKeys, ...remainingKeys];
+    
+    return finalKeys.map((key) => ({
       accessorKey: key,
       header: key.replace(/_/g, ' ').toUpperCase(),
       cell: (info: any) => {
         const val = info.getValue();
+        if (val === null || val === undefined || val === '') {
+          return <span className="null-value">—</span>;
+        }
         if (typeof val === 'number') {
-          return val.toLocaleString(undefined, { maximumFractionDigits: 2 });
+          if (key === 'year') {
+             return val.toString();
+          }
+          return val.toLocaleString(undefined, { maximumFractionDigits: (key === 'rank' ? 0 : 2) });
         }
         return val;
       },
-      size: 150, // Default column size
+      size: key === 'rank' ? 60 : 
+            (key === 'stadium_name' ? 120 : 
+             (key === 'opponent' ? 170 : 
+              (key === 'city' ? 150 : 
+               (key === 'team' ? 110 : 115)))),
     }));
-  }, [data]);
+  }, [data, viewMode]);
 
   const table = useReactTable({
     data,
@@ -93,8 +149,8 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
                       width: header.getSize(),
                     }}
                   >
-                    <div className="flex items-center gap-2">
-                       <span className="text-[10px] tracking-widest font-black opacity-80">
+                    <div className="flex items-center justify-center gap-2 w-full">
+                       <span className="text-[10px] tracking-widest font-black opacity-80 text-center">
                         {flexRender(header.column.columnDef.header, header.getContext())}
                        </span>
                       {{
@@ -109,12 +165,13 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
           ))}
         </thead>
 
-        <tbody
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            position: 'relative',
-          }}
-        >
+        <tbody className="relative">
+          {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getVirtualItems()[0].start > 0 && (
+            <tr>
+              <td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={columns.length} />
+            </tr>
+          )}
+
           {rowVirtualizer.getVirtualItems().map((virtualRow: any) => {
             const row = rows[virtualRow.index];
             return (
@@ -124,12 +181,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
                 onClick={() => onRowClick?.(row.original)}
                 className="group/row cursor-pointer transition-colors"
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
                   height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
                 {row.getVisibleCells().map((cell: any) => {
@@ -142,7 +194,9 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
                         isSticky ? 'sticky-col border-r border-[#ffffff10] font-black tracking-tight text-white/90 shadow-[4px_0_15px_rgba(0,0,0,0.3)]' : ''
                       )}
                       style={{
-                        width: cell.column.getSize(),
+                         width: cell.column.getSize(),
+                         minWidth: cell.column.getSize(),
+                         maxWidth: cell.column.getSize(),
                       }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -152,6 +206,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ data, onRowCli
               </tr>
             );
           })}
+
+          {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end < rowVirtualizer.getTotalSize() && (
+             <tr>
+               <td style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }} colSpan={columns.length} />
+             </tr>
+          )}
         </tbody>
 
       </table>

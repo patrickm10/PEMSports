@@ -18,6 +18,11 @@ import sys
 from pathlib import Path
 from typing import List
 
+# Ensure project root is on sys.path for consistent imports
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,15 +34,11 @@ from backend.core.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 
-# Ensure project root is on sys.path for consistent imports
-_ROOT = Path(__file__).resolve().parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
 from backend.core.health import check_health
 from backend.data.postgres import init_db, close_db
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,7 +75,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ── CORS ──────────────────────────────────────────────────────────────────────
 _raw_origins = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:5175,http://localhost:3000",
+    "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000",
 )
 # Strip whitespace and trailing slashes for exact origin matching in CORSMiddleware
 _allowed_origins: list[str] = [o.strip().rstrip("/") for o in _raw_origins.split(",") if o.strip()]

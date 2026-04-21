@@ -25,13 +25,24 @@ def get_team_slug(team_raw: str) -> str:
     if not team_raw:
         return "unknown"
     
-    # Check if it's an abbreviation in TEAM_MAP
+    # 1. Check if it's an abbreviation in TEAM_MAP
     up = str(team_raw).upper()
     if up in TEAM_MAP:
         return TEAM_MAP[up]
     
-    # Otherwise normalize the string
-    return str(team_raw).lower().replace(" ", "_").replace(".", "").replace("'", "")
+    # 2. Normalize the string to a slug
+    slug = str(team_raw).lower().replace(" ", "_").replace(".", "").replace("'", "")
+    
+    # 3. Handle historical full name variants
+    historical_variants = {
+        "washington_redskins": "washington_commanders",
+        "washington_football_team": "washington_commanders",
+        "oakland_raiders": "las_vegas_raiders",
+        "san_diego_chargers": "los_angeles_chargers",
+        "st_louis_rams": "los_angeles_rams"
+    }
+    
+    return historical_variants.get(slug, slug)
 
 def get_rich_schedule() -> pl.DataFrame:
     """
@@ -45,7 +56,7 @@ def get_rich_schedule() -> pl.DataFrame:
     # Load enriched matchups
     df = pl.read_csv(ENRICHED_MATCHUPS_PATH, infer_schema_length=0)
     
-    # Standardize column names
+    # Standardize column names and types
     df = df.rename({
         "Week": "week",
         "Year": "year",
@@ -53,6 +64,12 @@ def get_rich_schedule() -> pl.DataFrame:
         "Loser": "loser",
         "Date": "date"
     })
+    
+    # Explicitly cast join keys to Int64 early
+    df = df.with_columns([
+        pl.col("year").cast(pl.Int64, strict=False),
+        pl.col("week").cast(pl.Int64, strict=False)
+    ]).filter(pl.col("year").is_not_null() & pl.col("week").is_not_null())
 
     # Join weather data
     WEATHER_PATH = BASE_DATA_DIR / "nfl_matchups_with_weather.csv"
@@ -80,44 +97,32 @@ def get_rich_schedule() -> pl.DataFrame:
             pl.lit(None).alias("wind"),
         ])
 
-    # Convert year and week to numeric
-    df = df.with_columns([
-        pl.col("year").cast(pl.Int64, strict=False),
-        pl.col("week").cast(pl.Int64, strict=False)
-    ]).filter(pl.col("year").is_not_null() & pl.col("week").is_not_null())
+    # Year and Week are already numeric now
 
     # Create bidirectional records
-    winners = df.select([
+    cols_to_select = [
         pl.col("year"),
         pl.col("week"),
+        pl.col("stadium_name"),
+        pl.col("indoor_outdoor") if "indoor_outdoor" in df.columns else pl.lit(None).alias("indoor_outdoor"),
+        pl.col("surface_type") if "surface_type" in df.columns else pl.lit(None).alias("surface_type"),
+        pl.col("elevation").cast(pl.Float64, strict=False) if "elevation" in df.columns else pl.lit(None).cast(pl.Float64).alias("elevation"),
+        pl.col("temp").cast(pl.Float64, strict=False) if "temp" in df.columns else pl.lit(None).cast(pl.Float64).alias("temp"),
+        pl.col("humidity").cast(pl.Float64, strict=False) if "humidity" in df.columns else pl.lit(None).cast(pl.Float64).alias("humidity"),
+        pl.col("wind").cast(pl.Float64, strict=False) if "wind" in df.columns else pl.lit(None).cast(pl.Float64).alias("wind"),
+        pl.col("city") if "city" in df.columns else pl.lit(None).alias("city"),
+        pl.col("state") if "state" in df.columns else pl.lit(None).alias("state"),
+    ]
+
+    winners = df.select(cols_to_select + [
         pl.col("winner").alias("team"),
         pl.col("loser").alias("opponent"),
-        pl.col("stadium_name"),
-        pl.col("city"),
-        pl.col("state"),
-        pl.col("indoor_outdoor"),
-        pl.col("surface_type"),
-        pl.col("elevation").cast(pl.Float64, strict=False),
-        pl.col("temp").cast(pl.Float64, strict=False),
-        pl.col("humidity").cast(pl.Float64, strict=False),
-        pl.col("wind").cast(pl.Float64, strict=False),
         pl.lit("Winner").alias("game_result")
     ])
 
-    losers = df.select([
-        pl.col("year"),
-        pl.col("week"),
+    losers = df.select(cols_to_select + [
         pl.col("loser").alias("team"),
         pl.col("winner").alias("opponent"),
-        pl.col("stadium_name"),
-        pl.col("city"),
-        pl.col("state"),
-        pl.col("indoor_outdoor"),
-        pl.col("surface_type"),
-        pl.col("elevation").cast(pl.Float64, strict=False),
-        pl.col("temp").cast(pl.Float64, strict=False),
-        pl.col("humidity").cast(pl.Float64, strict=False),
-        pl.col("wind").cast(pl.Float64, strict=False),
         pl.lit("Loser").alias("game_result")
     ])
 
@@ -138,14 +143,24 @@ def enrich_weekly_stats(df: pl.DataFrame) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    # 1. Normalize player team name
+    # 1. Fetch rich schedule info
+    schedule = get_rich_schedule()
+
+    # 2. Clean old metadata columns to avoid duplicates
+    if not schedule.is_empty():
+        # Identify non-join columns in the schedule that might exist in the stats DF
+        overlap_cols = set(schedule.columns) - {"year", "week", "team"}
+        to_drop = [c for c in overlap_cols if c in df.columns]
+        if to_drop:
+            df = df.drop(to_drop)
+
+    # 3. Normalize player team name
     if "team" in df.columns:
         df = df.with_columns(pl.col("team").map_elements(get_team_slug, return_dtype=pl.String))
     
-    # 2. Add rich schedule info
-    schedule = get_rich_schedule()
+    # 4. Join rich schedule info
     if not schedule.is_empty():
-        # Ensure types match before join
+        # Ensure join keys have matching types
         df = df.with_columns([
             pl.col("year").cast(pl.Int64),
             pl.col("week").cast(pl.Int64)

@@ -1,55 +1,68 @@
-import requests
-from bs4 import BeautifulSoup
 import polars as pl
-
-START_YEAR = 2018
-END_YEAR = 2026
-historical_years = range(START_YEAR, END_YEAR)
-
-def get_historical_matchups(year: int, session: requests.Session) -> pl.DataFrame | None:
-    """
-    Return a DataFrame with columns:
-    None signals a fetch or parse problem.
-    """
-    url = f"https://www.pro-football-reference.com/years/2024/games.htm"
-    print(f"Getting data from {url}")
-    try:
-        response = session.get(url, timeout=15, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        })
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-        table = soup.find("table", id="games")
-        rows = table.find_all("tr")[1:] if table else []
-
-        if not rows:
-            return None
-
-        data = []
-        headers = [th.get_text(strip=True) for th in table.find("thead").find_all("th")]
-        for row in rows:
-            cols = row.find_all(["th", "td"])
-            if not cols or len(cols) != len(headers):
-                continue
-            data.append([col.get_text(strip=True) for col in cols])
-
-        if not data:
-            return None
-
-        df = pl.DataFrame(data, schema=headers)
-        return df
-
-    except Exception as exc:
-        print(f"Failed {year} {exc}")
-        return None
+import os
 
 def main() -> None:
-    with requests.Session() as session:
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        })
-        df = get_historical_matchups(2020, session)
-        print(df)
+    # Target 2018-2025 as requested
+    years = list(range(2018, 2026))
+    all_dfs = []
+    
+    metadata_dir = "data/nfl_metadata"
+    
+    for year in years:
+        file_path = os.path.join(metadata_dir, f"{year}.csv")
+        if os.path.exists(file_path):
+            print(f"Reading local cleaned data for {year}")
+            # Use the standardized 13-column schema from Step 0
+            df = pl.read_csv(file_path)
+            df = df.with_columns(pl.lit(int(year)).alias("Year"))
+            
+            # Ensure 'Week' is integer for consistent concatenation
+            df = df.with_columns(pl.col("Week").cast(pl.Int64))
+            
+            all_dfs.append(df)
+        else:
+            print(f"Skipping {year}: File not found at {file_path}")
+    
+    if not all_dfs:
+        print("No local CSV data found.")
+        return
+
+    # Combine all years
+    combined = pl.concat(all_dfs, how="diagonal")
+    
+    # Rename for consistency with enrichment pipeline
+    if "Winner/tie" in combined.columns:
+        combined = combined.rename({"Winner/tie": "Winner"})
+    if "Loser/tie" in combined.columns:
+        combined = combined.rename({"Loser/tie": "Loser"})
+
+    # Load stadium info
+    stadium_path = os.path.join(metadata_dir, "stadium.csv")
+    if os.path.exists(stadium_path):
+        stadiums = pl.read_csv(stadium_path)
+        
+        # Determine home team
+        # Logic: If 'at' column == '@', the Loser was the home team.
+        # Otherwise, the Winner was the home team.
+        if "at" in combined.columns:
+            combined = combined.with_columns(
+                pl.when(pl.col("at") == "@")
+                .then(pl.col("Loser"))
+                .otherwise(pl.col("Winner"))
+                .alias("home_team")
+            )
+        else:
+            # Fallback if 'at' is missing (should not happen after Phase 0)
+            combined = combined.with_columns(pl.col("Winner").alias("home_team"))
+
+        # Join with stadium metadata
+        combined = combined.join(stadiums, left_on="home_team", right_on="team_name", how="left")
+        print("Joined with stadium metadata.")
+    
+    # Output the final enriched reference file
+    output_path = os.path.join(metadata_dir, "nfl_matchups_enriched.csv")
+    combined.write_csv(output_path)
+    print(f"Saved {len(combined)} enriched matchups to {output_path}")
 
 if __name__ == "__main__":
     main()

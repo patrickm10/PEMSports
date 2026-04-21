@@ -28,11 +28,35 @@ data_local/
 !data_local/.gitkeep
 
 # Tracked Optimized Data (Keep Parquet, ignore CSV)
-# We move to data/rankings/ and data/metadata/ structure
 data/official_rankings/
 data/archive/
 legacy_data/
 
-# Logs
+# DuckDB Serving Layer (build artifact from bake_db.py)
+data/nfl_stats.db
+data/nfl_stats.db.bak
+
+# Logs & Debug Output
 logs/
+*.log
+*_cols.txt
+*_debug.txt
+audit_results.txt
+context_report.txt
+test_output.txt
+test_hash.txt
+status.txt
+
+# Local-Only Docs & Research
+research/
+docs/
+artifacts/
+
+# Agent Configuration (local-only)
+.agent/
+
+# Dev Handoff State (local-only)
+state_handoff.md
+CHLOG.md
+scratch/
 

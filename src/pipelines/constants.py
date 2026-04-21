@@ -26,8 +26,11 @@ TEAM_MAP: Dict[str, str] = {
     "JAC": "jacksonville_jaguars",
     "KC":  "kansas_city_chiefs",
     "LV":  "las_vegas_raiders",
+    "OAK": "las_vegas_raiders",
     "LAC": "los_angeles_chargers",
+    "SD":  "los_angeles_chargers",
     "LAR": "los_angeles_rams",
+    "STL": "los_angeles_rams",
     "MIA": "miami_dolphins",
     "MIN": "minnesota_vikings",
     "NE":  "new_england_patriots",
@@ -41,6 +44,7 @@ TEAM_MAP: Dict[str, str] = {
     "TB":  "tampa_bay_buccaneers",
     "TEN": "tennessee_titans",
     "WAS": "washington_commanders",
+    "WSH": "washington_commanders",
 }
 
 OFFENSIVE_POSITIONS = ["QB", "RB", "WR", "TE", "K"]

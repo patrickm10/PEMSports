@@ -1,0 +1,84 @@
+# Backend CI/CD — Python (FastAPI) → Render
+#
+# Triggers on changes to backend source, tests, or dependencies.
+# Gate job: lint + pytest (runs on every push/PR to main)
+# Deploy job: Render deploy hook (push to main only, after gate passes)
+#
+# Required secrets for CD:
+#   RENDER_DEPLOY_HOOK_URL — https://render.com/docs/deploy-hooks
+
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/backend/**"
+      - "backend/**"
+      - "tests/**"
+      - "requirements.txt"
+      - "Dockerfile"
+      - ".github/workflows/ci-backend.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/backend/**"
+      - "backend/**"
+      - "tests/**"
+      - "requirements.txt"
+      - "Dockerfile"
+      - ".github/workflows/ci-backend.yml"
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pylint
+
+      - name: Lint (pylint)
+        run: |
+          pylint --disable=line-too-long --fail-under=0 src/backend/
+
+      - name: Test (pytest)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          pytest tests/ -v --tb=short
+
+  deploy:
+    name: Deploy to Render
+    needs: gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render deploy hook
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "⚠️  RENDER_DEPLOY_HOOK_URL secret not set — skipping deploy"
+            exit 0
+          fi
+          curl -sf "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
+            && echo "✅ Render deploy triggered" \
+            || { echo "❌ Render deploy hook failed"; exit 1; }

@@ -119,15 +119,15 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
       {/* Search */}
       {/* Search and Auth Context */}
-      <div className="flex items-center gap-3 flex-1 max-w-lg min-w-[200px] justify-end">
-        <div className="relative flex-1 group">
+      <div className="flex items-center gap-3 flex-shrink-0 lg:flex-1 max-w-lg justify-end ml-auto">
+        <div className="relative flex-1 group min-w-[140px] md:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
           <input
             type="text"
-            placeholder="Search players or teams..."
+            placeholder="Search players..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all placeholder:text-slate-600"
+            className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 pl-10 pr-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all placeholder:text-slate-600"
           />
         </div>
 
