@@ -10,7 +10,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import { staticAssetUrl } from '../utils/backendOrigin';
+import { PUBLIC_DEFAULT_PLAYER_IMG, staticAssetUrl } from '../utils/backendOrigin';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -156,9 +156,9 @@ const DENSITY: Record<
   GridDensity,
   { rowHeight: number; padY: string; padX: string; fontSize: string; headerPadY: string }
 > = {
-  compact: { rowHeight: 30, padY: '4px', padX: '6px', fontSize: '12px', headerPadY: '6px' },
-  standard: { rowHeight: 36, padY: '6px', padX: '8px', fontSize: '12.5px', headerPadY: '8px' },
-  expert: { rowHeight: 40, padY: '8px', padX: '10px', fontSize: '13px', headerPadY: '10px' },
+  compact: { rowHeight: 32, padY: '5px', padX: '7px', fontSize: '12px', headerPadY: '7px' },
+  standard: { rowHeight: 40, padY: '7px', padX: '9px', fontSize: '13.5px', headerPadY: '9px' },
+  expert: { rowHeight: 46, padY: '9px', padX: '11px', fontSize: '15px', headerPadY: '11px' },
 };
 
 export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
@@ -233,11 +233,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
           if (key === 'player_name' || key === 'name') {
             const row = info.row.original as Record<string, unknown>;
             const pid = row.player_id ?? row.player;
+            const apiDefault = staticAssetUrl('/static/players/default-player.png');
             const src = pid
               ? staticAssetUrl(
                   `/static/players/${encodeURIComponent(String(pid))}.png`,
                 )
-              : staticAssetUrl('/static/players/blank-player.png');
+              : PUBLIC_DEFAULT_PLAYER_IMG;
             const label =
               val === null || val === undefined || val === ''
                 ? '—'
@@ -252,8 +253,18 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                   className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-white/10 bg-slate-800"
                   onError={(e) => {
                     const el = e.currentTarget;
-                    const fb = staticAssetUrl('/static/players/blank-player.png');
-                    if (!el.src.includes('blank-player.png')) el.src = fb;
+                    const step = el.dataset.fb ?? '0';
+                    if (step === '0') {
+                      el.dataset.fb = '1';
+                      el.src = apiDefault;
+                      return;
+                    }
+                    if (step === '1') {
+                      el.dataset.fb = '2';
+                      el.src = PUBLIC_DEFAULT_PLAYER_IMG;
+                      return;
+                    }
+                    el.onerror = null;
                   }}
                 />
                 <span className="truncate font-black tracking-tight text-white/90">

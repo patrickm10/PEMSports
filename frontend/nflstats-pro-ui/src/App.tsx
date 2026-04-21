@@ -112,12 +112,12 @@ export default function App() {
         activePosition={activeTab}
         onPositionChange={handleTabChange}
       >
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-6">
           <header>
             <h1 className="text-3xl font-extrabold tracking-tight text-white italic">
               {activeTab.toUpperCase()} <span className="text-[#38bdf8]">PERFORMANCE</span>
             </h1>
-            <p className="text-slate-500 mt-1.5 text-xs font-bold tracking-widest uppercase">
+            <p className="text-slate-500 mt-2 text-sm font-bold tracking-widest uppercase">
               {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
             </p>
           </header>
@@ -140,7 +140,9 @@ export default function App() {
 
           <StatsSummary data={filteredData} isLoading={isLoading} />
 
-          <div className="bg-[#1e293b4d] rounded-2xl border border-[#ffffff0a] overflow-hidden shadow-2xl h-[calc(100vh-360px)] min-h-[480px]">
+          <div
+            className="rounded-2xl overflow-hidden shadow-2xl h-[calc(100vh-360px)] min-h-[480px] border border-[color:var(--border-glass)] bg-[color:var(--bg-glass)] backdrop-blur-xl"
+          >
             <VirtualizedGrid
               data={filteredData}
               onRowClick={setSelectedPlayer}

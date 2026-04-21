@@ -87,7 +87,7 @@ html, body, #root {
   background: var(--bg-secondary);
   padding: var(--grid-header-pad-y, 8px) var(--grid-pad-x, 8px);
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;

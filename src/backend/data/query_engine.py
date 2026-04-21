@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import threading
 from pathlib import Path
 from typing import Any, Optional
@@ -35,9 +36,11 @@ from backend.core.exceptions import (
 
 logger = logging.getLogger(__name__)
 
-# Resolve paths
+# Resolve paths — __file__ is under src/backend/data/, so four parents = repo root.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DB_PATH = _PROJECT_ROOT / "data" / "nfl_stats.db"
+_DB_PATH = Path(
+    os.environ.get("NFL_STATS_DB_PATH", str(_PROJECT_ROOT / "data" / "nfl_stats.db"))
+).resolve()
 
 _thread_local = threading.local()
 

@@ -13,8 +13,8 @@ import { z } from 'zod';
  */
 const BaseStatsSchema = z.object({
   year: z.coerce.number(),
-  player_id: z.string(),
-  player_name: z.string(),
+  player_id: z.coerce.string(),
+  player_name: z.coerce.string(),
   team: z.string().nullable(),
   position: z.string().optional(),
   games_played: z.coerce.number().default(0),

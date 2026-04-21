@@ -157,14 +157,17 @@ app.include_router(rankings_router, prefix="/api", tags=["rankings (legacy)"], i
 
 # ── Static files ──────────────────────────────────────────────────────────────
 # Player headshots live at repo-root assets/players/ → /static/players/{player_id}.png
+# Always ensure the directory exists and mount with an absolute path so the
+# server resolves files regardless of process working directory.
 # Mount the more specific path first so it is not shadowed by a blanket /static mount.
-_players_assets = _PROJECT_ROOT / "assets" / "players"
-if _players_assets.is_dir():
-    app.mount(
-        "/static/players",
-        StaticFiles(directory=str(_players_assets)),
-        name="static_players",
-    )
+_players_assets = (_PROJECT_ROOT / "assets" / "players").resolve()
+_players_assets.mkdir(parents=True, exist_ok=True)
+logger.info("Serving player images from %s at /static/players", _players_assets)
+app.mount(
+    "/static/players",
+    StaticFiles(directory=str(_players_assets)),
+    name="static_players",
+)
 
 _static_path = Path(__file__).parent / "static"
 if _static_path.exists():
