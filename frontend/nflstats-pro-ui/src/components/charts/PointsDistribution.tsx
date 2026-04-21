@@ -92,7 +92,7 @@ export const PointsDistribution: React.FC<PointsDistributionProps> = ({
   if (buckets.length === 0) return null;
 
   return (
-    <div className="distribution-panel glass-panel">
+    <div className="distribution-panel glass-card">
       <div className="dashboard-header">
         <h3>Points Distribution</h3>
         <p className="subtitle">

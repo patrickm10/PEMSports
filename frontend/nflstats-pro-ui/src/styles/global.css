@@ -1,21 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Midnight Slate Core Palette */
   --bg-primary: #020617;
   --bg-secondary: #0f172a;
-  --bg-glass: rgba(15, 23, 42, 0.7);
-  
+  --bg-glass: rgba(15, 23, 42, 0.45);
+
   --primary: #38bdf8;
   --primary-glow: rgba(56, 189, 248, 0.2);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
+  --label-muted: #94a3b8; /* slate-400 */
   --border: rgba(255, 255, 255, 0.1);
   --sticky-name-edge: rgba(148, 163, 184, 0.35);
 
   --font-main: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --glass-blur: blur(12px);
+  --glass-blur: blur(16px);
+
+  /* Performance tiers (subtle glow — Sleeper / DK–style semantic heat) */
+  --tier-elite: rgba(34, 197, 94, 0.14);
+  --tier-elite-border: rgba(34, 197, 94, 0.28);
+  --tier-elite-glow: rgba(34, 197, 94, 0.12);
+  --tier-solid: rgba(245, 158, 11, 0.1);
+  --tier-solid-border: rgba(245, 158, 11, 0.22);
+  --tier-solid-glow: rgba(245, 158, 11, 0.08);
 
   /* Interaction & Motion */
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -44,7 +53,6 @@
 html, body, #root {
   height: 100%;
   width: 100%;
-  background: linear-gradient(165deg, #020617 0%, #0f172a 42%, #020617 100%);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-main);
@@ -55,11 +63,51 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Glassmorphism primitives */
+/* Animated mesh gradient shell (Bloomberg / premium SaaS depth) */
+.app-mesh-root {
+  position: relative;
+  min-height: 100%;
+  background: linear-gradient(165deg, #020617 0%, #0f172a 48%, #020617 100%);
+}
+
+.app-mesh-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 55% at 15% -5%, rgba(56, 189, 248, 0.09), transparent 52%),
+    radial-gradient(ellipse 70% 45% at 88% 15%, rgba(59, 130, 246, 0.07), transparent 48%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(15, 23, 42, 0.85), transparent 55%);
+  animation: mesh-breathe 22s ease-in-out infinite alternate;
+}
+
+@keyframes mesh-breathe {
+  0% {
+    opacity: 0.85;
+    filter: saturate(1);
+  }
+  100% {
+    opacity: 1;
+    filter: saturate(1.08);
+  }
+}
+
+/* Glassmorphism — cards & analysis surfaces */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
 .glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
@@ -84,14 +132,14 @@ html, body, #root {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--bg-secondary);
+  background: rgba(15, 23, 42, 0.95);
   padding: var(--grid-header-pad-y, 8px) var(--grid-pad-x, 8px);
   text-align: center;
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--primary);
+  color: var(--label-muted);
   border-bottom: 1px solid var(--border);
 }
 
@@ -99,9 +147,22 @@ html, body, #root {
   padding: var(--grid-pad-y, 6px) var(--grid-pad-x, 8px);
   font-size: var(--grid-font-size, 0.825rem);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  color: #cbd5e1;
+  color: var(--label-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.analysis-grid td .stat-primary {
+  color: #fff;
+  font-weight: 700;
+}
+
+.analysis-grid tbody tr[data-tier="elite"] td[data-kind="rank"] {
+  box-shadow: inset 3px 0 0 0 rgba(34, 197, 94, 0.85);
+}
+
+.analysis-grid tbody tr[data-tier="solid"] td[data-kind="rank"] {
+  box-shadow: inset 3px 0 0 0 rgba(245, 158, 11, 0.8);
 }
 
 .analysis-grid td[data-kind="name"] {
@@ -112,7 +173,7 @@ html, body, #root {
   position: sticky;
   left: 0;
   z-index: 10;
-  background: #020617;
+  background: rgba(2, 6, 23, 0.92);
 }
 
 .sticky-col-right {
@@ -402,8 +463,10 @@ html, body, #root {
   padding: 1rem;
 }
 
-.glass-panel {
-  background: var(--bg-secondary);
+.modal-panel {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -625,10 +688,47 @@ html, body, #root {
 }
 
 .analysis-grid tbody tr:hover {
-  background: rgba(56, 189, 248, 0.04);
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.06);
+  background: rgba(56, 189, 248, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.12);
 }
 
 .analysis-grid tbody tr:hover td {
   color: var(--text-primary);
+}
+
+.analysis-grid tbody tr[data-tier="elite"]:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(34, 197, 94, 0.35),
+    0 0 24px var(--tier-elite-glow);
+}
+
+.analysis-grid tbody tr[data-tier="solid"]:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 158, 11, 0.35),
+    0 0 20px var(--tier-solid-glow);
+}
+
+/* Mobile card list */
+.player-card-shell {
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.player-card-shell:hover {
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.player-card-shell[data-tier="elite"] {
+  box-shadow: inset 0 0 0 1px var(--tier-elite-border);
+  background: linear-gradient(135deg, var(--tier-elite), rgba(255, 255, 255, 0.04));
+}
+
+.player-card-shell[data-tier="solid"] {
+  box-shadow: inset 0 0 0 1px var(--tier-solid-border);
+  background: linear-gradient(135deg, var(--tier-solid), rgba(255, 255, 255, 0.04));
 }

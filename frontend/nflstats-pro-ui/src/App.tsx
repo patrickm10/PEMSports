@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 import type { Ranking, SortField, SortOrder } from './models/Ranking';
@@ -29,6 +29,8 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [density, setDensity] = useState<GridDensity>('standard');
   const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
+  const [workspaceView, setWorkspaceView] = useState<'dashboard' | 'rankings'>('rankings');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Seasons — cached separately
   const { data: rawYears = [] } = useSeasons(activeTab);
@@ -91,6 +93,7 @@ export default function App() {
     setSortBy('rank');
     setSortOrder('asc');
     setSelectedPlayer(null);
+    setWorkspaceView('rankings');
   };
 
 
@@ -111,45 +114,85 @@ export default function App() {
       <ResponsiveDock
         activePosition={activeTab}
         onPositionChange={handleTabChange}
+        workspaceView={workspaceView}
+        onWorkspaceViewChange={setWorkspaceView}
+        onSearchFocus={() => {
+          setWorkspaceView('rankings');
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+        }}
+        density={density}
+        setDensity={setDensity}
       >
-        <div className="w-full space-y-6">
-          <header>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white italic">
-              {activeTab.toUpperCase()} <span className="text-[#38bdf8]">PERFORMANCE</span>
+        <div className="w-full max-w-[1600px] mx-auto space-y-6">
+          <header className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              {workspaceView === 'dashboard' ? (
+                'Command center'
+              ) : (
+                <>
+                  {activeTab.toUpperCase()}{' '}
+                  <span className="text-sky-400">performance</span>
+                </>
+              )}
             </h1>
-            <p className="text-slate-500 mt-2 text-sm font-bold tracking-widest uppercase">
-              {selectedYear} {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
+            <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
+              {selectedYear}{' '}
+              {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
             </p>
           </header>
 
-          <ControlBar
-            viewMode={viewMode}
-            setViewMode={handleViewModeChange}
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            availableYears={availableYears}
-            selectedWeek={selectedWeek}
-            setSelectedWeek={setSelectedWeek}
-            availableWeeks={availableWeeks}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            totalPlayers={filteredData.length}
-            density={density}
-            setDensity={setDensity}
-          />
+          {workspaceView === 'rankings' && (
+            <ControlBar
+              ref={searchInputRef}
+              viewMode={viewMode}
+              setViewMode={handleViewModeChange}
+              selectedYear={selectedYear}
+              setSelectedYear={setSelectedYear}
+              availableYears={availableYears}
+              selectedWeek={selectedWeek}
+              setSelectedWeek={setSelectedWeek}
+              availableWeeks={availableWeeks}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              totalPlayers={filteredData.length}
+              density={density}
+              setDensity={setDensity}
+            />
+          )}
 
           <StatsSummary data={filteredData} isLoading={isLoading} />
 
-          <div
-            className="rounded-2xl overflow-hidden shadow-2xl h-[calc(100vh-360px)] min-h-[480px] border border-[color:var(--border-glass)] bg-[color:var(--bg-glass)] backdrop-blur-xl"
-          >
-            <VirtualizedGrid
-              data={filteredData}
-              onRowClick={setSelectedPlayer}
-              viewMode={viewMode}
-              density={density}
-            />
-          </div>
+          {workspaceView === 'dashboard' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-2xl p-6 glass-card border-white/10">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Snapshot</p>
+                <p className="text-white font-bold text-lg mb-2">Rankings &amp; filters</p>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Open <span className="text-white font-semibold">Rankings</span> in the sidebar to browse the virtualized
+                  leaderboard, density modes, and weekly or seasonal context.
+                </p>
+              </div>
+              <div className="rounded-2xl p-6 glass-card border-white/10">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Shortcuts</p>
+                <p className="text-white font-bold text-lg mb-2">Search &amp; settings</p>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Use <span className="text-white font-semibold">Search</span> to focus the player query, or{' '}
+                  <span className="text-white font-semibold">Settings</span> for compact / standard / expert density.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {workspaceView === 'rankings' && (
+            <div className="rounded-2xl overflow-hidden min-h-[min(70vh,900px)] h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)] glass-card border-white/10">
+              <VirtualizedGrid
+                data={filteredData}
+                onRowClick={setSelectedPlayer}
+                viewMode={viewMode}
+                density={density}
+              />
+            </div>
+          )}
         </div>
       </ResponsiveDock>
 

@@ -38,7 +38,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ player, onClose }) =
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className="modal-content glass-panel" style={{ maxWidth: '600px' }} role="document">
+      <div className="modal-content modal-panel" style={{ maxWidth: '600px' }} role="document">
         <button className="btn-close" onClick={onClose} aria-label="Close detail panel">
           <X size={24} />
         </button>
@@ -47,8 +47,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ player, onClose }) =
           <h2 id="modal-title" className="detail-name">{player.player_name}</h2>
           <div className="detail-badges">
             <span className="badge rank">Rank #{player.rank || '—'}</span>
-            <span className="badge position">{player.position.toUpperCase()}</span>
-            <span className="badge team">{player.team.toUpperCase().replace('_', ' ')}</span>
+            <span className="badge position">{(player.position ?? '—').toUpperCase()}</span>
+            <span className="badge team">{(player.team ?? '—').toUpperCase().replace('_', ' ')}</span>
           </div>
         </div>
         

@@ -1,4 +1,5 @@
 import React, { useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,6 +12,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import { PUBLIC_DEFAULT_PLAYER_IMG, staticAssetUrl } from '../utils/backendOrigin';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -161,6 +163,143 @@ const DENSITY: Record<
   expert: { rowHeight: 46, padY: '9px', padX: '11px', fontSize: '15px', headerPadY: '11px' },
 };
 
+const HEADLINE_STAT_KEYS = new Set([
+  'fpts_ppr',
+  'fpts',
+  'fpts_per_game',
+  'fpts_ppr_per_game',
+  'yds',
+  'td',
+  'rush_yds',
+  'rush_td',
+  'rec',
+  'tgt',
+]);
+
+const MOBILE_CARD_H: Record<GridDensity, number> = {
+  compact: 104,
+  standard: 118,
+  expert: 132,
+};
+
+function rankTier(rank: unknown, total: number): 'elite' | 'solid' | undefined {
+  const r = typeof rank === 'number' ? rank : Number(rank);
+  if (!Number.isFinite(r) || total <= 0) return undefined;
+  const top25 = Math.max(1, Math.ceil(total * 0.25));
+  const top60 = Math.max(1, Math.ceil(total * 0.6));
+  if (r <= top25) return 'elite';
+  if (r <= top60) return 'solid';
+  return undefined;
+}
+
+function PlayerAvatar({
+  row,
+  imgClassName,
+}: {
+  row: Record<string, unknown>;
+  imgClassName: string;
+}) {
+  const pid = row.player_id ?? row.player;
+  const apiDefault = staticAssetUrl('/static/players/default-player.png');
+  const src = pid
+    ? staticAssetUrl(`/static/players/${encodeURIComponent(String(pid))}.png`)
+    : PUBLIC_DEFAULT_PLAYER_IMG;
+  return (
+    <img
+      src={src}
+      alt=""
+      className={imgClassName}
+      onError={(e) => {
+        const el = e.currentTarget;
+        const step = el.dataset.fb ?? '0';
+        if (step === '0') {
+          el.dataset.fb = '1';
+          el.src = apiDefault;
+          return;
+        }
+        if (step === '1') {
+          el.dataset.fb = '2';
+          el.src = PUBLIC_DEFAULT_PLAYER_IMG;
+          return;
+        }
+        el.onerror = null;
+      }}
+    />
+  );
+}
+
+function MobilePlayerCard({
+  row,
+  tier,
+  density,
+  onClick,
+}: {
+  row: Record<string, unknown>;
+  tier?: 'elite' | 'solid';
+  density: GridDensity;
+  onClick: () => void;
+}) {
+  const name = String(row.player_name ?? row.name ?? '—');
+  const team = row.team != null ? String(row.team) : '—';
+  const rank = row.rank;
+  const fmt = (v: unknown, digits = 2) =>
+    typeof v === 'number' && Number.isFinite(v)
+      ? v.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })
+      : '—';
+  const pad = density === 'compact' ? 'p-3' : density === 'expert' ? 'p-4' : 'p-3.5';
+  const imgSize = density === 'compact' ? 'h-10 w-10' : density === 'expert' ? 'h-14 w-14' : 'h-12 w-12';
+
+  return (
+    <motion.button
+      type="button"
+      layout={false}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      onClick={onClick}
+      data-tier={tier}
+      className={cn(
+        'w-full text-left player-card-shell group/row',
+        pad,
+        'flex flex-col gap-3',
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <PlayerAvatar
+          row={row}
+          imgClassName={cn(
+            imgSize,
+            'rounded-full object-cover shrink-0 ring-1 ring-white/10 bg-slate-800 transition-transform duration-200 group-hover/row:scale-105',
+          )}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 tabular-nums">
+              #{rank != null && rank !== '' ? String(rank) : '—'}
+            </span>
+            <span className="truncate font-bold text-white">{name}</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">{team}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/[0.06]">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">PPR</p>
+          <p className="text-sm font-bold text-white tabular-nums">{fmt(row.fpts_ppr)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">YDS</p>
+          <p className="text-sm font-bold text-white tabular-nums">{fmt(row.yds, 0)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">TD</p>
+          <p className="text-sm font-bold text-white tabular-nums">{fmt(row.td, 0)}</p>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
 export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   data,
   onRowClick,
@@ -232,42 +371,17 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
 
           if (key === 'player_name' || key === 'name') {
             const row = info.row.original as Record<string, unknown>;
-            const pid = row.player_id ?? row.player;
-            const apiDefault = staticAssetUrl('/static/players/default-player.png');
-            const src = pid
-              ? staticAssetUrl(
-                  `/static/players/${encodeURIComponent(String(pid))}.png`,
-                )
-              : PUBLIC_DEFAULT_PLAYER_IMG;
             const label =
               val === null || val === undefined || val === ''
                 ? '—'
                 : String(val);
             return (
               <div className="flex items-center gap-2 min-w-0">
-                <img
-                  src={src}
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-white/10 bg-slate-800"
-                  onError={(e) => {
-                    const el = e.currentTarget;
-                    const step = el.dataset.fb ?? '0';
-                    if (step === '0') {
-                      el.dataset.fb = '1';
-                      el.src = apiDefault;
-                      return;
-                    }
-                    if (step === '1') {
-                      el.dataset.fb = '2';
-                      el.src = PUBLIC_DEFAULT_PLAYER_IMG;
-                      return;
-                    }
-                    el.onerror = null;
-                  }}
+                <PlayerAvatar
+                  row={row}
+                  imgClassName="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-white/10 bg-slate-800 transition-transform duration-200 ease-out group-hover/row:scale-110 group-hover/row:ring-sky-400/40"
                 />
-                <span className="truncate font-black tracking-tight text-white/90">
+                <span className="truncate font-bold tracking-tight text-white">
                   {label}
                 </span>
               </div>
@@ -278,14 +392,21 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             return <span className="null-value">—</span>;
           }
           if (typeof val === 'number') {
+            if (key === 'rank') {
+              return <span className="font-bold text-white tabular-nums">{val.toString()}</span>;
+            }
             if (key === 'year' || key === 'week' || kind === 'int') {
-              return val.toString();
+              return <span className="text-slate-400">{val.toString()}</span>;
             }
             const digits = kind === 'pct' ? 1 : 2;
-            return val.toLocaleString(undefined, {
+            const formatted = val.toLocaleString(undefined, {
               minimumFractionDigits: digits,
               maximumFractionDigits: digits,
             });
+            if (HEADLINE_STAT_KEYS.has(key)) {
+              return <span className="stat-primary">{formatted}</span>;
+            }
+            return <span className="text-slate-400">{formatted}</span>;
           }
           return val;
         },
@@ -311,42 +432,87 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
 
   const { rows } = table.getRowModel();
   const preset = DENSITY[density];
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => preset.rowHeight,
-    overscan: 20,
+    estimateSize: () => (isMobile ? MOBILE_CARD_H[density] : preset.rowHeight),
+    overscan: isMobile ? 8 : 20,
   });
 
   // Compute sticky offsets up-front so left-frozen columns stack correctly.
   const visibleLeafColumns = table.getVisibleLeafColumns();
   const rankIdx = visibleLeafColumns.findIndex((c) => c.id === 'rank');
-  const nameIdx = visibleLeafColumns.findIndex(
-    (c) => c.id === 'player_name' || c.id === 'name',
-  );
   const rankWidth =
     rankIdx !== -1 ? (visibleLeafColumns[rankIdx] as any).getSize() : 0;
+
+  const shellStyle: React.CSSProperties = {
+    height: '100%',
+    width: '100%',
+    overflow: 'auto',
+    borderRadius: '16px',
+    ['--grid-row-h' as string]: `${preset.rowHeight}px`,
+    ['--grid-pad-y' as string]: preset.padY,
+    ['--grid-pad-x' as string]: preset.padX,
+    ['--grid-font-size' as string]: preset.fontSize,
+    ['--grid-header-pad-y' as string]: preset.headerPadY,
+  };
+
+  if (!data.length) {
+    return (
+      <div
+        className="analysis-grid-shell glass-card flex items-center justify-center min-h-[240px] rounded-2xl border border-white/10"
+        data-density={density}
+      >
+        <p className="text-slate-400 text-sm font-medium">No player data for this view.</p>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    const vItems = rowVirtualizer.getVirtualItems();
+    const last = vItems.length > 0 ? vItems[vItems.length - 1] : null;
+    return (
+      <div
+        ref={parentRef}
+        className="analysis-grid-shell glass-card rounded-2xl border border-white/10"
+        data-density={density}
+        style={shellStyle}
+      >
+        <div className="flex flex-col gap-2.5 p-3">
+          {vItems.length > 0 && vItems[0].start > 0 && <div style={{ height: vItems[0].start }} />}
+          {vItems.map((virtualRow) => {
+            const row = rows[virtualRow.index];
+            const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
+            return (
+              <div key={virtualRow.key} style={{ minHeight: virtualRow.size }}>
+                <MobilePlayerCard
+                  row={row.original as Record<string, unknown>}
+                  tier={tier}
+                  density={density}
+                  onClick={() => onRowClick?.(row.original)}
+                />
+              </div>
+            );
+          })}
+          {last && last.end < rowVirtualizer.getTotalSize() && (
+            <div style={{ height: rowVirtualizer.getTotalSize() - last.end }} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={parentRef}
-      className="analysis-grid-shell glass-panel"
+      className="analysis-grid-shell glass-card min-w-0"
       data-density={density}
-      style={{
-        height: '100%',
-        width: '100%',
-        overflow: 'auto',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        ['--grid-row-h' as any]: `${preset.rowHeight}px`,
-        ['--grid-pad-y' as any]: preset.padY,
-        ['--grid-pad-x' as any]: preset.padX,
-        ['--grid-font-size' as any]: preset.fontSize,
-        ['--grid-header-pad-y' as any]: preset.headerPadY,
-      }}
+      style={shellStyle}
     >
-      <table className="analysis-grid" style={{ width: '100%' }}>
+      <div className="min-w-0 overflow-x-auto h-full">
+        <table className="analysis-grid w-max min-w-full">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -402,12 +568,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                         align === 'left' && 'justify-start',
                       )}
                     >
-                      <span className="text-[10px] tracking-widest font-black opacity-80">
+                      <span className="text-[10px] tracking-widest font-bold text-slate-400">
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </span>
                       {{
-                        asc: <span className="text-primary text-[10px]">▲</span>,
-                        desc: <span className="text-primary text-[10px]">▼</span>,
+                        asc: <span className="text-sky-400 text-[10px]">▲</span>,
+                        desc: <span className="text-sky-400 text-[10px]">▼</span>,
                       }[header.column.getIsSorted() as string] ?? null}
                     </div>
                   </th>
@@ -430,18 +596,21 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
 
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
+            const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
             return (
-              <tr
+              <motion.tr
                 key={virtualRow.key}
                 data-index={virtualRow.index}
+                data-tier={tier}
                 onClick={() => onRowClick?.(row.original)}
                 className="group/row cursor-pointer transition-colors"
                 style={{ height: `${virtualRow.size}px` }}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               >
                 {row.getVisibleCells().map((cell) => {
                   const colId = cell.column.id;
-                  const isLeftSticky =
-                    colId === 'rank' || colId === 'player_name' || colId === 'name';
                   const isRightSticky = colId === 'fpts_ppr';
                   const meta = (cell.column.columnDef.meta ?? {}) as {
                     align?: 'left' | 'right' | 'center';
@@ -485,7 +654,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                     </td>
                   );
                 })}
-              </tr>
+              </motion.tr>
             );
           })}
 
@@ -506,6 +675,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

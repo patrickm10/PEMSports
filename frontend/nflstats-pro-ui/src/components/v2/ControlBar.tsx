@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, Hash, Users, User, LogOut, ChevronDown, Rows3 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -28,16 +28,19 @@ const DENSITY_LABELS: Record<GridDensity, string> = {
   expert: 'Expert',
 };
 
-export const ControlBar: React.FC<ControlBarProps> = ({
-  viewMode, setViewMode, selectedYear, setSelectedYear, availableYears,
-  selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
-  totalPlayers, density, setDensity,
-}) => {
+export const ControlBar = forwardRef<HTMLInputElement, ControlBarProps>(function ControlBar(
+  {
+    viewMode, setViewMode, selectedYear, setSelectedYear, availableYears,
+    selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
+    totalPlayers, density, setDensity,
+  },
+  ref,
+) {
   const { user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-slate-900/30 backdrop-blur-xl border border-slate-800/40 rounded-2xl">
+    <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-2xl glass-card border-white/10">
       <div className="flex items-center gap-3 flex-wrap">
         {/* View Toggle */}
         <div className="flex bg-slate-950/60 p-1 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20">
@@ -155,6 +158,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
         <div className="relative flex-1 group min-w-[140px] md:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
           <input
+            ref={ref}
             type="text"
             placeholder="Search players..."
             value={searchQuery}
@@ -196,4 +200,4 @@ export const ControlBar: React.FC<ControlBarProps> = ({
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
   );
-};
+});
