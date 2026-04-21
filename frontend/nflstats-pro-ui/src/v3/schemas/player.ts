@@ -2,15 +2,21 @@ import { z } from 'zod';
 
 /**
  * PlayerStatsSchema (V3)
- * Enforces the Zero-Transformation Data Integrity Contract between Backend and Frontend.
- * All positions share core columns. Extended fields are handled as nullable/optional.
+ *
+ * Discriminated by the presence of `week`:
+ *   - SeasonalStatsSchema: aggregate per year (no week, no matchup context).
+ *   - WeeklyStatsSchema: per-game row (has week + enriched matchup fields).
+ *
+ * Both derive from a shared `BaseStatsSchema`. The zod `.passthrough()` at
+ * each leaf preserves position-specific metrics baked by `scripts/bake_db.py`
+ * (e.g. QB: `cmp`, `att`, `int`, `sacks`, `fumbles`; WR/TE: `tgt`, `rec`).
  */
-export const PlayerStatsSchema = z.object({
+const BaseStatsSchema = z.object({
   year: z.coerce.number(),
   player_id: z.string(),
   player_name: z.string(),
   team: z.string().nullable(),
-  position: z.string(),
+  position: z.string().optional(),
   games_played: z.coerce.number().default(0),
   fpts: z.coerce.number().nullable().default(0),
   fpts_ppr: z.coerce.number().nullable().default(0),
@@ -18,9 +24,15 @@ export const PlayerStatsSchema = z.object({
   fpts_ppr_per_game: z.coerce.number().nullable().default(0),
   yds: z.coerce.number().nullable().default(0),
   td: z.coerce.number().nullable().default(0),
-  
-  // Weekly / Situational Data
-  week: z.coerce.number().optional().nullable(),
+  rank: z.coerce.number().optional(),
+});
+
+export const SeasonalStatsSchema = BaseStatsSchema.extend({
+  season: z.string().optional(),
+}).passthrough();
+
+export const WeeklyStatsSchema = BaseStatsSchema.extend({
+  week: z.coerce.number(),
   opponent: z.string().optional().nullable(),
   stadium_name: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
@@ -32,16 +44,19 @@ export const PlayerStatsSchema = z.object({
   humidity: z.coerce.number().optional().nullable(),
   wind: z.coerce.number().optional().nullable(),
   game_result: z.string().optional().nullable(),
-
-  // Positional Extensions
-  rec: z.coerce.number().optional().nullable(),
-  targets: z.coerce.number().optional().nullable(),
 }).passthrough();
 
+export const SeasonalStatsListSchema = z.array(SeasonalStatsSchema);
+export const WeeklyStatsListSchema = z.array(WeeklyStatsSchema);
 
-export type PlayerStats = z.infer<typeof PlayerStatsSchema>;
+export type SeasonalStats = z.infer<typeof SeasonalStatsSchema>;
+export type WeeklyStats = z.infer<typeof WeeklyStatsSchema>;
 
 /**
- * Array Schema for multiple player results.
+ * Backwards-compatible union — most of the UI is schema-agnostic and only
+ * needs the base fields. Components that depend on weekly-only fields
+ * (stadium, weather, opponent) should narrow via `'week' in row`.
  */
+export const PlayerStatsSchema = z.union([WeeklyStatsSchema, SeasonalStatsSchema]);
 export const PlayerStatsListSchema = z.array(PlayerStatsSchema);
+export type PlayerStats = z.infer<typeof PlayerStatsSchema>;

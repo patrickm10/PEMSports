@@ -10,6 +10,7 @@ import { useWeeks } from './hooks/useWeeks';
 
 import { LandingPage } from './components/v2/LandingPage';
 import { VirtualizedGrid } from './components/VirtualizedGrid';
+import type { GridDensity } from './components/VirtualizedGrid';
 import { ControlBar } from './components/v2/ControlBar';
 import { StatsSummary } from './components/v2/StatsSummary';
 import { PlayerDetail } from './components/PlayerDetail';
@@ -24,8 +25,9 @@ export default function App() {
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedWeek, setSelectedWeek] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortField>('fpts_ppr');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [sortBy, setSortBy] = useState<SortField>('rank');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [density, setDensity] = useState<GridDensity>('standard');
   const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
 
   // Seasons — cached separately
@@ -59,7 +61,8 @@ export default function App() {
   const validYearInput = isYearValid ? selectedYear : '';
   const validWeekInput = isWeekValid ? selectedWeek : '';
 
-  // Rankings queries
+  // Rankings queries — sortBy/sortOrder preserved for API compatibility but
+  // sorting itself is now owned by TanStack Table inside VirtualizedGrid.
   const seasonQuery = useRankings(activeTab, validYearInput, sortBy, sortOrder);
   const weeklyQuery = useWeeklyRankings(
     activeTab,
@@ -85,16 +88,16 @@ export default function App() {
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
-    setSortBy('fpts_ppr');
-    setSortOrder('desc');
+    setSortBy('rank');
+    setSortOrder('asc');
     setSelectedPlayer(null);
   };
 
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
-    setSortBy('fpts_ppr');
-    setSortOrder('desc');
+    setSortBy('rank');
+    setSortOrder('asc');
     setSelectedPlayer(null);
   };
 
@@ -109,7 +112,7 @@ export default function App() {
         activePosition={activeTab}
         onPositionChange={handleTabChange}
       >
-        <div className="w-full px-[10%] space-y-6">
+        <div className="w-full space-y-4">
           <header>
             <h1 className="text-3xl font-extrabold tracking-tight text-white italic">
               {activeTab.toUpperCase()} <span className="text-[#38bdf8]">PERFORMANCE</span>
@@ -131,15 +134,18 @@ export default function App() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             totalPlayers={filteredData.length}
+            density={density}
+            setDensity={setDensity}
           />
 
           <StatsSummary data={filteredData} isLoading={isLoading} />
 
-          <div className="bg-[#1e293b4d] rounded-2xl border border-[#ffffff0a] overflow-hidden shadow-2xl">
-            <VirtualizedGrid 
-              data={filteredData} 
+          <div className="bg-[#1e293b4d] rounded-2xl border border-[#ffffff0a] overflow-hidden shadow-2xl h-[calc(100vh-360px)] min-h-[480px]">
+            <VirtualizedGrid
+              data={filteredData}
               onRowClick={setSelectedPlayer}
               viewMode={viewMode}
+              density={density}
             />
           </div>
         </div>

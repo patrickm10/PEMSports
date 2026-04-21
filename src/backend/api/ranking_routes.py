@@ -8,35 +8,40 @@ Contract rules:
 - Pagination defaults: limit=200, offset=0. Max limit=1000.
 - Response shape is stable — adding fields is not a breaking change,
   removing fields is.
+
+Error handling:
+- Domain errors (`NFLStatsException` subclasses) bubble up and are mapped
+  by the global handler in `main.py`. Routes should NOT swallow them
+  with `try/except Exception`. A broad handler here would mask a
+  `TableMissingError` as a 500.
 """
-import json
-import logging
-import io
 import csv
-from typing import List, Optional, Any, Dict, Literal
+import io
+import logging
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Response, Request
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import JSONResponse
-from backend.core.limiter import limiter
 
-# Position import removed to bypass Pydantic ForwardRef issues
+from backend.core.exceptions import NoDataForFilterError
+from backend.core.limiter import limiter
 from backend.services.ranking_service import (
     get_available_seasons,
+    get_available_weeks,
+    get_defense_stats,
+    get_player_impact,
     get_rankings,
     get_weekly_rankings,
-    get_available_weeks,
-    get_player_impact,
-    get_defense_stats,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 @router.get("/debug-test")
 def debug_test():
     return {"status": "ok", "message": "Router is alive"}
-
 
 
 @router.get("/rankings/{pos}")
@@ -48,32 +53,16 @@ def api_get_rankings(
     limit: int = Query(default=200, ge=1, le=1000, description="Max records to return"),
     offset: int = Query(default=0, ge=0, description="Records to skip for pagination"),
 ):
-    """
-    Returns fantasy rankings for a specific position.
-    Performance: Bypasses Pydantic validation for high-volume data.
-    """
-    try:
-        data = get_rankings(pos, year=year, limit=limit, offset=offset)
-        # Optimized: Direct JSONResponse bypasses Pydantic's slow validation loop for large lists
-        return JSONResponse(content=data)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.exception("Unexpected error in get_player_rankings(%s, year=%s)", pos, year)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    """Returns fantasy rankings for a specific position."""
+    data = get_rankings(pos, year=year, limit=limit, offset=offset)
+    return JSONResponse(content=data)
 
 
 @router.get("/rankings/{pos}/seasons")
 @limiter.limit("30/minute")
 def api_get_seasons(request: Request, pos: str):
     """Returns available season years for the given position, most recent first."""
-    try:
-        return get_available_seasons(pos)
-    except Exception as exc:
-        logger.exception("Unexpected error in get_position_seasons(%s)", pos)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    return get_available_seasons(pos)
 
 
 @router.get("/rankings/{pos}/weekly")
@@ -81,25 +70,14 @@ def api_get_seasons(request: Request, pos: str):
 def api_get_weekly_rankings(
     request: Request,
     pos: str,
-    year: Optional[int] = Query(default=None, ge=2018, le=2030, description="Filter to a specific season year"),
-    week: Optional[int] = Query(default=None, ge=1, le=18, description="Filter to a specific week"),
+    year: Optional[int] = Query(default=None, ge=2018, le=2030),
+    week: Optional[int] = Query(default=None, ge=1, le=18),
     limit: int = Query(default=200, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ):
-    """
-    Returns weekly fantasy rankings for a specific position.
-    Performance: Bypasses Pydantic validation for high-volume data.
-    """
-    try:
-        data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
-        return JSONResponse(content=data)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.exception("Unexpected error in get_weekly_player_rankings(%s, year=%s, week=%s)", pos, year, week)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    """Returns weekly fantasy rankings for a specific position."""
+    data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
+    return JSONResponse(content=data)
 
 
 @router.get("/rankings/{pos}/weeks")
@@ -107,14 +85,10 @@ def api_get_weekly_rankings(
 def get_position_weeks(
     request: Request,
     pos: str,
-    year: Optional[int] = Query(default=None, ge=2018, le=2030, description="Filter weeks to a specific year"),
+    year: Optional[int] = Query(default=None, ge=2018, le=2030),
 ):
     """Returns available weeks for the given position, optionally filtered by year."""
-    try:
-        return get_available_weeks(pos, year=year)
-    except Exception as exc:
-        logger.exception("Unexpected error in get_position_weeks(%s, year=%s)", pos, year)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    return get_available_weeks(pos, year=year)
 
 
 @router.get("/weekly-rankings")
@@ -128,12 +102,8 @@ def get_all_weekly_rankings(
     offset: int = Query(default=0, ge=0),
 ):
     """Alias for /rankings/{pos}/weekly."""
-    try:
-        data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
-        return JSONResponse(content=data)
-    except Exception as exc:
-        logger.exception("Error in get_all_weekly_rankings")
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    data = get_weekly_rankings(pos, year=year, week=week, limit=limit, offset=offset)
+    return JSONResponse(content=data)
 
 
 @router.get("/rankings/{pos}/impact/{player_id}")
@@ -145,22 +115,14 @@ def get_player_impact_metrics(
     metric: str = Query(default="surface", description="Analysis type: surface, venue, elevation, opponent"),
 ):
     """Returns historical performance splits for a player based on external factors."""
-    try:
-        return get_player_impact(pos, player_id, metric)
-    except Exception as exc:
-        logger.exception("Error in get_player_impact_metrics")
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    return get_player_impact(pos, player_id, metric)
 
 
 @router.get("/rankings/{pos}/defense")
 @limiter.limit("20/minute")
 def api_get_defense_stats_analytics(request: Request, pos: str):
     """Returns ranking of NFL defenses based on fantasy points allowed to the given position."""
-    try:
-        return get_defense_stats(pos)
-    except Exception as exc:
-        logger.exception("Error in get_defense_analytics")
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+    return get_defense_stats(pos)
 
 
 @router.get(
@@ -175,17 +137,10 @@ def get_player_rankings_csv(
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
 ):
     """Returns rankings as a downloadable CSV file."""
-    try:
-        data = get_rankings(pos, year=year, limit=1000, offset=0)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.exception("Unexpected error in get_player_rankings_csv(%s)", pos)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
-
+    data = get_rankings(pos, year=year, limit=1000, offset=0)
 
     if not data:
-        raise HTTPException(status_code=404, detail="No data available for export.")
+        raise NoDataForFilterError("No data available for export.")
 
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=data[0].keys())

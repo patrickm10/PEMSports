@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Calendar, Hash, Users, User, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Calendar, Hash, Users, User, LogOut, ChevronDown, Rows3 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoginModal } from './Auth/LoginModal';
+import type { GridDensity } from '../VirtualizedGrid';
 
 interface ControlBarProps {
   viewMode: 'season' | 'weekly';
@@ -17,12 +18,20 @@ interface ControlBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   totalPlayers?: number;
+  density: GridDensity;
+  setDensity: (d: GridDensity) => void;
 }
+
+const DENSITY_LABELS: Record<GridDensity, string> = {
+  compact: 'Compact',
+  standard: 'Standard',
+  expert: 'Expert',
+};
 
 export const ControlBar: React.FC<ControlBarProps> = ({
   viewMode, setViewMode, selectedYear, setSelectedYear, availableYears,
   selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
-  totalPlayers,
+  totalPlayers, density, setDensity,
 }) => {
   const { user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
@@ -115,6 +124,29 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             </div>
           </>
         )}
+
+        {/* Density Toggle */}
+        <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
+        <div className="flex items-center gap-2 bg-slate-950/40 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
+          <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" />
+          <div className="flex bg-slate-950/80 p-0.5 rounded-lg">
+            {(['compact', 'standard', 'expert'] as const).map((d) => (
+              <button
+                key={d}
+                onClick={() => setDensity(d)}
+                className={cn(
+                  'px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors',
+                  density === d
+                    ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
+                    : 'text-slate-500 hover:text-slate-300',
+                )}
+                title={`${DENSITY_LABELS[d]} density`}
+              >
+                {DENSITY_LABELS[d].slice(0, 3)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Search */}

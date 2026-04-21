@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Midnight Slate Core Palette */
@@ -12,8 +12,9 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --border: rgba(255, 255, 255, 0.1);
+  --sticky-name-edge: rgba(148, 163, 184, 0.35);
 
-  --font-main: 'Outfit', sans-serif;
+  --font-main: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --glass-blur: blur(12px);
 
   /* Interaction & Motion */
@@ -43,9 +44,13 @@
 html, body, #root {
   height: 100%;
   width: 100%;
+  background: linear-gradient(165deg, #020617 0%, #0f172a 42%, #020617 100%);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-main);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -59,10 +64,20 @@ html, body, #root {
 }
 
 /* High-Density Virtualized Grid */
+.analysis-grid-shell {
+  /* Container query root: hide `[data-optional="true"]` columns when the
+     available inline size falls below 1200px. This keeps the dashboard
+     scroll-free on typical laptop widths without sacrificing density on
+     wide monitors. */
+  container-type: inline-size;
+  container-name: grid;
+}
+
 .analysis-grid {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .analysis-grid th {
@@ -70,8 +85,8 @@ html, body, #root {
   top: 0;
   z-index: 20;
   background: var(--bg-secondary);
-  padding: 8px;
-  text-align: center; /* Centralized headers */
+  padding: var(--grid-header-pad-y, 8px) var(--grid-pad-x, 8px);
+  text-align: center;
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -81,12 +96,16 @@ html, body, #root {
 }
 
 .analysis-grid td {
-  padding: 6px 8px;
-  font-size: 0.825rem;
+  padding: var(--grid-pad-y, 6px) var(--grid-pad-x, 8px);
+  font-size: var(--grid-font-size, 0.825rem);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   color: #cbd5e1;
   white-space: nowrap;
-  text-align: center; /* Centralized values */
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-grid td[data-kind="name"] {
+  font-variant-numeric: normal;
 }
 
 .sticky-col {
@@ -96,8 +115,35 @@ html, body, #root {
   background: #020617;
 }
 
+.sticky-col-right {
+  left: auto !important;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.4);
+}
+
 .analysis-grid th.sticky-col {
   z-index: 30;
+}
+
+/* Vertical edge on the frozen player column — separates scroll from identity */
+.analysis-grid th.sticky-name-col,
+.analysis-grid td.sticky-name-col {
+  border-right: 1px solid var(--sticky-name-edge);
+}
+
+/* Hide optional columns below 1200px of available grid width. */
+@container grid (max-width: 1200px) {
+  .analysis-grid th[data-optional="true"],
+  .analysis-grid td[data-optional="true"] {
+    display: none;
+  }
+}
+
+/* In compact density, trim non-identity columns even harder — the table
+   already drops font-size via --grid-font-size, so this just removes
+   vertical rhythm. */
+.analysis-grid-shell[data-density="compact"] .analysis-grid td,
+.analysis-grid-shell[data-density="compact"] .analysis-grid th {
+  letter-spacing: 0.04em;
 }
 
 /* Custom Scrollbar */

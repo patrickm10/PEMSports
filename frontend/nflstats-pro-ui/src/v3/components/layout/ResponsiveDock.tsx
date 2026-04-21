@@ -34,7 +34,7 @@ export const ResponsiveDock = ({
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto p-8 relative scrollbar-thin scrollbar-thumb-[#1e293b] scrollbar-track-transparent">
+        <section className="flex-1 overflow-y-auto px-4 py-6 lg:px-6 lg:py-8 relative scrollbar-thin scrollbar-thumb-[#1e293b] scrollbar-track-transparent">
           {children}
         </section>
 

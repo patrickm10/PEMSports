@@ -36,8 +36,10 @@ from slowapi.util import get_remote_address
 
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
+from backend.core.config import config
+from backend.core.exceptions import NFLStatsException
 from backend.core.health import check_health
-from backend.data.postgres import init_db, close_db
+from backend.data.postgres import DatabaseUnavailable, init_db, close_db
 
 
 logging.basicConfig(
@@ -47,15 +49,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Repository root (parent of `src/`) — used for assets outside the package tree
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 # Rate limiting is initialized in backend/core/limiter.py
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize Postgres schema & connection pool
-    await init_db()
-    
+    # Startup: Initialize Postgres schema & connection pool.
+    # In staging/production, `init_db()` raises DatabaseUnavailable on
+    # failure; we translate that into a process-level SystemExit so the
+    # pod gets restarted by the orchestrator rather than silently serving
+    # with a disabled auth backend.
+    try:
+        await init_db()
+    except DatabaseUnavailable as exc:
+        logger.critical("Startup aborted: %s", exc)
+        raise SystemExit(1) from exc
+
     yield
-    
+
     # Shutdown: Close connection pool
     await close_db()
 
@@ -71,6 +84,15 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(NFLStatsException)
+async def _nfl_stats_exception_handler(request: Request, exc: NFLStatsException):
+    """Map every domain exception to a stable JSON envelope + HTTP status."""
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={"detail": exc.detail, "type": exc.__class__.__name__},
+    )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 _raw_origins = os.getenv(
@@ -134,6 +156,16 @@ app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 app.include_router(rankings_router, prefix="/api", tags=["rankings (legacy)"], include_in_schema=False)
 
 # ── Static files ──────────────────────────────────────────────────────────────
+# Player headshots live at repo-root assets/players/ → /static/players/{player_id}.png
+# Mount the more specific path first so it is not shadowed by a blanket /static mount.
+_players_assets = _PROJECT_ROOT / "assets" / "players"
+if _players_assets.is_dir():
+    app.mount(
+        "/static/players",
+        StaticFiles(directory=str(_players_assets)),
+        name="static_players",
+    )
+
 _static_path = Path(__file__).parent / "static"
 if _static_path.exists():
     app.mount("/static", StaticFiles(directory=_static_path), name="static")
