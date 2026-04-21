@@ -1,8 +1,7 @@
 import type { LoginCredentials, RegisterCredentials, AuthResponse, UserProfile } from '../models/Auth';
+import { getApiBaseUrl } from '../utils/backendOrigin';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL 
-  ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth` 
-  : 'http://localhost:8000/api/v1/auth';
+const API_BASE = `${getApiBaseUrl()}/auth`;
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {

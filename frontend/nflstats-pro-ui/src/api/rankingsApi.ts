@@ -1,6 +1,7 @@
 import type { SeasonalRanking, WeeklyRanking } from '../models/Ranking';
+import { getApiBaseUrl } from '../utils/backendOrigin';
 
-const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE) || 'http://localhost:8000/api/v1';
+const API_BASE = getApiBaseUrl();
 
 class ApiError extends Error {
   status?: number;
