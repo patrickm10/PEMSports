@@ -25,6 +25,8 @@ from backend.data.query_engine import (
     query_player_impact_metrics,
     query_team_defense_stats,
     get_player_full_profile as query_player_full_profile,
+    query_player_weekly_facets,
+    query_player_conditional_split,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,15 +126,68 @@ def get_available_weeks(position: Any, year: Optional[int] = None) -> list[int]:
     return data
 
 
-def get_player_impact(position: Any, player_id: str, metric_type: str) -> list[dict[str, Any]]:
-    """Returns performance impact metrics for a player."""
-    cache_key = f"impact:{player_id}:{metric_type}"
+def get_player_impact(
+    position: Any,
+    player_id: str,
+    metric_type: str,
+    year: Optional[int] = None,
+) -> list[dict[str, Any]]:
+    """Returns performance impact metrics for a player (optional season scope)."""
+    cache_key = f"impact:{player_id}:{metric_type}:{year if year is not None else 'all'}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
-    data = query_player_impact_metrics(position, player_id, metric_type)
+    data = query_player_impact_metrics(position, player_id, metric_type, year=year)
     cache.set(cache_key, data, ttl=3600)  # 1 hour cache
+    return data
+
+
+def get_player_weekly_facets(position: Any, player_id: str, year: int) -> dict[str, Any]:
+    """Distinct filter values for matchup / environment (one season)."""
+    cache_key = f"facets:{position}:{player_id}:{year}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    data = query_player_weekly_facets(str(position).lower(), player_id, year)
+    cache.set(cache_key, data, ttl=600)
+    return data
+
+
+def get_player_conditional_split(
+    position: Any,
+    player_id: str,
+    year: int,
+    *,
+    opponent: Optional[str] = None,
+    indoor_outdoor: Optional[str] = None,
+    surface_type: Optional[str] = None,
+    elevation_band: Optional[str] = None,
+) -> dict[str, Any]:
+    """Baseline vs. filtered weekly averages for situational analysis."""
+    cache_key = (
+        f"split:{position}:{player_id}:{year}:"
+        f"{opponent}:{indoor_outdoor}:{surface_type}:{elevation_band}"
+    )
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    data = query_player_conditional_split(
+        str(position).lower(),
+        player_id,
+        year,
+        opponent=opponent,
+        indoor_outdoor=indoor_outdoor,
+        surface_type=surface_type,
+        elevation_band=elevation_band,
+    )
+    baseline_games = int(data.get("baseline", {}).get("games") or 0)
+    if baseline_games == 0:
+        raise NoDataForFilterError("No weekly game rows for that player and season.")
+
+    cache.set(cache_key, data, ttl=600)
     return data
 
 

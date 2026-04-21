@@ -3,12 +3,15 @@ import { getApiBaseUrl } from '../utils/backendOrigin';
 
 const API_BASE = getApiBaseUrl();
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status?: number;
-  constructor(message: string, status?: number) {
+  /** NFLStatsException class name from API envelope (`type`). */
+  code?: string;
+  constructor(message: string, status?: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -35,7 +38,16 @@ async function fetchWithRetry(url: string, signal?: AbortSignal, retries = 2): P
       }
 
       if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}`, response.status);
+        let detail = `HTTP ${response.status}`;
+        let code: string | undefined;
+        try {
+          const body = (await response.json()) as { detail?: unknown; type?: unknown };
+          if (typeof body.detail === 'string') detail = body.detail;
+          if (typeof body.type === 'string') code = body.type;
+        } catch {
+          /* non-JSON error body */
+        }
+        throw new ApiError(detail, response.status, code);
       }
       return response;
     } catch (err) {
@@ -120,6 +132,62 @@ export const RankingsApi = {
   ): Promise<unknown> {
     const url = new URL(`${API_BASE}/rankings/${position}/players/${encodeURIComponent(playerId)}/profile`);
     url.searchParams.set('year', year);
+    const response = await fetchWithRetry(url.toString(), signal);
+    return response.json();
+  },
+
+  async fetchPlayerFacets(
+    position: string,
+    playerId: string,
+    year: string,
+    signal?: AbortSignal,
+  ): Promise<{
+    opponents: string[];
+    indoor_outdoor: string[];
+    surface_type: string[];
+    elevation_band: string[];
+  }> {
+    const url = new URL(`${API_BASE}/rankings/${position}/players/${encodeURIComponent(playerId)}/facets`);
+    url.searchParams.set('year', year);
+    const response = await fetchWithRetry(url.toString(), signal);
+    return response.json();
+  },
+
+  async fetchPlayerSplits(
+    position: string,
+    playerId: string,
+    year: string,
+    filters: {
+      opponent?: string;
+      indoor_outdoor?: string;
+      surface_type?: string;
+      elevation_band?: string;
+    },
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    const url = new URL(`${API_BASE}/rankings/${position}/players/${encodeURIComponent(playerId)}/splits`);
+    url.searchParams.set('year', year);
+    const { opponent, indoor_outdoor, surface_type, elevation_band } = filters;
+    if (opponent) url.searchParams.set('opponent', opponent);
+    if (indoor_outdoor) url.searchParams.set('indoor_outdoor', indoor_outdoor);
+    if (surface_type) url.searchParams.set('surface_type', surface_type);
+    if (elevation_band) url.searchParams.set('elevation_band', elevation_band);
+    const response = await fetchWithRetry(url.toString(), signal);
+    return response.json();
+  },
+
+  async fetchPlayerImpact(
+    position: string,
+    playerId: string,
+    metric: 'surface' | 'venue' | 'elevation' | 'opponent',
+    year: string | undefined,
+    signal?: AbortSignal,
+  ): Promise<
+    { metric_label: string; avg_fpts: number; avg_fpts_ppr: number; games_played: number }[]
+  > {
+    const url = new URL(`${API_BASE}/rankings/${position}/impact/${encodeURIComponent(playerId)}`);
+    url.searchParams.set('metric', metric);
+    if (year) url.searchParams.set('year', year);
     const response = await fetchWithRetry(url.toString(), signal);
     return response.json();
   },

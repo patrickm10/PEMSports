@@ -38,6 +38,13 @@ class NoDataForFilterError(NFLStatsException):
     default_detail = "No data for the requested filters"
 
 
+class InvalidParameterError(NFLStatsException):
+    """Client sent a combination of parameters the engine cannot satisfy."""
+
+    http_status = 422
+    default_detail = "Invalid request parameters"
+
+
 class QueryEngineError(NFLStatsException):
     """DuckDB raised a binder/parser/IO error that should surface as 500."""
 

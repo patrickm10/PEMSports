@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { RankingsApi } from '../api/rankingsApi';
 import type { SeasonalRanking, SortField, SortOrder } from '../models/Ranking';
+import { useQueryErrorToast } from './useQueryErrorToast';
 import { SeasonalStatsListSchema } from '../v3/schemas/player';
 
 /**
@@ -23,7 +24,7 @@ export function useRankings(
   _sortBy: SortField = 'fpts_ppr',
   _sortOrder: SortOrder = 'desc',
 ) {
-  return useQuery<SeasonalRanking[], Error>({
+  const q = useQuery<SeasonalRanking[], Error>({
     queryKey: ['rankings', position, year],
     queryFn: async ({ signal }) => {
       const data = await RankingsApi.fetchRankings(position, year, signal);
@@ -36,4 +37,6 @@ export function useRankings(
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
   });
+  useQueryErrorToast(q.error, q.isError);
+  return q;
 }

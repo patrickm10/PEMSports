@@ -2,6 +2,9 @@
 Bake Script: Compiles Parquet Data Lake into a Persistent DuckDB Serving Layer.
 Solves PlainSkip errors and optimizes for cloud hosting.
 
+Multi-year history is preserved as long as each `data/rankings/*_{weekly,seasonal}.parquet`
+file contains multiple `year` values; the API does not cap seasons at the DuckDB layer.
+
 Column Strategy: Dynamic discovery with blacklist pruning.
 Instead of a static whitelist (which silently drops performance metrics like
 YDS, TD, CMP, ATT, etc.), we read ALL columns from the source Parquet and

@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { RankingsApi } from '../api/rankingsApi';
 import type { SortField, SortOrder, WeeklyRanking } from '../models/Ranking';
+import { useQueryErrorToast } from './useQueryErrorToast';
 import { WeeklyStatsListSchema } from '../v3/schemas/player';
 
 /**
@@ -19,7 +20,7 @@ export function useWeeklyRankings(
   _sortBy: SortField = 'fpts_ppr',
   _sortOrder: SortOrder = 'desc',
 ) {
-  return useQuery<WeeklyRanking[], Error>({
+  const q = useQuery<WeeklyRanking[], Error>({
     queryKey: ['weekly-rankings', position, year, week],
     queryFn: async ({ signal }) => {
       const data = await RankingsApi.fetchWeeklyRankings(position, year, week, signal);
@@ -32,4 +33,6 @@ export function useWeeklyRankings(
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
   });
+  useQueryErrorToast(q.error, q.isError);
+  return q;
 }

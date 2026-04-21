@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -72,7 +72,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({
   snapshot,
   onClose,
 }) => {
-  const overlayRef = useRef<HTMLDivElement>(null);
   const snapshotRowIsWeekly = isWeeklyRanking(snapshot);
 
   const { data, isLoading, isError, error, refetch } = usePlayerProfile(
@@ -140,31 +139,37 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({
 
   return (
     <motion.div
-      className="modal-overlay !z-[80] px-3 py-6 sm:px-6"
+      className="fixed inset-0 z-[80] flex"
       role="dialog"
       aria-modal="true"
       aria-labelledby="player-detail-title"
-      ref={overlayRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
-      }}
+      transition={{ duration: 0.22 }}
     >
+      <motion.button
+        type="button"
+        aria-label="Close panel"
+        className="min-w-0 flex-1 cursor-default bg-black/55 backdrop-blur-[2px]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
       <motion.div
         role="document"
+        layout
         className={clsx(
-          'modal-content mx-auto flex w-full max-w-[min(1400px,98vw)] flex-col overflow-hidden',
-          'max-h-[min(92vh,1100px)] min-h-[min(48vh,520px)]',
-          'glass-panel rounded-2xl border border-white/10 shadow-2xl',
-          'bg-[rgba(15,23,42,0.78)] backdrop-blur-xl',
+          'relative flex h-full w-full max-w-[min(760px,100%)] shrink-0 flex-col overflow-hidden',
+          'border-l border-white/[0.1] shadow-[-24px_0_60px_rgba(0,0,0,0.55)]',
+          'glass-panel rounded-none sm:rounded-l-3xl',
+          'bg-[linear-gradient(165deg,rgba(15,23,42,0.96)_0%,rgba(2,6,23,0.92)_100%)] backdrop-blur-xl',
         )}
-        initial={{ opacity: 0, scale: 0.94, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ type: 'spring', stiffness: 440, damping: 30, mass: 0.82 }}
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 34, mass: 0.9 }}
       >
         <button
           type="button"
@@ -240,13 +245,12 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({
           )}
 
           {isError && (
-            <div className="rounded-xl border border-rose-500/30 bg-rose-950/30 px-4 py-3 text-sm text-rose-100">
-              <p className="font-semibold">Could not load profile</p>
-              <p className="mt-1 text-rose-200/90">{error?.message ?? 'Request failed'}</p>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-500/25 bg-rose-950/20 px-4 py-3 text-sm text-rose-100">
+              <p className="min-w-0 text-rose-200/95">{error?.message ?? 'Request failed'}</p>
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="mt-3 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15"
+                className="shrink-0 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15"
               >
                 Retry
               </button>

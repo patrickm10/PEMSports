@@ -57,9 +57,14 @@ const FEATURES = [
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
   return (
-    <div className="relative flex min-h-screen flex-col items-center overflow-x-hidden bg-[#020617] px-6 pb-32 pt-16 text-center sm:px-8 sm:pb-40 sm:pt-20">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-[#020617] px-6 pb-40 pt-24 text-center sm:px-8 sm:pb-48 sm:pt-28">
+      {/* Midnight Slate radial depth */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(15,23,42,0.9),transparent_55%),radial-gradient(ellipse_90%_60%_at_50%_120%,rgba(2,6,23,0.95),transparent_50%)]"
+        aria-hidden
+      />
       {/* Decorative Glows */}
-      <div className="pointer-events-none absolute left-1/2 top-[12%] h-[400px] w-[min(800px,110vw)] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[120px]" />
+      <div className="pointer-events-none absolute left-1/2 top-[10%] h-[420px] w-[min(820px,110vw)] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[120px]" />
       
       <motion.div
         variants={containerVariants}
@@ -79,7 +84,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         {/* Hero Title */}
         <motion.h1 
           variants={itemVariants}
-          className="mb-8 text-center text-5xl font-black italic leading-[1.02] tracking-tight text-white sm:text-6xl md:text-8xl md:leading-[0.95]"
+          className="mb-10 text-center text-5xl font-black italic leading-[1.02] tracking-tight text-white sm:text-6xl md:text-8xl md:leading-[0.95]"
         >
           ANALYTICS <span className="text-sky-500">REDEFINED</span>
         </motion.h1>
@@ -87,7 +92,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         {/* Hero Subtitle */}
         <motion.p 
           variants={itemVariants}
-          className="mb-12 max-w-2xl px-1 text-center text-base leading-relaxed text-slate-400 sm:text-lg md:text-xl"
+          className="mb-14 max-w-2xl px-1 text-center text-base leading-relaxed text-slate-400 sm:text-lg md:text-xl"
         >
           The world's most advanced NFL data exploration suite. 
           Harness the power of DuckDB to visualize high-density performance metrics in real-time.

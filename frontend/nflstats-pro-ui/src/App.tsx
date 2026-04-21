@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import type { Ranking, SortField, SortOrder } from './models/Ranking';
 
@@ -9,6 +9,7 @@ import { useWeeklyRankings } from './hooks/useWeeklyRankings';
 import { useWeeks } from './hooks/useWeeks';
 
 import { LandingPage } from './components/v2/LandingPage';
+import { SituationalDashboard } from './components/v2/SituationalDashboard';
 import { VirtualizedGrid } from './components/VirtualizedGrid';
 import type { GridDensity } from './components/VirtualizedGrid';
 import { ControlBar } from './components/v2/ControlBar';
@@ -33,17 +34,17 @@ export default function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Seasons — cached separately
-  const { data: rawYears = [] } = useSeasons(activeTab);
-  const availableYears = useMemo(() => rawYears.filter(y => y !== 2026), [rawYears]);
+  const { data: rawYears = [] as number[] } = useSeasons(activeTab);
+  const availableYears = useMemo(() => rawYears.filter((y: number) => y !== 2026), [rawYears]);
 
   // Weeks — only fetched in weekly mode
-  const { data: availableWeeks = [] } = useWeeks(activeTab, selectedYear);
+  const { data: availableWeeks = [] as number[] } = useWeeks(activeTab, selectedYear);
 
   // Sync selectedYear whenever position changes
   useEffect(() => {
     if (availableYears.length > 0) {
       if (!selectedYear || !availableYears.includes(parseInt(selectedYear))) {
-        setSelectedYear(availableYears.includes(2025) ? '2025' : availableYears[0].toString());
+        setSelectedYear(availableYears[0].toString());
       }
     }
   }, [availableYears, selectedYear]);
@@ -131,8 +132,8 @@ export default function App() {
         density={density}
         setDensity={setDensity}
       >
-        <div className="w-full max-w-[1600px] mx-auto space-y-6">
-          <header className="space-y-1">
+        <motion.div layout className="w-full max-w-[1600px] mx-auto space-y-6">
+          <motion.header layout className="space-y-1 text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               {workspaceView === 'dashboard' ? (
                 'Command center'
@@ -147,61 +148,65 @@ export default function App() {
               {selectedYear}{' '}
               {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
             </p>
-          </header>
+          </motion.header>
 
-          {workspaceView === 'rankings' && (
-            <ControlBar
-              ref={searchInputRef}
-              viewMode={viewMode}
-              setViewMode={handleViewModeChange}
-              selectedYear={selectedYear}
-              setSelectedYear={setSelectedYear}
-              availableYears={availableYears}
-              selectedWeek={selectedWeek}
-              setSelectedWeek={setSelectedWeek}
-              availableWeeks={availableWeeks}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              totalPlayers={filteredData.length}
-              density={density}
-              setDensity={setDensity}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            {workspaceView === 'dashboard' ? (
+              <motion.div
+                key="workspace-dashboard"
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <SituationalDashboard
+                  position={activeTab}
+                  year={validYearInput || selectedYear}
+                  roster={filteredData as Ranking[]}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="workspace-rankings"
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-6"
+              >
+                <ControlBar
+                  ref={searchInputRef}
+                  viewMode={viewMode}
+                  setViewMode={handleViewModeChange}
+                  selectedYear={selectedYear}
+                  setSelectedYear={setSelectedYear}
+                  availableYears={availableYears}
+                  selectedWeek={selectedWeek}
+                  setSelectedWeek={setSelectedWeek}
+                  availableWeeks={availableWeeks}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  totalPlayers={filteredData.length}
+                  density={density}
+                  setDensity={setDensity}
+                />
 
-          <StatsSummary data={filteredData} isLoading={isLoading} />
+                <StatsSummary data={filteredData} isLoading={isLoading} />
 
-          {workspaceView === 'dashboard' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl p-6 glass-card border-white/10">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Snapshot</p>
-                <p className="text-white font-bold text-lg mb-2">Rankings &amp; filters</p>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Open <span className="text-white font-semibold">Rankings</span> in the sidebar to browse the virtualized
-                  leaderboard, density modes, and weekly or seasonal context.
-                </p>
-              </div>
-              <div className="rounded-2xl p-6 glass-card border-white/10">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Shortcuts</p>
-                <p className="text-white font-bold text-lg mb-2">Search &amp; settings</p>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Use <span className="text-white font-semibold">Search</span> to focus the player query, or{' '}
-                  <span className="text-white font-semibold">Settings</span> for compact / standard / expert density.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {workspaceView === 'rankings' && (
-            <div className="rounded-2xl overflow-hidden min-h-[min(70vh,900px)] h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)] glass-card border-white/10">
-              <VirtualizedGrid
-                data={filteredData}
-                onRowClick={setSelectedPlayer}
-                viewMode={viewMode}
-                density={density}
-              />
-            </div>
-          )}
-        </div>
+                <div className="rounded-2xl overflow-hidden min-h-[min(70vh,900px)] h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)] glass-card border-white/10">
+                  <VirtualizedGrid
+                    data={filteredData}
+                    onRowClick={setSelectedPlayer}
+                    viewMode={viewMode}
+                    density={density}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </ResponsiveDock>
 
       <AnimatePresence>

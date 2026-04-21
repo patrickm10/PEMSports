@@ -30,6 +30,7 @@ import duckdb
 
 from backend.core.exceptions import (
     DatabaseUnavailableError,
+    InvalidParameterError,
     NFLStatsException,
     QueryEngineError,
     TableMissingError,
@@ -224,8 +225,9 @@ def query_player_impact_metrics(
     position: str,
     player_id: str,
     metric_type: str = "surface",
+    year: Optional[int] = None,
 ) -> list[dict[str, Any]]:
-    """Analytical splits for performance metrics."""
+    """Analytical splits for performance metrics (optionally scoped to one season)."""
     table = f"{position.lower()}_weekly"
 
     metric_cfg = {
@@ -244,6 +246,11 @@ def query_player_impact_metrics(
 
     cfg = metric_cfg.get(metric_type, metric_cfg["surface"])
 
+    year_clause = " AND year = ?" if year is not None else ""
+    params: list[Any] = [player_id]
+    if year is not None:
+        params.append(float(year))
+
     sql = f"""
         SELECT
             {cfg['col']} AS metric_label,
@@ -251,12 +258,201 @@ def query_player_impact_metrics(
             ROUND(AVG(fpts_ppr), 2) AS avg_fpts_ppr,
             COUNT(*) AS games_played
         FROM {table}
-        WHERE player_id = ? AND {cfg['filter']}
+        WHERE player_id = ?{year_clause} AND {cfg['filter']}
         GROUP BY 1
         ORDER BY avg_fpts_ppr DESC
     """
 
-    return _execute(sql, [player_id], context=f"{table} (impact/{metric_type})")
+    return _execute(sql, params, context=f"{table} (impact/{metric_type})")
+
+
+_ELEVATION_BAND_SQL = (
+    "CASE WHEN elevation >= 500 THEN 'High' "
+    "WHEN elevation BETWEEN 100 AND 499 THEN 'Med' "
+    "ELSE 'Low' END"
+)
+
+
+def query_player_weekly_facets(
+    position: str,
+    player_id: str,
+    year: int,
+) -> dict[str, Any]:
+    """Distinct matchup / environment values for filter dropdowns (one season)."""
+    pos = position.lower().strip()
+    if pos not in _ALLOWED_PROFILE_POSITIONS:
+        raise QueryEngineError(f"Invalid position for facets query: {position!r}")
+
+    table = f"{pos}_weekly"
+    yr = float(year)
+
+    opponents = _execute(
+        f"""
+        SELECT DISTINCT TRIM(CAST(opponent AS VARCHAR)) AS v
+        FROM {table}
+        WHERE player_id = ? AND year = ? AND opponent IS NOT NULL AND TRIM(CAST(opponent AS VARCHAR)) <> ''
+        ORDER BY 1
+        """,
+        [player_id, yr],
+        context=f"{table} (facets/opponents)",
+    )
+    venues = _execute(
+        f"""
+        SELECT DISTINCT TRIM(CAST(indoor_outdoor AS VARCHAR)) AS v
+        FROM {table}
+        WHERE player_id = ? AND year = ? AND indoor_outdoor IS NOT NULL
+        ORDER BY 1
+        """,
+        [player_id, yr],
+        context=f"{table} (facets/venues)",
+    )
+    surfaces = _execute(
+        f"""
+        SELECT DISTINCT TRIM(CAST(surface_type AS VARCHAR)) AS v
+        FROM {table}
+        WHERE player_id = ? AND year = ? AND surface_type IS NOT NULL
+        ORDER BY 1
+        """,
+        [player_id, yr],
+        context=f"{table} (facets/surfaces)",
+    )
+    bands = _execute(
+        f"""
+        SELECT DISTINCT {_ELEVATION_BAND_SQL} AS v
+        FROM {table}
+        WHERE player_id = ? AND year = ? AND elevation IS NOT NULL
+        ORDER BY 1
+        """,
+        [player_id, yr],
+        context=f"{table} (facets/elevation)",
+    )
+
+    return {
+        "opponents": [r["v"] for r in opponents if r.get("v")],
+        "indoor_outdoor": [r["v"] for r in venues if r.get("v")],
+        "surface_type": [r["v"] for r in surfaces if r.get("v")],
+        "elevation_band": [r["v"] for r in bands if r.get("v")],
+    }
+
+
+def query_player_conditional_split(
+    position: str,
+    player_id: str,
+    year: int,
+    *,
+    opponent: Optional[str] = None,
+    indoor_outdoor: Optional[str] = None,
+    surface_type: Optional[str] = None,
+    elevation_band: Optional[str] = None,
+) -> dict[str, Any]:
+    """Baseline vs. AND-filtered weekly sample for situational intelligence (one season)."""
+    pos = position.lower().strip()
+    if pos not in _ALLOWED_PROFILE_POSITIONS:
+        raise QueryEngineError(f"Invalid position for split query: {position!r}")
+
+    filters = [opponent, indoor_outdoor, surface_type, elevation_band]
+    if not any(f is not None and str(f).strip() != "" for f in filters):
+        raise InvalidParameterError(
+            "At least one of opponent, indoor_outdoor, surface_type, or elevation_band is required."
+        )
+
+    table = f"{pos}_weekly"
+    yr = float(year)
+
+    base_where = "player_id = ? AND year = ?"
+    base_params: list[Any] = [player_id, yr]
+
+    extra: list[str] = []
+    extra_params: list[Any] = []
+    if opponent is not None and str(opponent).strip() != "":
+        extra.append("TRIM(CAST(opponent AS VARCHAR)) = TRIM(?)")
+        extra_params.append(opponent)
+    if indoor_outdoor is not None and str(indoor_outdoor).strip() != "":
+        extra.append("TRIM(CAST(indoor_outdoor AS VARCHAR)) = TRIM(?)")
+        extra_params.append(indoor_outdoor)
+    if surface_type is not None and str(surface_type).strip() != "":
+        extra.append("TRIM(CAST(surface_type AS VARCHAR)) = TRIM(?)")
+        extra_params.append(surface_type)
+    if elevation_band is not None and str(elevation_band).strip() != "":
+        extra.append(f"{_ELEVATION_BAND_SQL} = TRIM(?)")
+        extra_params.append(elevation_band)
+
+    agg_sql = f"""
+        SELECT
+            COUNT(*)::INTEGER AS games,
+            ROUND(AVG(fpts_ppr), 4) AS avg_fpts_ppr,
+            ROUND(AVG(COALESCE(yds, 0) + COALESCE(rush_yds, 0)), 2) AS avg_scrimmage_yds
+        FROM {table}
+        WHERE {{where}}
+    """
+
+    baseline_rows = _execute(
+        agg_sql.format(where=base_where),
+        base_params,
+        context=f"{table} (split/baseline)",
+    )
+    cond_where = base_where + (" AND " + " AND ".join(extra) if extra else "")
+    cond_params = base_params + extra_params
+    filtered_rows = _execute(
+        agg_sql.format(where=cond_where),
+        cond_params,
+        context=f"{table} (split/conditional)",
+    )
+
+    if not baseline_rows:
+        return {}
+
+    b = baseline_rows[0]
+    f = filtered_rows[0] if filtered_rows else {"games": 0}
+
+    def _num(row: dict[str, Any], key: str) -> Optional[float]:
+        v = row.get(key)
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    b_games = int(_num(b, "games") or 0)
+    f_games = int(_num(f, "games") or 0)
+    b_ppr = _num(b, "avg_fpts_ppr")
+    f_ppr = _num(f, "avg_fpts_ppr")
+    b_yds = _num(b, "avg_scrimmage_yds")
+    f_yds = _num(f, "avg_scrimmage_yds")
+
+    def _pct(baseline: Optional[float], sample: Optional[float]) -> Optional[float]:
+        if baseline is None or sample is None:
+            return None
+        if baseline == 0:
+            return None
+        return round((sample - baseline) / baseline * 100.0, 2)
+
+    return {
+        "year": int(year),
+        "filters": {
+            "opponent": opponent,
+            "indoor_outdoor": indoor_outdoor,
+            "surface_type": surface_type,
+            "elevation_band": elevation_band,
+        },
+        "baseline": {
+            "games": b_games,
+            "avg_fpts_ppr": b_ppr,
+            "avg_scrimmage_yds": b_yds,
+        },
+        "conditional": {
+            "games": f_games,
+            "avg_fpts_ppr": f_ppr,
+            "avg_scrimmage_yds": f_yds,
+        },
+        "delta_pct": {
+            "fpts_ppr": _pct(b_ppr, f_ppr),
+            "scrimmage_yds": _pct(b_yds, f_yds),
+        },
+    }
 
 
 def query_team_defense_stats(position: str) -> list[dict[str, Any]]:

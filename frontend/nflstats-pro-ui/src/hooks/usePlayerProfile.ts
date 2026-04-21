@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { RankingsApi } from '../api/rankingsApi';
 import { PlayerProfileResponseSchema, type PlayerProfileResponse } from '../v3/schemas/player';
+import { useQueryErrorToast } from './useQueryErrorToast';
 
 export function usePlayerProfile(
   playerId: string | null,
@@ -9,7 +10,7 @@ export function usePlayerProfile(
   position: string,
   enabled: boolean,
 ) {
-  return useQuery<PlayerProfileResponse, Error>({
+  const q = useQuery<PlayerProfileResponse, Error>({
     queryKey: ['playerProfile', position, playerId, year],
     queryFn: async ({ signal }) => {
       if (!playerId) throw new Error('playerId required');
@@ -22,4 +23,6 @@ export function usePlayerProfile(
     retry: 2,
     refetchOnWindowFocus: false,
   });
+  useQueryErrorToast(q.error, q.isError);
+  return q;
 }

@@ -31,6 +31,8 @@ from backend.services.ranking_service import (
     get_defense_stats,
     get_player_full_profile,
     get_player_impact,
+    get_player_weekly_facets,
+    get_player_conditional_split,
     get_rankings,
     get_weekly_rankings,
 )
@@ -138,9 +140,49 @@ def get_player_impact_metrics(
     pos: str,
     player_id: str,
     metric: str = Query(default="surface", description="Analysis type: surface, venue, elevation, opponent"),
+    year: Optional[int] = Query(default=None, ge=2018, le=2030, description="Optional season scope"),
 ):
     """Returns historical performance splits for a player based on external factors."""
-    return get_player_impact(pos, player_id, metric)
+    pos_key = _require_valid_position(pos)
+    return get_player_impact(pos_key, player_id, metric, year=year)
+
+
+@router.get("/rankings/{pos}/players/{player_id}/facets")
+@limiter.limit("60/minute")
+def api_get_player_weekly_facets(
+    request: Request,
+    pos: str,
+    player_id: str,
+    year: int = Query(..., ge=2018, le=2030, description="Season year"),
+):
+    """Distinct opponents, surfaces, venue types, and elevation bands for filter UI."""
+    pos_key = _require_valid_position(pos)
+    return get_player_weekly_facets(pos_key, player_id, year)
+
+
+@router.get("/rankings/{pos}/players/{player_id}/splits")
+@limiter.limit("60/minute")
+def api_get_player_conditional_splits(
+    request: Request,
+    pos: str,
+    player_id: str,
+    year: int = Query(..., ge=2018, le=2030, description="Season year"),
+    opponent: Optional[str] = Query(default=None),
+    indoor_outdoor: Optional[str] = Query(default=None, description="Stadium type, e.g. Indoor / Outdoor"),
+    surface_type: Optional[str] = Query(default=None),
+    elevation_band: Optional[str] = Query(default=None, description="Low, Med, or High"),
+):
+    """Baseline vs. conditional weekly averages (AND filters) for situational intelligence."""
+    pos_key = _require_valid_position(pos)
+    return get_player_conditional_split(
+        pos_key,
+        player_id,
+        year,
+        opponent=opponent,
+        indoor_outdoor=indoor_outdoor,
+        surface_type=surface_type,
+        elevation_band=elevation_band,
+    )
 
 
 @router.get("/rankings/{pos}/defense")
