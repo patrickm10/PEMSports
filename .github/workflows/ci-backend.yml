@@ -66,6 +66,10 @@ jobs:
         run: |
           pytest tests/ -v --tb=short
 
+      - name: Validate data completeness (Parquet)
+        run: |
+          python scripts/validate_db_completeness.py --mode parquet
+
   deploy:
     name: Deploy to Render
     needs: gate
