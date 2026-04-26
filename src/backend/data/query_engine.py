@@ -92,11 +92,12 @@ def _serialize_rows(cursor) -> list[dict[str, Any]]:
         for k, v in row_dict.items():
             if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
                 row_dict[k] = None
-        # Normalize opponent/team values to canonical abbreviations before API response.
-        # Applies across all positional datasets where OPP/opponent exists.
-        for opp_key in ("opp", "opponent", "defense_team"):
-            if opp_key in row_dict and row_dict[opp_key] is not None:
-                row_dict[opp_key] = normalize_team_abbr(row_dict[opp_key])
+        # Normalize team and opponent values to canonical abbreviations (TEAM_MAP) before
+        # API response. Seasonal parquets often store abbrs for `team` already; weekly
+        # rows may use slug form — same path so weekly and seasonal match.
+        for col in ("team", "opp", "opponent", "defense_team"):
+            if col in row_dict and row_dict[col] is not None:
+                row_dict[col] = normalize_team_abbr(row_dict[col])
         results.append(row_dict)
     return results
 
