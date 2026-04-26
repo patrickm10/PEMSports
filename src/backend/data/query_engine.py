@@ -33,6 +33,7 @@ from backend.core.exceptions import (
     QueryEngineError,
     TableMissingError,
 )
+from backend.utils.team_normalization import normalize_team_abbr
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,11 @@ def _serialize_rows(cursor) -> list[dict[str, Any]]:
         for k, v in row_dict.items():
             if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
                 row_dict[k] = None
+        # Normalize opponent/team values to canonical abbreviations before API response.
+        # Applies across all positional datasets where OPP/opponent exists.
+        for opp_key in ("opp", "opponent", "defense_team"):
+            if opp_key in row_dict and row_dict[opp_key] is not None:
+                row_dict[opp_key] = normalize_team_abbr(row_dict[opp_key])
         results.append(row_dict)
     return results
 
