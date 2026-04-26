@@ -52,28 +52,29 @@ const HIDDEN_WEEKLY = new Set<string>([
 const OPTIONAL_UNDER_1200: ReadonlySet<string> = new Set([
   'sacks',
   'fumbles',
-  'surface_type',
-  'indoor_outdoor',
-  'elevation',
   'temp',
   'humidity',
   'wind',
-  'city',
-  'state',
 ]);
 
 // Columns only shown in 'expert' density. In 'standard' these collapse into
 // a hoverable context cell or are hidden outright.
 const EXPERT_ONLY: ReadonlySet<string> = new Set([
-  'city',
-  'state',
-  'indoor_outdoor',
-  'elevation',
   'temp',
   'humidity',
   'wind',
-  'surface_type',
 ]);
+
+const STADIUM_METADATA_KEYS: readonly string[] = [
+  'stadium_name',
+  'city',
+  'state',
+  'indoor_outdoor',
+  'surface_type',
+  'elevation',
+  'weather_impact',
+  'year_opened',
+];
 
 // Short headers for dense numeric columns. Full name kept in the `title`
 // attribute so screen readers + tooltips still get the canonical label.
@@ -101,9 +102,13 @@ const HEADER_ABBR: Record<string, string> = {
   rush_yds: 'RYD',
   rush_td: 'RTD',
   stadium_name: 'Stadium',
+  city: 'City',
+  state: 'ST',
   surface_type: 'Surf',
   indoor_outdoor: 'Venue',
   elevation: 'Elev',
+  weather_impact: 'Wx Impact',
+  year_opened: 'Opened',
   temp: 'Temp',
   humidity: 'Hum',
   wind: 'Wind',
@@ -117,13 +122,21 @@ function classify(key: string): ColumnKind {
   if (key === 'player_name' || key === 'name') return 'name';
   if (key === 'team' || key === 'opponent') return 'badge';
   if (key === 'game_result') return 'result';
-  if (key === 'year' || key === 'week' || key === 'games_played') return 'int';
+  if (
+    key === 'year' ||
+    key === 'week' ||
+    key === 'games_played' ||
+    key === 'year_opened'
+  ) {
+    return 'int';
+  }
   if (
     key === 'stadium_name' ||
     key === 'city' ||
     key === 'state' ||
     key === 'indoor_outdoor' ||
-    key === 'surface_type'
+    key === 'surface_type' ||
+    key === 'weather_impact'
   ) {
     return 'context';
   }
@@ -140,6 +153,17 @@ const WIDTH_BY_KIND: Record<ColumnKind, number> = {
   pct: 72,
   context: 140,
   result: 88,
+};
+
+const WIDTH_BY_KEY: Record<string, number> = {
+  stadium_name: 220,
+  city: 140,
+  state: 64,
+  indoor_outdoor: 112,
+  surface_type: 104,
+  elevation: 92,
+  weather_impact: 128,
+  year_opened: 104,
 };
 
 const ALIGN_BY_KIND: Record<ColumnKind, 'left' | 'right' | 'center'> = {
@@ -347,10 +371,15 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
       middle.unshift('fpts');
     }
 
-    // Stadium/context keys get pushed toward the end of middle.
-    const contextKeys = middle.filter((k) => classify(k) === 'context');
-    const coreMiddle = middle.filter((k) => !contextKeys.includes(k));
-    const finalKeys = [...leadKeys, ...coreMiddle, ...contextKeys, ...trailKeys];
+    // Stadium metadata is displayed as a complete ordered group.
+    const stadiumKeys = STADIUM_METADATA_KEYS.filter((k) => middle.includes(k));
+    const contextKeys = middle.filter(
+      (k) => classify(k) === 'context' && !stadiumKeys.includes(k),
+    );
+    const coreMiddle = middle.filter(
+      (k) => !contextKeys.includes(k) && !stadiumKeys.includes(k),
+    );
+    const finalKeys = [...leadKeys, ...coreMiddle, ...stadiumKeys, ...contextKeys, ...trailKeys];
 
     return finalKeys.map((key) => {
       const kind = classify(key);
@@ -410,7 +439,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
           }
           return val;
         },
-        size: WIDTH_BY_KIND[kind],
+        size: WIDTH_BY_KEY[key] ?? WIDTH_BY_KIND[kind],
         meta: {
           kind,
           align: ALIGN_BY_KIND[kind],

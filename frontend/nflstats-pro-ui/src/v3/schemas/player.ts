@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+const nullableInteger = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : value;
+  },
+  z.number().int().nullable(),
+);
+
 /**
  * PlayerStatsSchema (V3)
  *
@@ -40,6 +49,8 @@ export const WeeklyStatsSchema = BaseStatsSchema.extend({
   indoor_outdoor: z.string().optional().nullable(),
   surface_type: z.string().optional().nullable(),
   elevation: z.coerce.number().optional().nullable(),
+  weather_impact: z.string().optional().nullable(),
+  year_opened: nullableInteger.optional(),
   temp: z.coerce.number().optional().nullable(),
   humidity: z.coerce.number().optional().nullable(),
   wind: z.coerce.number().optional().nullable(),

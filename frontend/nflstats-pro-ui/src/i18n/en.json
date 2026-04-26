@@ -31,6 +31,8 @@
     "indoor_outdoor": "Venue",
     "surface_type": "Surface",
     "elevation": "Elev",
+    "weather_impact": "Weather Impact",
+    "year_opened": "Year Opened",
     "temp": "Temp°F",
     "humidity": "Hum%",
     "wind": "Wind",

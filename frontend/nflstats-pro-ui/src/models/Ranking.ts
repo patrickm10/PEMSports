@@ -44,6 +44,8 @@ export interface WeeklyRanking extends BaseRanking {
   indoor_outdoor: string | null;
   surface_type: string | null;
   elevation: number | null;
+  weather_impact: string | null;
+  year_opened: number | null;
   temp: number | null;
   humidity: number | null;
   wind: number | null;
