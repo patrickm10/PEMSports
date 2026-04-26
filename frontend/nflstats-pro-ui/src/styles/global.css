@@ -126,6 +126,7 @@ html, body, #root {
   border-collapse: separate;
   border-spacing: 0;
   font-variant-numeric: tabular-nums;
+  table-layout: fixed;
 }
 
 .analysis-grid th {
@@ -149,6 +150,8 @@ html, body, #root {
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--label-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 

@@ -34,7 +34,14 @@ export default function App() {
 
   // Seasons — cached separately
   const { data: rawYears = [] } = useSeasons(activeTab);
-  const availableYears = useMemo(() => rawYears.filter(y => y !== 2026), [rawYears]);
+  const availableYears = useMemo(() => rawYears, [rawYears]);
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug('[seasons chain]', { activeTab, rawYears, availableYears });
+    }
+  }, [activeTab, rawYears, availableYears]);
 
   // Weeks — only fetched in weekly mode
   const { data: availableWeeks = [] } = useWeeks(activeTab, selectedYear);
@@ -42,9 +49,9 @@ export default function App() {
   // Sync selectedYear whenever position changes
   useEffect(() => {
     if (availableYears.length > 0) {
-      if (!selectedYear || !availableYears.includes(parseInt(selectedYear))) {
-        setSelectedYear(availableYears.includes(2025) ? '2025' : availableYears[0].toString());
-      }
+      const parsed = Number.parseInt(selectedYear, 10);
+      const selectedIsValid = Number.isFinite(parsed) && availableYears.includes(parsed);
+      if (!selectedIsValid) setSelectedYear(availableYears[0].toString());
     }
   }, [availableYears, selectedYear]);
 
