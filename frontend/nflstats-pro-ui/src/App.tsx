@@ -15,6 +15,12 @@ import { ControlBar } from './components/v2/ControlBar';
 import { StatsSummary } from './components/v2/StatsSummary';
 import { PlayerDetail } from './components/PlayerDetail';
 import { AuthProvider } from './contexts/AuthContext';
+import { EChart } from './components/charts/EChart';
+import {
+  buildMetricByFacetOption,
+  buildRankingsTopTenOption,
+} from './components/charts/chartOptions';
+import { resolvePrimaryMetric } from './utils/metrics';
 
 import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
 
@@ -85,8 +91,8 @@ export default function App() {
   const { data: sortedData = [], isLoading } = activeQuery;
 
   // Client-side search filter
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return sortedData;
+  const filteredData = useMemo<Ranking[]>(() => {
+    if (!searchQuery) return sortedData as Ranking[];
     const q = searchQuery.toLowerCase();
     return (sortedData as Ranking[]).filter(
       (p) =>
@@ -94,6 +100,26 @@ export default function App() {
         (p.team?.toLowerCase() || "").includes(q),
     );
   }, [sortedData, searchQuery]);
+  const resolvedMetric = useMemo(
+    () => resolvePrimaryMetric(filteredData),
+    [filteredData],
+  );
+  const rankingsTopTenOption = useMemo(
+    () => buildRankingsTopTenOption(filteredData, resolvedMetric),
+    [filteredData, resolvedMetric],
+  );
+  const opponentOption = useMemo(
+    () => buildMetricByFacetOption(filteredData, resolvedMetric, 'opponent'),
+    [filteredData, resolvedMetric],
+  );
+  const surfaceOption = useMemo(
+    () => buildMetricByFacetOption(filteredData, resolvedMetric, 'surface_type'),
+    [filteredData, resolvedMetric],
+  );
+  const venueOption = useMemo(
+    () => buildMetricByFacetOption(filteredData, resolvedMetric, 'indoor_outdoor'),
+    [filteredData, resolvedMetric],
+  );
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
@@ -167,38 +193,65 @@ export default function App() {
             />
           )}
 
-          <StatsSummary data={filteredData} isLoading={isLoading} />
+          <StatsSummary data={filteredData} metric={resolvedMetric} isLoading={isLoading} />
 
           {workspaceView === 'dashboard' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl p-6 glass-card border-white/10">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Snapshot</p>
-                <p className="text-white font-bold text-lg mb-2">Rankings &amp; filters</p>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Open <span className="text-white font-semibold">Rankings</span> in the sidebar to browse the virtualized
-                  leaderboard, density modes, and weekly or seasonal context.
-                </p>
-              </div>
-              <div className="rounded-2xl p-6 glass-card border-white/10">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-2">Shortcuts</p>
-                <p className="text-white font-bold text-lg mb-2">Search &amp; settings</p>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Use <span className="text-white font-semibold">Search</span> to focus the player query, or{' '}
-                  <span className="text-white font-semibold">Settings</span> for compact / standard / expert density.
-                </p>
-              </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+              <EChart
+                title="Opponent Efficiency"
+                subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by opponent`}
+                option={opponentOption}
+                isLoading={isLoading}
+                emptyMessage={
+                  viewMode === 'weekly'
+                    ? 'No opponent metadata for the current filters'
+                    : 'Switch to weekly rankings to compare opponents'
+                }
+              />
+              <EChart
+                title="Surface Split"
+                subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by surface`}
+                option={surfaceOption}
+                isLoading={isLoading}
+                emptyMessage={
+                  viewMode === 'weekly'
+                    ? 'No surface metadata for the current filters'
+                    : 'Switch to weekly rankings to compare surfaces'
+                }
+              />
+              <EChart
+                title="Venue Split"
+                subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by venue type`}
+                option={venueOption}
+                isLoading={isLoading}
+                emptyMessage={
+                  viewMode === 'weekly'
+                    ? 'No venue metadata for the current filters'
+                    : 'Switch to weekly rankings to compare venue types'
+                }
+              />
             </div>
           )}
 
           {workspaceView === 'rankings' && (
-            <div className="rounded-2xl overflow-hidden min-h-[min(70vh,900px)] h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)] glass-card border-white/10">
-              <VirtualizedGrid
-                data={filteredData}
-                onRowClick={setSelectedPlayer}
-                viewMode={viewMode}
-                density={density}
+            <>
+              <EChart
+                title="Top 10 Rankings"
+                subtitle={`Highest ${resolvedMetric?.label ?? 'metric'} within current filters`}
+                option={rankingsTopTenOption}
+                isLoading={isLoading}
+                height={260}
+                emptyMessage="No ranking data for the current filters"
               />
-            </div>
+              <div className="rounded-2xl overflow-hidden min-h-[360px] h-[calc(100vh-600px)] glass-card border-white/10">
+                <VirtualizedGrid
+                  data={filteredData}
+                  onRowClick={setSelectedPlayer}
+                  viewMode={viewMode}
+                  density={density}
+                />
+              </div>
+            </>
           )}
         </div>
       </ResponsiveDock>

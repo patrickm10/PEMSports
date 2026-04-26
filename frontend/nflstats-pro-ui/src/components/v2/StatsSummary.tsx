@@ -2,9 +2,12 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, TrendingUp, Crown } from 'lucide-react';
 import type { Ranking } from '../../models/Ranking';
+import type { ResolvedMetric } from '../../utils/metrics';
+import { formatMetricValue } from '../../utils/metrics';
 
 interface StatsSummaryProps {
   data: Ranking[];
+  metric: ResolvedMetric | null;
   isLoading?: boolean;
 }
 
@@ -17,18 +20,22 @@ const cardVariant = {
   }),
 };
 
-export const StatsSummary: React.FC<StatsSummaryProps> = ({ data, isLoading }) => {
+export const StatsSummary: React.FC<StatsSummaryProps> = ({ data, metric, isLoading }) => {
   const stats = useMemo(() => {
-    if (data.length === 0) return null;
+    if (data.length === 0 || !metric) return null;
 
     const total = data.length;
-    const avgPPR = data.reduce((sum, p) => sum + (p.fpts_ppr || 0), 0) / total;
-    const topPlayer = data.reduce((top, p) =>
-      (p.fpts_ppr || 0) > (top.fpts_ppr || 0) ? p : top
-    , data[0]);
+    const values = data
+      .map((row) => ({ row, value: metric.getValue(row) }))
+      .filter((item): item is { row: Ranking; value: number } => item.value !== null);
 
-    return { total, avgPPR, topPlayer };
-  }, [data]);
+    if (values.length === 0) return null;
+
+    const averageMetric = values.reduce((sum, item) => sum + item.value, 0) / values.length;
+    const top = values.reduce((best, item) => (item.value > best.value ? item : best), values[0]);
+
+    return { total, averageMetric, topPlayer: top.row, topValue: top.value };
+  }, [data, metric]);
 
   if (isLoading || !stats) {
     return (
@@ -50,8 +57,8 @@ export const StatsSummary: React.FC<StatsSummaryProps> = ({ data, isLoading }) =
     },
     {
       icon: TrendingUp,
-      label: 'Avg PPR Points',
-      value: stats.avgPPR.toFixed(1),
+      label: `Avg ${metric?.shortLabel ?? 'Metric'}`,
+      value: formatMetricValue(stats.averageMetric),
       accent: 'text-emerald-400',
       iconBg: 'bg-emerald-500/10 border-emerald-500/20',
     },
@@ -59,7 +66,7 @@ export const StatsSummary: React.FC<StatsSummaryProps> = ({ data, isLoading }) =
       icon: Crown,
       label: 'Top Performer',
       value: stats.topPlayer.player_name,
-      subValue: `${stats.topPlayer.fpts_ppr.toFixed(1)} PPR`,
+      subValue: `${formatMetricValue(stats.topValue)} ${metric?.shortLabel ?? ''}`.trim(),
       accent: 'text-amber-400',
       iconBg: 'bg-amber-500/10 border-amber-500/20',
     },
