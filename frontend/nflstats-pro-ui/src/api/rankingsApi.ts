@@ -81,7 +81,33 @@ export const RankingsApi = {
   async fetchSeasons(position: string): Promise<number[]> {
     const url = `${API_BASE}/rankings/${position}/seasons`;
     const response = await fetchWithRetry(url);
-    return response.json();
+    // Normalize shape defensively (some deployments return { years: [...] } / { seasons: [...] }).
+    const rawText = await response.clone().text();
+    let payload: unknown;
+    try {
+      payload = rawText ? JSON.parse(rawText) : [];
+    } catch {
+      payload = [];
+    }
+
+    const raw =
+      Array.isArray(payload)
+        ? payload
+        : (payload as any)?.years ?? (payload as any)?.seasons ?? [];
+
+    const normalized = (Array.isArray(raw) ? raw : [])
+      .map((v) => Number(v))
+      .filter((n) => Number.isFinite(n));
+
+    // Keep all years; only de-dupe obvious duplicates.
+    const unique = Array.from(new Set(normalized));
+
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug('[fetchSeasons]', { url, rawText, normalized: unique });
+    }
+
+    return unique;
   },
 
   async fetchWeeklyRankings(position: string, year: string, week: string, signal?: AbortSignal): Promise<WeeklyRanking[]> {

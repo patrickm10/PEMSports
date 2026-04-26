@@ -43,6 +43,7 @@ _DB_PATH = Path(
 ).resolve()
 
 _thread_local = threading.local()
+_logged_db_path = False
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
@@ -54,7 +55,18 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
             connection, which used to make missing-database errors look
             identical to empty-result responses.
     """
+    global _logged_db_path
     if not hasattr(_thread_local, "conn"):
+        if not _logged_db_path:
+            # Temporary runtime proof: shows the exact DB file in use.
+            # This must match the file we query directly and the API responses.
+            logger.warning(
+                "[DB PATH] NFL_STATS_DB_PATH=%r resolved_db_path=%s exists=%s",
+                os.environ.get("NFL_STATS_DB_PATH"),
+                _DB_PATH,
+                _DB_PATH.exists(),
+            )
+            _logged_db_path = True
         if not _DB_PATH.exists():
             logger.error(
                 "Serving database not found at %s. Run bake_db.py first.", _DB_PATH
@@ -153,7 +165,11 @@ def query_seasons(position: str) -> list[int]:
         f"SELECT DISTINCT CAST(year AS INTEGER) AS yr FROM {table} ORDER BY yr DESC",
         context=f"{table} (seasons)",
     )
-    return [int(r["yr"]) for r in rows if r.get("yr") is not None]
+    # Temporary runtime proof: log raw rows before service-layer caching.
+    logger.warning("[query_seasons] table=%s raw_rows=%s", table, rows)
+    seasons = [int(r["yr"]) for r in rows if r.get("yr") is not None]
+    logger.warning("[query_seasons] table=%s seasons=%s", table, seasons)
+    return seasons
 
 
 # ── Weekly Rankings ───────────────────────────────────────────────────────────
