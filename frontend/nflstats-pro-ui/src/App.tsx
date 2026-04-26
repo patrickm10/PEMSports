@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 import type { Ranking, SortField, SortOrder } from './models/Ranking';
@@ -23,6 +23,21 @@ import {
 import { resolvePrimaryMetric } from './utils/metrics';
 
 import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
+import { SearchModal } from './v3/components/search/SearchModal';
+import { PlayerAnalyticsView } from './v3/components/playerAnalytics/PlayerAnalyticsView';
+import { useSearchStore } from './stores/searchStore';
+import { usePlayerAnalyticsStore } from './stores/playerAnalyticsStore';
+
+type WorkspaceView = 'dashboard' | 'rankings' | 'player';
+
+const POSITION_TABS: ReadonlySet<string> = new Set([
+  'qb',
+  'rb',
+  'wr',
+  'te',
+  'k',
+  'dst',
+]);
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
@@ -35,10 +50,28 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [density, setDensity] = useState<GridDensity>('standard');
   const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
-  const [workspaceView, setWorkspaceView] = useState<'dashboard' | 'rankings'>('rankings');
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('rankings');
 
-  // Seasons — cached separately
+  const openSearch = useSearchStore((s) => s.open);
+  const analyticsPlayer = usePlayerAnalyticsStore((s) => s.selectedPlayer);
+  const clearAnalytics = usePlayerAnalyticsStore((s) => s.clear);
+
+  // App owns navigation. The store mutates UI state only; this effect
+  // reacts to store changes and updates navigation imperatively. The
+  // store does NOT call setWorkspaceView or setActiveTab.
+  useEffect(() => {
+    if (!analyticsPlayer) return;
+    const pos = analyticsPlayer.position?.toLowerCase();
+    if (pos && POSITION_TABS.has(pos) && pos !== activeTab) {
+      setActiveTab(pos);
+      setSortBy('rank');
+      setSortOrder('asc');
+    }
+    setWorkspaceView('player');
+    // intentionally no dep on activeTab — we only react to selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analyticsPlayer]);
+
   const { data: rawYears = [] } = useSeasons(activeTab);
   const availableYears = useMemo(() => rawYears, [rawYears]);
 
@@ -49,10 +82,8 @@ export default function App() {
     }
   }, [activeTab, rawYears, availableYears]);
 
-  // Weeks — only fetched in weekly mode
   const { data: availableWeeks = [] } = useWeeks(activeTab, selectedYear);
 
-  // Sync selectedYear whenever position changes
   useEffect(() => {
     if (availableYears.length > 0) {
       const parsed = Number.parseInt(selectedYear, 10);
@@ -61,7 +92,6 @@ export default function App() {
     }
   }, [availableYears, selectedYear]);
 
-  // Sync selectedWeek whenever year/position changes
   useEffect(() => {
     if (availableWeeks.length > 0) {
       if (!selectedWeek || !availableWeeks.includes(parseInt(selectedWeek))) {
@@ -70,14 +100,11 @@ export default function App() {
     }
   }, [availableWeeks, selectedWeek]);
 
-  // Validated parameter combinations
   const isYearValid = Boolean(selectedYear && availableYears.includes(parseInt(selectedYear)));
   const isWeekValid = Boolean(selectedWeek && availableWeeks.includes(parseInt(selectedWeek)));
   const validYearInput = isYearValid ? selectedYear : '';
   const validWeekInput = isWeekValid ? selectedWeek : '';
 
-  // Rankings queries — sortBy/sortOrder preserved for API compatibility but
-  // sorting itself is now owned by TanStack Table inside VirtualizedGrid.
   const seasonQuery = useRankings(activeTab, validYearInput, sortBy, sortOrder);
   const weeklyQuery = useWeeklyRankings(
     activeTab,
@@ -90,14 +117,13 @@ export default function App() {
   const activeQuery = (viewMode === 'season' ? seasonQuery : weeklyQuery) as any;
   const { data: sortedData = [], isLoading } = activeQuery;
 
-  // Client-side search filter
   const filteredData = useMemo<Ranking[]>(() => {
     if (!searchQuery) return sortedData as Ranking[];
     const q = searchQuery.toLowerCase();
     return (sortedData as Ranking[]).filter(
       (p) =>
         p.player_name.toLowerCase().includes(q) ||
-        (p.team?.toLowerCase() || "").includes(q),
+        (p.team?.toLowerCase() || '').includes(q),
     );
   }, [sortedData, searchQuery]);
   const resolvedMetric = useMemo(
@@ -129,7 +155,6 @@ export default function App() {
     setWorkspaceView('rankings');
   };
 
-
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
     setSortBy('rank');
@@ -137,7 +162,19 @@ export default function App() {
     setSelectedPlayer(null);
   };
 
-  // ── Landing Page ──────────────────────────────────────────────────
+  const handleWorkspaceViewChange = (v: WorkspaceView) => {
+    if (v === 'player' && !analyticsPlayer) {
+      openSearch();
+      return;
+    }
+    setWorkspaceView(v);
+  };
+
+  const handleBackFromAnalytics = () => {
+    clearAnalytics();
+    setWorkspaceView('rankings');
+  };
+
   if (showLanding) {
     return <LandingPage onLaunch={() => setShowLanding(false)} />;
   }
@@ -148,35 +185,38 @@ export default function App() {
         activePosition={activeTab}
         onPositionChange={handleTabChange}
         workspaceView={workspaceView}
-        onWorkspaceViewChange={setWorkspaceView}
-        onSearchFocus={() => {
-          setWorkspaceView('rankings');
-          requestAnimationFrame(() => searchInputRef.current?.focus());
-        }}
+        onWorkspaceViewChange={handleWorkspaceViewChange}
+        hasSelectedPlayer={Boolean(analyticsPlayer)}
+        onOpenSearch={openSearch}
         density={density}
         setDensity={setDensity}
       >
         <div className="w-full max-w-[1600px] mx-auto space-y-6">
           <header className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              {workspaceView === 'dashboard' ? (
-                'Command center'
-              ) : (
+              {workspaceView === 'dashboard' && 'Command center'}
+              {workspaceView === 'rankings' && (
                 <>
                   {activeTab.toUpperCase()}{' '}
                   <span className="text-sky-400">performance</span>
                 </>
               )}
+              {workspaceView === 'player' && analyticsPlayer && (
+                <>
+                  {analyticsPlayer.player_name}{' '}
+                  <span className="text-sky-400">analytics</span>
+                </>
+              )}
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
-              {selectedYear}{' '}
-              {viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel
+              {workspaceView === 'player' && analyticsPlayer
+                ? `${analyticsPlayer.position?.toUpperCase() ?? '—'} · ${analyticsPlayer.team?.toUpperCase() ?? '—'} · DuckDB Analytical Kernel`
+                : `${selectedYear} ${viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel`}
             </p>
           </header>
 
           {workspaceView === 'rankings' && (
             <ControlBar
-              ref={searchInputRef}
               viewMode={viewMode}
               setViewMode={handleViewModeChange}
               selectedYear={selectedYear}
@@ -193,7 +233,13 @@ export default function App() {
             />
           )}
 
-          <StatsSummary data={filteredData} metric={resolvedMetric} isLoading={isLoading} />
+          {workspaceView !== 'player' && (
+            <StatsSummary
+              data={filteredData}
+              metric={resolvedMetric}
+              isLoading={isLoading}
+            />
+          )}
 
           {workspaceView === 'dashboard' && (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -253,8 +299,14 @@ export default function App() {
               </div>
             </>
           )}
+
+          {workspaceView === 'player' && (
+            <PlayerAnalyticsView onBack={handleBackFromAnalytics} />
+          )}
         </div>
       </ResponsiveDock>
+
+      <SearchModal />
 
       <AnimatePresence>
         {selectedPlayer && (

@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import type { GridDensity } from '../../../components/VirtualizedGrid';
 import { Sidebar } from '../navigation/Sidebar';
 
+export type WorkspaceView = 'dashboard' | 'rankings' | 'player';
+
 interface ResponsiveDockProps {
   children: React.ReactNode;
   activePosition: string;
   onPositionChange: (pos: string) => void;
-  workspaceView: 'dashboard' | 'rankings';
-  onWorkspaceViewChange: (v: 'dashboard' | 'rankings') => void;
-  onSearchFocus: () => void;
+  workspaceView: WorkspaceView;
+  onWorkspaceViewChange: (v: WorkspaceView) => void;
+  /** True when the player-analytics surface has a selected player to show. */
+  hasSelectedPlayer: boolean;
+  /** Open the global search modal (UI store action). */
+  onOpenSearch: () => void;
   density: GridDensity;
   setDensity: (d: GridDensity) => void;
 }
@@ -19,11 +24,19 @@ export const ResponsiveDock = ({
   onPositionChange,
   workspaceView,
   onWorkspaceViewChange,
-  onSearchFocus,
+  hasSelectedPlayer,
+  onOpenSearch,
   density,
   setDensity,
 }: ResponsiveDockProps) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const headerSubtitle =
+    workspaceView === 'dashboard'
+      ? 'Overview'
+      : workspaceView === 'player'
+      ? 'Player'
+      : 'Leaderboard';
 
   return (
     <div className="app-mesh-root flex h-screen w-full text-slate-200 overflow-hidden font-sans antialiased">
@@ -34,7 +47,8 @@ export const ResponsiveDock = ({
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         workspaceView={workspaceView}
         onWorkspaceViewChange={onWorkspaceViewChange}
-        onSearchFocus={onSearchFocus}
+        hasSelectedPlayer={hasSelectedPlayer}
+        onOpenSearch={onOpenSearch}
         density={density}
         setDensity={setDensity}
       />
@@ -47,7 +61,7 @@ export const ResponsiveDock = ({
             </span>
             <span className="text-slate-600 hidden sm:inline">·</span>
             <span className="text-xs font-semibold text-slate-300 hidden sm:inline truncate">
-              {workspaceView === 'dashboard' ? 'Overview' : 'Leaderboard'}
+              {headerSubtitle}
             </span>
           </div>
         </header>

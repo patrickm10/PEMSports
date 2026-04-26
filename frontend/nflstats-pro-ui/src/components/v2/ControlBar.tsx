@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, Hash, Users, User, LogOut, ChevronDown, Rows3 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -28,14 +28,11 @@ const DENSITY_LABELS: Record<GridDensity, string> = {
   expert: 'Expert',
 };
 
-export const ControlBar = forwardRef<HTMLInputElement, ControlBarProps>(function ControlBar(
-  {
-    viewMode, setViewMode, selectedYear, setSelectedYear, availableYears,
-    selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
-    totalPlayers, density, setDensity,
-  },
-  ref,
-) {
+export function ControlBar({
+  viewMode, setViewMode, selectedYear, setSelectedYear, availableYears,
+  selectedWeek, setSelectedWeek, availableWeeks, searchQuery, setSearchQuery,
+  totalPlayers, density, setDensity,
+}: ControlBarProps) {
   const { user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
@@ -158,9 +155,8 @@ export const ControlBar = forwardRef<HTMLInputElement, ControlBarProps>(function
         <div className="relative flex-1 group min-w-[140px] md:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
           <input
-            ref={ref}
             type="text"
-            placeholder="Search players..."
+            placeholder="Filter visible rows..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 pl-10 pr-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all placeholder:text-slate-600"
@@ -200,4 +196,4 @@ export const ControlBar = forwardRef<HTMLInputElement, ControlBarProps>(function
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
   );
-});
+}

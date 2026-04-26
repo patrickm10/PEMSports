@@ -11,6 +11,7 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
+  UserSearch,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +19,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useState } from 'react';
 import type { GridDensity } from '../../../components/VirtualizedGrid';
+import type { WorkspaceView } from '../layout/ResponsiveDock';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,20 +31,32 @@ interface SidebarItemProps {
   active?: boolean;
   onClick?: () => void;
   collapsed?: boolean;
+  disabled?: boolean;
+  hint?: string;
 }
 
-const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed }: SidebarItemProps) => (
+const SidebarItem = ({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+  collapsed,
+  disabled,
+  hint,
+}: SidebarItemProps) => (
   <button
     type="button"
     onClick={onClick}
+    disabled={disabled}
     className={cn(
       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group text-left',
       active
         ? 'bg-white/10 text-white border border-white/15 shadow-[0_0_0_1px_rgba(56,189,248,0.15)]'
         : 'text-slate-400 hover:text-slate-100 border border-transparent hover:bg-white/[0.04]',
       collapsed && 'justify-center px-0',
+      disabled && 'opacity-40 pointer-events-none',
     )}
-    title={collapsed ? label : undefined}
+    title={collapsed ? label : hint}
   >
     <Icon
       size={18}
@@ -80,9 +94,10 @@ interface SidebarProps {
   onPositionChange: (pos: string) => void;
   collapsed: boolean;
   onToggle: () => void;
-  workspaceView: 'dashboard' | 'rankings';
-  onWorkspaceViewChange: (v: 'dashboard' | 'rankings') => void;
-  onSearchFocus: () => void;
+  workspaceView: WorkspaceView;
+  onWorkspaceViewChange: (v: WorkspaceView) => void;
+  hasSelectedPlayer: boolean;
+  onOpenSearch: () => void;
   density: GridDensity;
   setDensity: (d: GridDensity) => void;
 }
@@ -94,7 +109,8 @@ export const Sidebar = ({
   onToggle,
   workspaceView,
   onWorkspaceViewChange,
-  onSearchFocus,
+  hasSelectedPlayer,
+  onOpenSearch,
   density,
   setDensity,
 }: SidebarProps) => {
@@ -152,7 +168,22 @@ export const Sidebar = ({
           collapsed={collapsed}
           onClick={() => onWorkspaceViewChange('rankings')}
         />
-        <SidebarItem icon={Search} label="Search" collapsed={collapsed} onClick={onSearchFocus} />
+        <SidebarItem
+          icon={Search}
+          label="Search"
+          collapsed={collapsed}
+          onClick={onOpenSearch}
+          hint="Open search modal"
+        />
+        <SidebarItem
+          icon={UserSearch}
+          label="Player"
+          active={workspaceView === 'player'}
+          collapsed={collapsed}
+          onClick={() => onWorkspaceViewChange('player')}
+          disabled={!hasSelectedPlayer}
+          hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from search to enable'}
+        />
         <div className="relative">
           <SidebarItem
             icon={Settings}
