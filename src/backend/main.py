@@ -15,6 +15,7 @@ CORS:
 import logging
 import os
 import sys
+import asyncio
 from pathlib import Path
 from typing import List
 
@@ -22,6 +23,11 @@ from typing import List
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+
+# Windows asyncio policy: psycopg async pools are not compatible with the
+# default ProactorEventLoop. This must be set before any async pool is opened.
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -36,6 +42,7 @@ from slowapi.util import get_remote_address
 
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
+from backend.api.players_routes import router as players_router
 from backend.core.config import config
 from backend.core.exceptions import NFLStatsException
 from backend.core.health import check_health
@@ -150,10 +157,12 @@ def root(request: Request):
 # Versioned routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
+app.include_router(players_router, prefix="/api/v1", tags=["players"])
 
 # Backwards-compatible alias — keeps existing frontend/consumers working
 # while they migrate to /api/v1/
 app.include_router(rankings_router, prefix="/api", tags=["rankings (legacy)"], include_in_schema=False)
+app.include_router(players_router, prefix="/api", tags=["players (legacy)"], include_in_schema=False)
 
 # ── Static files ──────────────────────────────────────────────────────────────
 # Player headshots live at repo-root assets/players/ → /static/players/{player_id}.png

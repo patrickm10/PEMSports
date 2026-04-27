@@ -305,6 +305,332 @@ def query_player_profile(player_id: str, position: str) -> Optional[dict[str, An
     return {"seasons": seasons} if seasons else None
 
 
+# ── Player Analytics (explicit resources) ─────────────────────────────────────
+
+def _table_columns(table: str) -> set[str]:
+    """Return a set of lowercased column names for a baked table."""
+    rows = _execute(f"PRAGMA table_info('{table}')", context=f"{table} (schema)")
+    cols: set[str] = set()
+    for r in rows:
+        name = r.get("name")
+        if isinstance(name, str):
+            cols.add(name.lower())
+    return cols
+
+
+def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
+    """
+    Cross-position search across all *_seasonal tables.
+
+    Contract: returns schema-stable search hits. Any missing value is null.
+    """
+    q_norm = (q or "").strip().lower()
+    if not q_norm:
+        return []
+
+    like = f"%{q_norm}%"
+    results: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for pos in ("qb", "rb", "wr", "te", "k", "dst"):
+        table = f"{pos}_seasonal"
+        try:
+            cols = _table_columns(table)
+        except NFLStatsException:
+            continue
+
+        # rank may not exist in baked tables; compute a lightweight current-season rank proxy if present.
+        rank_expr = "CAST(rank AS INTEGER)" if "rank" in cols else "NULL"
+
+        sql = f"""
+        SELECT
+          player_id,
+          player_name,
+          '{pos.upper()}' AS position,
+          team,
+          '/static/players/' || player_id || '.png' AS headshot_url,
+          {rank_expr} AS current_season_rank
+        FROM {table}
+        WHERE LOWER(player_name) LIKE ?
+        ORDER BY year DESC
+        LIMIT 50
+        """
+        try:
+            rows = _execute(sql, [like], context=f"{table} (player_search)")
+        except NFLStatsException:
+            continue
+
+        for r in rows:
+            pid = r.get("player_id")
+            if not isinstance(pid, str) or pid in seen:
+                continue
+            seen.add(pid)
+
+            # Simple match score: prefix gets a bump; keep stable 0..1 range.
+            name = (r.get("player_name") or "").lower() if isinstance(r.get("player_name"), str) else ""
+            score = 0.6
+            if name.startswith(q_norm):
+                score = 0.95
+            elif q_norm in name:
+                score = 0.8
+
+            results.append(
+                {
+                    "player_id": pid,
+                    "player_name": r.get("player_name"),
+                    "position": r.get("position"),
+                    "team": r.get("team"),
+                    "headshot_url": r.get("headshot_url"),
+                    "current_season_rank": r.get("current_season_rank"),
+                    "match_score": score,
+                }
+            )
+
+            if len(results) >= limit:
+                return results
+
+    return results[:limit]
+
+
+def query_player_splits(
+    *, position: str, player_id: str, dimension: str
+) -> dict[str, Any]:
+    """Explicit split resource: opponent|stadium|surface|venue."""
+    table = f"{position.lower()}_weekly"
+    cols = _table_columns(table)
+
+    dim_col_map = {
+        "opponent": "opponent",
+        "stadium": "stadium_name",
+        "surface": "surface_type",
+        "venue": "indoor_outdoor",
+    }
+    dim_col = dim_col_map.get(dimension, "opponent")
+    if dim_col not in cols:
+        # Contract: still return stable schema, with empty splits.
+        return {
+            "player_id": player_id,
+            "position": position.lower(),
+            "dimension": dimension,
+            "splits": [],
+        }
+
+    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
+    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+
+    sql = f"""
+        SELECT
+            {dim_col} AS key,
+            COUNT(*) AS games,
+            ROUND(AVG(fpts_ppr), 2) AS avg_ppr,
+            ROUND(SUM(fpts_ppr), 2) AS total_ppr,
+            {avg_yards_expr} AS avg_yards,
+            {avg_tds_expr} AS avg_tds
+        FROM {table}
+        WHERE player_id = ? AND {dim_col} IS NOT NULL
+        GROUP BY 1
+        ORDER BY avg_ppr DESC NULLS LAST
+    """
+    rows = _execute(sql, [player_id], context=f"{table} (splits/{dimension})")
+
+    # Ensure schema-stable keys and NaN handling via _serialize_rows already.
+    splits = [
+        {
+            "key": r.get("key"),
+            "games": int(r.get("games") or 0),
+            "avg_ppr": r.get("avg_ppr"),
+            "total_ppr": r.get("total_ppr"),
+            "avg_yards": r.get("avg_yards"),
+            "avg_tds": r.get("avg_tds"),
+        }
+        for r in rows
+    ]
+    return {
+        "player_id": player_id,
+        "position": position.lower(),
+        "dimension": dimension,
+        "splits": splits,
+    }
+
+
+def query_player_splits_by_year(
+    *, position: str, player_id: str, dimension: str
+) -> dict[str, Any]:
+    """
+    Yearly split resource. Returns rows grouped by (year, dimension key).
+
+    Contract: schema-stable. Keys always present; missing metrics are null.
+    """
+    table = f"{position.lower()}_weekly"
+    cols = _table_columns(table)
+
+    dim_col_map = {
+        "opponent": "opponent",
+        "stadium": "stadium_name",
+        "surface": "surface_type",
+        "venue": "indoor_outdoor",
+    }
+    dim_col = dim_col_map.get(dimension, "opponent")
+    if dim_col not in cols:
+        return {
+            "player_id": player_id,
+            "position": position.lower(),
+            "dimension": dimension,
+            "years": [],
+            "rows": [],
+        }
+
+    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
+    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+
+    sql = f"""
+        SELECT
+            CAST(year AS INTEGER) AS year,
+            {dim_col} AS key,
+            COUNT(*) AS games,
+            ROUND(AVG(fpts_ppr), 2) AS avg_ppr,
+            ROUND(SUM(fpts_ppr), 2) AS total_ppr,
+            {avg_yards_expr} AS avg_yards,
+            {avg_tds_expr} AS avg_tds
+        FROM {table}
+        WHERE player_id = ? AND {dim_col} IS NOT NULL
+        GROUP BY 1, 2
+        ORDER BY year DESC, avg_ppr DESC NULLS LAST
+    """
+    rows = _execute(sql, [player_id], context=f"{table} (splits/{dimension}/by-year)")
+
+    years: list[int] = []
+    seen_years: set[int] = set()
+    out_rows: list[dict[str, Any]] = []
+    for r in rows:
+        yr = r.get("year")
+        if isinstance(yr, int) and yr not in seen_years:
+            years.append(yr)
+            seen_years.add(yr)
+        out_rows.append(
+            {
+                "year": yr,
+                "key": r.get("key"),
+                "games": int(r.get("games") or 0),
+                "avg_ppr": r.get("avg_ppr"),
+                "total_ppr": r.get("total_ppr"),
+                "avg_yards": r.get("avg_yards"),
+                "avg_tds": r.get("avg_tds"),
+            }
+        )
+
+    return {
+        "player_id": player_id,
+        "position": position.lower(),
+        "dimension": dimension,
+        "years": years,
+        "rows": out_rows,
+    }
+
+
+def query_player_weekly(
+    *, position: str, player_id: str, years: list[int] | None = None
+) -> dict[str, Any]:
+    """Weekly logs across seasons. Returns schema-stable per-week rows."""
+    table = f"{position.lower()}_weekly"
+    cols = _table_columns(table)
+
+    yards_expr = "CAST(yds AS DOUBLE)" if "yds" in cols else "NULL"
+    tds_expr = "CAST(td AS DOUBLE)" if "td" in cols else "NULL"
+
+    conditions: list[str] = ["player_id = ?"]
+    params: list[Any] = [player_id]
+    if years:
+        placeholders = ",".join(["?"] * len(years))
+        conditions.append(f"CAST(year AS INTEGER) IN ({placeholders})")
+        params.extend([float(y) for y in years])
+
+    where_clause = " AND ".join(conditions)
+    sql = f"""
+      SELECT
+        CAST(year AS INTEGER) AS year,
+        CAST(week AS INTEGER) AS week,
+        CAST(fpts_ppr AS DOUBLE) AS ppr_fpts,
+        CAST(fpts AS DOUBLE) AS fantasy_points,
+        {yards_expr} AS yards,
+        {tds_expr} AS tds,
+        opponent,
+        stadium_name,
+        surface_type,
+        indoor_outdoor,
+        NULL AS home_away,
+        NULL AS rest_days,
+        temp,
+        humidity,
+        wind,
+        weather_impact
+      FROM {table}
+      WHERE {where_clause}
+      ORDER BY year DESC, week ASC
+    """
+    rows = _execute(sql, params, context=f"{table} (player_weekly)")
+
+    seasons_map: dict[int, list[dict[str, Any]]] = {}
+    for r in rows:
+        yr = r.get("year")
+        if not isinstance(yr, int):
+            continue
+        seasons_map.setdefault(yr, []).append(
+            {
+                "week": r.get("week"),
+                "ppr_fpts": r.get("ppr_fpts"),
+                "fantasy_points": r.get("fantasy_points"),
+                "yards": r.get("yards"),
+                "tds": r.get("tds"),
+                "opponent": r.get("opponent"),
+                "stadium_name": r.get("stadium_name"),
+                "surface_type": r.get("surface_type"),
+                "indoor_outdoor": r.get("indoor_outdoor"),
+                "home_away": None,
+                "rest_days": None,
+                "temp": r.get("temp"),
+                "humidity": r.get("humidity"),
+                "wind": r.get("wind"),
+                "weather_impact": r.get("weather_impact"),
+            }
+        )
+
+    seasons_payload = [
+        {"year": yr, "weeks": weeks} for yr, weeks in sorted(seasons_map.items(), reverse=True)
+    ]
+    return {
+        "player_id": player_id,
+        "position": position.lower(),
+        "metric_keys": ["ppr_fpts", "fantasy_points", "yards", "tds"],
+        "seasons": seasons_payload,
+    }
+
+
+def query_player_metadata(*, position: str, player_id: str) -> dict[str, Any]:
+    """
+    Aggregated context overlays.
+
+    Note: home_away and rest_days are currently not baked; contract requires the
+    buckets exist anyway with games=0 and metric values null.
+    """
+    empty_agg = {"games": 0, "avg_ppr": None, "avg_yards": None, "avg_tds": None}
+    rest_buckets = [
+        {"bucket": "<6", "aggregate": dict(empty_agg)},
+        {"bucket": "6-7", "aggregate": dict(empty_agg)},
+        {"bucket": "8-13", "aggregate": dict(empty_agg)},
+        {"bucket": "14+", "aggregate": dict(empty_agg)},
+    ]
+    return {
+        "player_id": player_id,
+        "position": position.lower(),
+        "splits": {
+            "home_away": {"home": dict(empty_agg), "away": dict(empty_agg)},
+            "rest_buckets": rest_buckets,
+            "weather_impact": [],
+        },
+    }
+
+
 def invalidate_view(position: str, weekly: bool = False) -> None:
     """NO-OP in persistent mode. Database is updated via bake_db.py."""
     pass
