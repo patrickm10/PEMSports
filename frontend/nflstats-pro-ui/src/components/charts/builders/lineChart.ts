@@ -1,11 +1,10 @@
 import type { EChartsOption } from 'echarts';
 import type { TimeSeriesChartModel } from '../contract';
+import { CHART_PALETTE } from '../seasonColors';
 
 const axisLabelColor = '#94a3b8';
 const splitLineColor = 'rgba(148, 163, 184, 0.12)';
 const tooltipBackground = 'rgba(15, 23, 42, 0.96)';
-
-const PALETTE = ['#38bdf8', '#22c55e', '#f97316', '#a78bfa', '#ec4899', '#facc15'];
 
 /**
  * Builds an ECharts line option from the chart-data contract.
@@ -63,10 +62,10 @@ export function buildLineSeriesOption(
       data: s.points.map((p) => (p.y === null ? null : p.y)),
       emphasis: { disabled: true },
       select: { disabled: true },
-      itemStyle: { color: s.color ?? PALETTE[i % PALETTE.length] },
+      itemStyle: { color: s.color ?? CHART_PALETTE[i % CHART_PALETTE.length] },
       lineStyle: {
         width: 2,
-        color: s.color ?? PALETTE[i % PALETTE.length],
+        color: s.color ?? CHART_PALETTE[i % CHART_PALETTE.length],
       },
     })),
   };

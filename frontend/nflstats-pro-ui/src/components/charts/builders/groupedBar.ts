@@ -1,11 +1,10 @@
 import type { EChartsOption } from 'echarts';
 import type { CategoricalChartModel } from '../contract';
+import { CHART_PALETTE } from '../seasonColors';
 
 const axisLabelColor = '#94a3b8';
 const splitLineColor = 'rgba(148, 163, 184, 0.12)';
 const tooltipBackground = 'rgba(15, 23, 42, 0.96)';
-
-const PALETTE = ['#38bdf8', '#f97316', '#22c55e', '#a78bfa'];
 
 interface BuildOpts {
   height?: number;
@@ -79,7 +78,7 @@ export function buildGroupedBarOption(
       emphasis: { disabled: true },
       select: { disabled: true },
       itemStyle: {
-        color: s.color ?? PALETTE[i % PALETTE.length],
+        color: s.color ?? CHART_PALETTE[i % CHART_PALETTE.length],
         borderRadius: [4, 4, 0, 0],
       },
     })),
