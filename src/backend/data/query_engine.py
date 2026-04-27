@@ -107,9 +107,12 @@ def _execute(sql: str, params: list[Any] | None = None, *, context: str) -> list
 
     `context` is a short label used in log messages (e.g. "qb_weekly").
     """
-    try:
+    def _run() -> list[dict[str, Any]]:
         cursor = _get_conn().execute(sql, params or [])
         return _serialize_rows(cursor)
+
+    try:
+        return _run()
     except duckdb.CatalogException as exc:
         logger.warning("Table missing for %s: %s", context, exc)
         raise TableMissingError(f"Table for {context} is not baked.") from exc
@@ -117,10 +120,22 @@ def _execute(sql: str, params: list[Any] | None = None, *, context: str) -> list
         logger.exception("Query engine SQL error (%s)", context)
         raise QueryEngineError(f"SQL error querying {context}: {exc}") from exc
     except duckdb.IOException as exc:
-        logger.exception("DuckDB IO error (%s)", context)
-        raise DatabaseUnavailableError(
-            f"DuckDB IO failure while querying {context}: {exc}"
-        ) from exc
+        # A common local-dev failure mode is rebaking `data/nfl_stats.db` while the
+        # server is running. That can invalidate a previously opened DuckDB file
+        # handle. We reset the thread-local connection and retry once to recover.
+        logger.warning("DuckDB IO error (%s), retrying with fresh connection: %s", context, exc)
+        if hasattr(_thread_local, "conn"):
+            try:
+                delattr(_thread_local, "conn")
+            except Exception:
+                pass
+        try:
+            return _run()
+        except Exception as exc2:
+            logger.exception("DuckDB IO error after retry (%s)", context)
+            raise DatabaseUnavailableError(
+                f"DuckDB IO failure while querying {context}: {exc2}"
+            ) from exc2
     except NFLStatsException:
         raise
     except Exception as exc:  # noqa: BLE001 - final safety net, re-raised as typed

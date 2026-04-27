@@ -21,6 +21,7 @@ export function buildLineSeriesOption(
     ((v: number | null) => (v === null ? '—' : v.toFixed(1)));
 
   return {
+    animation: false,
     grid: { top: 32, right: 24, bottom: 36, left: 48 },
     legend: {
       show: model.series.length > 1,
@@ -60,6 +61,8 @@ export function buildLineSeriesOption(
       symbolSize: 6,
       connectNulls: false,
       data: s.points.map((p) => (p.y === null ? null : p.y)),
+      emphasis: { disabled: true },
+      select: { disabled: true },
       itemStyle: { color: s.color ?? PALETTE[i % PALETTE.length] },
       lineStyle: {
         width: 2,

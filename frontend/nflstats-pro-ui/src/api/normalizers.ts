@@ -115,10 +115,43 @@ export function toYearlyCategoricalChartModel(
   const comparisonName = options?.comparisonName ?? comparison?.player_id ?? '';
   const topN = options?.topN;
 
-  const categoriesAll = uniqueOrdered(primary.rows.map((r) => r.key));
-  const categories = typeof topN === 'number' && topN > 0 ? categoriesAll.slice(0, topN) : categoriesAll;
+  // Categories must be stable and meaningful. The API returns rows ordered by
+  // (year desc, avg desc), which is not a good proxy for which buckets matter
+  // most to the player. Build categories from the union of keys and sort by
+  // total games across all years (and both players, when comparing).
+  const primaryKeys = primary.rows.map((r) => r.key);
+  const comparisonKeys = comparison ? comparison.rows.map((r) => r.key) : [];
+  const categoriesAll = uniqueOrdered([...primaryKeys, ...comparisonKeys]).filter(Boolean);
 
-  const years = primary.years ?? [];
+  const gamesByKey = new Map<string, number>();
+  for (const r of primary.rows) {
+    const key = r.key;
+    if (!key) continue;
+    gamesByKey.set(key, (gamesByKey.get(key) ?? 0) + (r.games ?? 0));
+  }
+  if (comparison) {
+    for (const r of comparison.rows) {
+      const key = r.key;
+      if (!key) continue;
+      gamesByKey.set(key, (gamesByKey.get(key) ?? 0) + (r.games ?? 0));
+    }
+  }
+
+  const categoriesRanked = [...categoriesAll].sort((a, b) => {
+    const ga = gamesByKey.get(a) ?? 0;
+    const gb = gamesByKey.get(b) ?? 0;
+    if (gb !== ga) return gb - ga;
+    return a.localeCompare(b);
+  });
+
+  const categories =
+    typeof topN === 'number' && topN > 0 ? categoriesRanked.slice(0, topN) : categoriesRanked;
+
+  // Guardrail: ECharts hover/highlight work scales with (#series × #categories).
+  // Player split-by-year can span many seasons in the baked DB; cap the rendered
+  // series count to keep interactions responsive.
+  const MAX_YEARS = 6;
+  const years = (primary.years ?? []).slice(0, MAX_YEARS);
 
   const valueByYearKey = new Map<string, Map<number, number | null>>();
   for (const r of primary.rows) {
@@ -133,7 +166,7 @@ export function toYearlyCategoricalChartModel(
   }));
 
   if (comparison) {
-    const cmpYears = comparison.years ?? [];
+    const cmpYears = (comparison.years ?? []).slice(0, MAX_YEARS);
     const cmpValueByYearKey = new Map<string, Map<number, number | null>>();
     for (const r of comparison.rows) {
       if (!cmpValueByYearKey.has(r.key)) cmpValueByYearKey.set(r.key, new Map());
@@ -175,7 +208,11 @@ export function toTimeSeriesChartModel(
 
   const series: TimeSeriesChartModel['series'] = [];
 
-  for (const season of primary.seasons) {
+  // Same guardrail as split-by-year: too many line series makes hover/tooltips
+  // expensive. Prefer the most recent seasons for readability.
+  const MAX_SEASONS = 6;
+  const primarySeasons = primary.seasons.slice(0, MAX_SEASONS);
+  for (const season of primarySeasons) {
     const lookup = new Map<number, number | null>(
       season.weeks.map((w) => [w.week, w[metric]]),
     );
@@ -191,7 +228,8 @@ export function toTimeSeriesChartModel(
   }
 
   if (comparison) {
-    for (const season of comparison.seasons) {
+    const comparisonSeasons = comparison.seasons.slice(0, MAX_SEASONS);
+    for (const season of comparisonSeasons) {
       const lookup = new Map<number, number | null>(
         season.weeks.map((w) => [w.week, w[metric]]),
       );
