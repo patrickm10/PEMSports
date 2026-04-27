@@ -286,9 +286,9 @@ export function usePlayerAnalytics(
       error: (metaQuery.error as Error) ?? null,
     };
 
-    // Slightly higher caps so the newest season doesn't look sparse while
-    // still keeping hover/tooltips responsive.
-    const vsOpponent = dimResource(0, 20);
+    // Opponent is naturally bounded (~32 teams). Do NOT apply cross-season Top-N
+    // slicing, which can make some seasons look artificially sparse.
+    const vsOpponent = dimResource(0);
     const stadium = dimResource(1, 16);
     const surface = dimResource(2);
 
