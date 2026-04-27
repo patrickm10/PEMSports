@@ -109,27 +109,57 @@ export function toYearlyCategoricalChartModel(
 
   // Categories must be stable and meaningful. The API returns rows ordered by
   // (year desc, avg desc), which is not a good proxy for which buckets matter
-  // most to the player. Build categories from the union of keys and sort by
-  // total games across all years (and both players, when comparing).
+  // most to the player.
+  //
+  // We rank categories using all-year coverage so this behavior is stable for
+  // every season window (not just the latest year):
+  // 1) number of distinct years where the category appears
+  // 2) most recent-year games (to keep newest season visible)
+  // 3) total games across all years
   const primaryKeys = primary.rows.map((r) => r.key);
   const comparisonKeys = comparison ? comparison.rows.map((r) => r.key) : [];
   const categoriesAll = uniqueOrdered([...primaryKeys, ...comparisonKeys]).filter(Boolean);
 
   const gamesByKey = new Map<string, number>();
+  const yearsByKey = new Map<string, Set<number>>();
+  const gamesByKeyMostRecent = new Map<string, number>();
+  const mostRecentYear = Math.max(...((primary.years ?? []).map((y) => Number(y)).filter(Number.isFinite) as number[]), 0);
   for (const r of primary.rows) {
     const key = r.key;
     if (!key) continue;
     gamesByKey.set(key, (gamesByKey.get(key) ?? 0) + (r.games ?? 0));
+    if (!yearsByKey.has(key)) yearsByKey.set(key, new Set<number>());
+    yearsByKey.get(key)!.add(r.year);
+    if (mostRecentYear && r.year === mostRecentYear) {
+      gamesByKeyMostRecent.set(
+        key,
+        (gamesByKeyMostRecent.get(key) ?? 0) + (r.games ?? 0),
+      );
+    }
   }
   if (comparison) {
     for (const r of comparison.rows) {
       const key = r.key;
       if (!key) continue;
       gamesByKey.set(key, (gamesByKey.get(key) ?? 0) + (r.games ?? 0));
+      if (!yearsByKey.has(key)) yearsByKey.set(key, new Set<number>());
+      yearsByKey.get(key)!.add(r.year);
+      if (mostRecentYear && r.year === mostRecentYear) {
+        gamesByKeyMostRecent.set(
+          key,
+          (gamesByKeyMostRecent.get(key) ?? 0) + (r.games ?? 0),
+        );
+      }
     }
   }
 
   const categoriesRanked = [...categoriesAll].sort((a, b) => {
+    const ya = yearsByKey.get(a)?.size ?? 0;
+    const yb = yearsByKey.get(b)?.size ?? 0;
+    if (yb !== ya) return yb - ya;
+    const ra = gamesByKeyMostRecent.get(a) ?? 0;
+    const rb = gamesByKeyMostRecent.get(b) ?? 0;
+    if (rb !== ra) return rb - ra;
     const ga = gamesByKey.get(a) ?? 0;
     const gb = gamesByKey.get(b) ?? 0;
     if (gb !== ga) return gb - ga;
