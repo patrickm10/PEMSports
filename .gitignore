@@ -36,6 +36,9 @@ legacy_data/
 data/nfl_stats.db
 data/nfl_stats.db.bak
 
+# Player headshots (downloaded binary assets; do not commit)
+data/headshots/
+
 # Logs & Debug Output
 logs/
 *.log

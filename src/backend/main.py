@@ -165,18 +165,18 @@ app.include_router(rankings_router, prefix="/api", tags=["rankings (legacy)"], i
 app.include_router(players_router, prefix="/api", tags=["players (legacy)"], include_in_schema=False)
 
 # ── Static files ──────────────────────────────────────────────────────────────
-# Player headshots live at repo-root assets/players/ → /static/players/{player_id}.png
-# Always ensure the directory exists and mount with an absolute path so the
-# server resolves files regardless of process working directory.
-# Mount the more specific path first so it is not shadowed by a blanket /static mount.
+# Headshots are keyed by canonical UUID `player_id`:
+#   repo-root/data/headshots/{player_id}.jpg  →  /headshots/{player_id}.jpg
+_headshots_dir = (_PROJECT_ROOT / "data" / "headshots").resolve()
+_headshots_dir.mkdir(parents=True, exist_ok=True)
+logger.info("Serving player headshots from %s at /headshots", _headshots_dir)
+app.mount("/headshots", StaticFiles(directory=str(_headshots_dir)), name="headshots")
+
+# Backwards-compat (older builds used assets/players → /static/players/*.png)
 _players_assets = (_PROJECT_ROOT / "assets" / "players").resolve()
 _players_assets.mkdir(parents=True, exist_ok=True)
-logger.info("Serving player images from %s at /static/players", _players_assets)
-app.mount(
-    "/static/players",
-    StaticFiles(directory=str(_players_assets)),
-    name="static_players",
-)
+logger.info("Serving legacy player images from %s at /static/players", _players_assets)
+app.mount("/static/players", StaticFiles(directory=str(_players_assets)), name="static_players")
 
 _static_path = Path(__file__).parent / "static"
 if _static_path.exists():

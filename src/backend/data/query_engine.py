@@ -166,6 +166,7 @@ def query_rankings(
     sql = f"""
     SELECT
         *,
+        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
             PARTITION BY year
             ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
@@ -221,6 +222,7 @@ def query_weekly_rankings(
     sql = f"""
     SELECT
         *,
+        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
             PARTITION BY year, week
             ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
@@ -363,7 +365,7 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
           player_name,
           '{pos.upper()}' AS position,
           team,
-          '/static/players/' || player_id || '.png' AS headshot_url,
+          '/headshots/' || player_id || '.jpg' AS headshot_url,
           {rank_expr} AS current_season_rank
         FROM {table}
         WHERE LOWER(player_name) LIKE ?

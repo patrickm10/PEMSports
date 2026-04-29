@@ -25,6 +25,10 @@ pydantic==2.11.7
 beautifulsoup4==4.12.3
 requests==2.32.3
 
+# Image processing (headshot pipeline writes .jpg)
+# Kept <12 for compatibility with streamlit dependency constraints in this repo.
+Pillow==11.3.0
+
 # Database (PostgreSQL — scaffolded)
 psycopg[binary]==3.2.4
 psycopg-pool==3.2.4
@@ -37,7 +41,3 @@ jinja2==3.1.5
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.20
-
-# Database
-psycopg[binary]>=3.0.0
-psycopg_pool>=3.0.0

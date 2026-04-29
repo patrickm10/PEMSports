@@ -17,6 +17,7 @@ logger = logging.getLogger("bake_db")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data" / "rankings"
 DB_PATH = PROJECT_ROOT / "data" / "nfl_stats.db"
+PLAYERS_CSV = PROJECT_ROOT / "data" / "players.csv"
 
 POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"]
 
@@ -29,7 +30,7 @@ GLOBAL_BLACKLIST = {"Rank", "Player"}
 KNOWN_STRING = {
     "player_name", "player_id", "team", "position", "season",
     "opponent", "stadium_name", "city", "state", "indoor_outdoor",
-    "surface_type", "game_result",
+    "surface_type", "game_result", "weather_impact",
 }
 
 # Position-Specific Mapping Matrix: Unified names for the Serving Layer.
@@ -109,16 +110,13 @@ def _discover_and_build(conn: duckdb.DuckDBPyConnection, parquet_path: Path, pos
         final_cols.append(out_name)
 
         # 2. SELECT Expression with Casting
+        # Qualify with `src.` so SELECTs stay unambiguous when joined with `players p`.
         if c == "player_name" and has_player_raw:
-            # Prefer enriched player_name, fall back to raw Player column
-            exprs.append(f'COALESCE("player_name", "Player") AS "{out_name}"')
+            exprs.append(f'COALESCE(src."player_name", src."Player") AS "{out_name}"')
         elif out_name in KNOWN_STRING:
-            # Metadata strings
-            exprs.append(f'"{c}" AS "{out_name}"')
+            exprs.append(f'src."{c}" AS "{out_name}"')
         else:
-            # All performance metrics & numeric metadata (temp, wind, fpts)
-            # TRY_CAST to DOUBLE ensures schema stability for the frontend
-            exprs.append(f'TRY_CAST("{c}" AS DOUBLE) AS "{out_name}"')
+            exprs.append(f'TRY_CAST(src."{c}" AS DOUBLE) AS "{out_name}"')
 
     return final_cols, ", ".join(exprs)
 
@@ -130,6 +128,32 @@ def bake():
 
     conn = duckdb.connect(str(DB_PATH))
 
+    # Optional canonical Players dimension:
+    # If present, this table upgrades legacy parquet `player_id` values to internal UUIDs.
+    # Downstream (API + headshots) should treat the UUID as the canonical key.
+    players_table_loaded = False
+    if PLAYERS_CSV.exists():
+        try:
+            conn.execute(
+                f"""
+                CREATE TABLE players AS
+                SELECT
+                  CAST(player_id AS VARCHAR) AS player_id,
+                  CAST(legacy_player_id AS VARCHAR) AS legacy_player_id,
+                  CAST(player_name AS VARCHAR) AS player_name,
+                  CAST(team AS VARCHAR) AS team,
+                  CAST(position AS VARCHAR) AS position,
+                  CAST(NULLIF(espn_player_id, '') AS VARCHAR) AS espn_player_id
+                FROM read_csv_auto('{str(PLAYERS_CSV).replace("\\\\", "/")}', HEADER=TRUE)
+                """
+            )
+            conn.execute("CREATE UNIQUE INDEX idx_players_player_id ON players(player_id)")
+            conn.execute("CREATE UNIQUE INDEX idx_players_legacy_player_id ON players(legacy_player_id)")
+            players_table_loaded = True
+            logger.info("Loaded players dimension from %s", PLAYERS_CSV)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to load players dimension from %s: %s", PLAYERS_CSV, exc)
+
     for pos in POSITIONS:
         # 1. Weekly Data
         weekly_parquet = DATA_DIR / f"{pos}_weekly.parquet"
@@ -139,10 +163,17 @@ def bake():
 
             columns, select_stmt = _discover_and_build(conn, weekly_parquet, pos)
 
-            conn.execute(
-                f"CREATE TABLE {pos.lower()}_weekly AS "
-                f"SELECT {select_stmt} FROM read_parquet('{path_str}')"
-            )
+            from_clause = f"read_parquet('{path_str}') src"
+            if players_table_loaded and "player_id" in {c.lower() for c in columns}:
+                # Replace legacy player_id with canonical UUID.
+                # Left join keeps rows even if mapping is missing (player_id becomes NULL).
+                select_stmt = select_stmt.replace('src."player_id" AS "player_id"', 'p.player_id AS "player_id"')
+                from_clause = (
+                    f"read_parquet('{path_str}') src "
+                    f"LEFT JOIN players p ON CAST(src.player_id AS VARCHAR) = p.legacy_player_id"
+                )
+
+            conn.execute(f"CREATE TABLE {pos.lower()}_weekly AS SELECT {select_stmt} FROM {from_clause}")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_lookup ON {pos.lower()}_weekly (year, week)")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_player ON {pos.lower()}_weekly (player_id)")
 
@@ -157,10 +188,15 @@ def bake():
 
             columns, select_stmt = _discover_and_build(conn, seasonal_parquet, pos)
 
-            conn.execute(
-                f"CREATE TABLE {pos.lower()}_seasonal AS "
-                f"SELECT {select_stmt} FROM read_parquet('{path_str}')"
-            )
+            from_clause = f"read_parquet('{path_str}') src"
+            if players_table_loaded and "player_id" in {c.lower() for c in columns}:
+                select_stmt = select_stmt.replace('src."player_id" AS "player_id"', 'p.player_id AS "player_id"')
+                from_clause = (
+                    f"read_parquet('{path_str}') src "
+                    f"LEFT JOIN players p ON CAST(src.player_id AS VARCHAR) = p.legacy_player_id"
+                )
+
+            conn.execute(f"CREATE TABLE {pos.lower()}_seasonal AS SELECT {select_stmt} FROM {from_clause}")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_seasonal_lookup ON {pos.lower()}_seasonal (year)")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_seasonal_player ON {pos.lower()}_seasonal (player_id)")
 

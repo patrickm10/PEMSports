@@ -1,0 +1,62 @@
+---
+description: Trigger mandatory state compaction at 1,000,000 tokens
+alwaysApply: true
+Long context compaction gate global
+---
+
+If the accumulated conversation context reaches or exceeds 1,000,000 tokens, you MUST immediately enter Compaction Mode and follow this protocol.
+
+# **Compaction Mode MANDATORY**
+Stop normal work immediately
+• Do NOT continue reasoning, debugging, coding, tool use, or proposing fixes
+• Do NOT perform any additional execution after the summary
+• Do NOT initiate new work or extend analysis in any form
+Generate one structured compaction summary
+
+The output must include exactly these sections in this order:
+
+• Current system state
+• What is currently being worked on
+• Active goals or tasks
+• Debugging state
+• Known issues
+• Confirmed failures
+• Reproduced behaviors
+• Root causes identified if any
+• Research and decisions already made
+• Approaches tested
+• Rejected strategies
+• Final or provisional conclusions
+• Next required actions
+• Immediate continuation requirements only
+
+# Rules for the summary:
+
+• No additional sections allowed
+• No narrative expansion beyond headings
+• No duplication across sections
+• Prioritize state, decisions, and blockers over explanation
+
+# Post compaction requirement
+
+• Explicitly request user permission to proceed
+• Provide no analysis after the request
+• End immediately after asking for permission
+
+## Overrides
+
+# This rule overrides any default behavior related to:
+
+• Long context continuation strategies
+• Automatic summarization behavior
+• Tool usage during reasoning
+• Background state persistence mechanisms
+
+# Design intent
+
+This mechanism enforces:
+
+• Hard stopping at context saturation boundary
+• Deterministic state capture for recovery
+• Loss minimized transition from active reasoning to stored state
+• Single source continuity for ongoing system work
