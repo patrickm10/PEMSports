@@ -168,15 +168,27 @@ app.include_router(players_router, prefix="/api", tags=["players (legacy)"], inc
 # Headshots are keyed by canonical UUID `player_id`:
 #   repo-root/data/headshots/{player_id}.jpg  →  /headshots/{player_id}.jpg
 _headshots_dir = (_PROJECT_ROOT / "data" / "headshots").resolve()
-_headshots_dir.mkdir(parents=True, exist_ok=True)
-logger.info("Serving player headshots from %s at /headshots", _headshots_dir)
-app.mount("/headshots", StaticFiles(directory=str(_headshots_dir)), name="headshots")
+try:
+    # Vercel functions run on a read-only filesystem (except /tmp). These dirs are
+    # optional at runtime; don’t crash app import if they can’t be created.
+    if not os.getenv("VERCEL"):
+        _headshots_dir.mkdir(parents=True, exist_ok=True)
+    if _headshots_dir.exists():
+        logger.info("Serving player headshots from %s at /headshots", _headshots_dir)
+        app.mount("/headshots", StaticFiles(directory=str(_headshots_dir)), name="headshots")
+except OSError as exc:
+    logger.warning("Headshots directory unavailable (%s): %s", _headshots_dir, exc)
 
 # Backwards-compat (older builds used assets/players → /static/players/*.png)
 _players_assets = (_PROJECT_ROOT / "assets" / "players").resolve()
-_players_assets.mkdir(parents=True, exist_ok=True)
-logger.info("Serving legacy player images from %s at /static/players", _players_assets)
-app.mount("/static/players", StaticFiles(directory=str(_players_assets)), name="static_players")
+try:
+    if not os.getenv("VERCEL"):
+        _players_assets.mkdir(parents=True, exist_ok=True)
+    if _players_assets.exists():
+        logger.info("Serving legacy player images from %s at /static/players", _players_assets)
+        app.mount("/static/players", StaticFiles(directory=str(_players_assets)), name="static_players")
+except OSError as exc:
+    logger.warning("Legacy player assets directory unavailable (%s): %s", _players_assets, exc)
 
 _static_path = Path(__file__).parent / "static"
 if _static_path.exists():
