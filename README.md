@@ -1,105 +1,115 @@
-# 🏈 NFLStatsPro: Professional Analytics Platform
+# NFLStatsAnalyzer / NFLStatsPro
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/react-18-61dafb.svg)](https://reactjs.org/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-Latest-yellow.svg)](https://duckdb.org/)
-[![Polars](https://img.shields.io/badge/Polars-Latest-orange.svg)](https://www.pola.rs/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com/)
+Fantasy rankings analytics: **Polars pipelines** → **Parquet** (`data/rankings/`) → **baked DuckDB** (`data/nfl_stats.db`) → **FastAPI** → **Vite + React** dashboard.
 
-**NFLStatsPro** is a high-performance, production-grade analytics platform designed for deep-dive NFL player performance analysis, fantasy football forecasting, and environmental impact assessment. 
-
-The system features a **strictly standardized data architecture** optimized for sub-millisecond analytical queries and lean GitHub repository management.
+**Python 3.10+** · **Node 20** (see CI) · **DuckDB 1.3.1** · **FastAPI** (pinned in `requirements.txt`)
 
 ---
 
-## 🏛️ Project Architecture
+## Architecture
 
-The platform follows a decoupled, data-centric architecture using a "Small Index, Big Data" strategy for Git management.
-
-### 📂 Repository Organization
 ```text
-NFLStatsAnalyzer/
-├── data/                 # 🟢 GIT-TRACKED (Optimized Parquet)
-│   └── rankings/         # Position-centric consolidated Parquet files
-├── data_local/           # 🔴 LOCAL-ONLY (Raw CSV Scrapes - .gitignored)
-│   └── raw_scrapes/      # Source HTML/CSV outputs from pipelines
-├── frontend/             # Midnight Slate UI (Vite + React)
-│   └── nflstats-pro-ui/  # Main dashboard application
-├── src/
-│   ├── backend/          # FastAPI REST API & Analytical Engines
-│   │   ├── api/          # Route handlers & Auth
-│   │   └── data/         # DuckDB & Postgres implementations
-│   └── pipelines/        # Scrapers & Polars ETL
-└── tests/                # Comprehensive Pytest suite
+data/rankings/{QB,RB,...}_{weekly|seasonal}.parquet   (git-tracked)
+        │
+        ▼  scripts/bake_db.py
+data/nfl_stats.db                                     (local build artifact, gitignored)
+        │
+        ▼  src/backend/data/query_engine.py (read-only DuckDB)
+FastAPI  src/backend/main.py  /api/v1/rankings/...
+        │
+        ▼  HTTP + CORS
+frontend/nflstats-pro-ui  (Vite, React 19)
 ```
 
----
-
-## ⚡ Core Technical Stack
-
--   **Query Engine**: [DuckDB](https://duckdb.org/) for in-memory analytical processing.
--   **ETL Pipeline**: [Polars](https://www.pola.rs/) for lightning-fast data transformation.
--   **Backend**: [FastAPI](https://fastapi.tiangolo.com/) with JWT-based OAuth2 authentication.
--   **Frontend**: [React 18](https://reactjs.org/) + Vite with TanStack Virtual for high-performance data rendering.
--   **Database**: **PostgreSQL** for user sessions and state management (with graceful local fallback).
+- **Rankings data:** Parquet on disk → materialized tables in `nfl_stats.db` for stable SQL and low cold-start cost on hosts like Render.
+- **Transactional / auth:** PostgreSQL via `psycopg` (`src/backend/data/postgres.py`). In **development**, a missing DB logs a warning and auth features degrade; **staging/production** fail startup if the pool cannot open (`src/backend/core/config.py` policy).
+- **ETL:** Primary code lives under **`src/pipelines/`**. A legacy **`pipelines/`** folder at repo root still exists—prefer `src/pipelines/` unless you know you need the root copy.
 
 ---
 
-## 📅 Data Strategy & Reproducibility
+## Setup (local)
 
-### Strict Separation of Concerns
-To maintain a clean GitHub footprint while preserving raw history, we split storage:
-1.  **Tracked Parquet (`data/rankings/`)**: Only optimized, consolidated Parquet files are committed to Git. This provides 10x better compression than CSV and native DuckDB speed.
-2.  **Ignored Raw Data (`data_local/`)**: All individual week/position CSV scrapes are kept locally for reproducibility but excluded from Git to prevent repository bloat.
+### 1. Backend
 
-### Reproducing Data
-The pipelines are idempotent and designed for incremental growth.
 ```powershell
-# Standardize Weekly Rankings (2020-2025)
-$env:PYTHONPATH="src"
-python src/pipelines/get_weekly_rankings.py
-
-# Standardize Seasonal Totals
-$env:PYTHONPATH="src"
-python src/pipelines/get_full_season_rankings.py
+cd <repo-root>
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
----
-
-## 🛠️ Testing & Verification
-
-Comprehensive testing is implemented via `pytest`. All query resolution and auth flows are validated before deployment.
+- **`PYTHONPATH`:** must include `src` when running modules (e.g. `$env:PYTHONPATH="src"`).
+- **Serving database:** create `data/nfl_stats.db` from parquet (required before API tests or rankings queries):
 
 ```powershell
 $env:PYTHONPATH="src"
-pytest tests/test_query_engine.py  # Validates DuckDB resolution & Parquet integrity
-pytest tests/test_auth_routes.py   # Validates JWT & Postgres flows
+python scripts/bake_db.py
 ```
 
----
+- **Optional:** `NFL_STATS_DB_PATH` overrides the default path (`data/nfl_stats.db` under repo root, resolved in `query_engine.py`).
 
-## 🚧 Dashboard V3 Status: Active Development
-The platform is currently undergoing a "High-Hardness" stabilization phase.
+Run API (example):
 
-| Component | Status | Note |
-| :--- | :--- | :--- |
-| **Data Layer** | 🟢 ENRICHED | Parquet 2.0 schema is live with Opponent, Stadium, and Weather metadata. |
-| **Backend API** | 🟡 DEGRADED | `PlainSkip` bug in DuckDB 1.3.1 impacts non-QB positional loading. |
-| **Frontend** | 🟢 STABLE | Midnight Slate UI is configured for full-width responsive analysis. |
+```powershell
+$env:PYTHONPATH="src"
+uvicorn backend.main:app --reload --app-dir src
+```
 
-### **Known Issue: The DuckDB "PlainSkip" Failure**
-Queries for **Weekly Rankings** (non-QB) currently encounter an internal DuckDB optimizer failure (`PlainSkip not implemented`).
-*   **Root Cause**: Attempting to push `LIMIT` and `WHERE` filters through a `PARTITION BY` window function over Parquet files.
-*   **Fix in Progress**: Moving rank calculation into a materialized temporary table or a late-binding subquery execution to decouple the physical scan from the analytical window.
+### 2. Frontend
 
----
+```powershell
+cd frontend/nflstats-pro-ui
+npm ci
+npm run dev
+```
 
-## 📜 Roadmap
-- [x] **Strategy B Refactor**: Position-centric Parquet consolidation.
-- [x] **Data Enrichment**: Stadium/Weather metadata integrated into Weekly Parquets.
-- [ ] **Analytical Decoupling**: Fixed DuckDB window engine implementation.
-- [ ] **Predictive Modeling**: Integrating ML-based projection layers.
-- [ ] **CI/CD Deployment**: Automated Parquet validation on GitHub Actions.
+Point the UI at your API base URL and ensure **`ALLOWED_ORIGINS`** on the server lists your Vite origin (defaults in `main.py` include `http://localhost:5173`).
+
+### 3. Convenience (Windows)
+
+`scripts/manage_services.py` starts/stops local FastAPI + Vite; it is **Windows-only** as written.
 
 ---
-*Internal use only. NFLStatsPro 2026.*
+
+## Testing and data checks
+
+```powershell
+$env:PYTHONPATH="src"
+pytest tests/ -v --tb=short
+python scripts/validate_db_completeness.py --mode parquet
+```
+
+CI runs pytest and **parquet-mode** completeness validation (`.github/workflows/ci-backend.yml`). It does **not** currently bake `nfl_stats.db` in the workflow—you need a local bake (or your deploy pipeline) for DuckDB-backed tests to match production.
+
+---
+
+## Limitations
+
+| Topic | Detail |
+|--------|--------|
+| **`nfl_stats.db`** | Gitignored. Fresh clones have no API database until you run `bake_db.py`. |
+| **CI vs serving layer** | GitHub Actions validates **parquet** completeness; **parquet ↔ baked DuckDB** parity is a separate manual or deploy-time concern unless you add a bake + `--mode both` step. |
+| **Postgres** | Optional in development; production/staging expect a real `DATABASE_URL` and strict config. |
+| **Duplicate pipeline roots** | Prefer `src/pipelines/`; root `pipelines/` may confuse imports and docs. |
+| **DuckDB / SQL edge cases** | Historical non-QB weekly paths hit DuckDB optimizer limits when scanning raw parquet through certain window patterns; **bake** + served tables is the supported mitigation (see `bake_db.py` header). |
+
+---
+
+## Roadmap (short)
+
+- [ ] CI: bake `nfl_stats.db` + validate **`both`** parquet and DuckDB before merge.
+- [ ] Remove or merge root `pipelines/` into `src/pipelines/`.
+- [ ] Tighten lint gate (non-zero pylint floor or Ruff) in backend CI.
+- [ ] Align frontend CD docs with reality (Vercel Git integration vs stubbed GitHub Actions deploy block in `ci-frontend.yml`).
+- [ ] Optional: projections / ML layer on top of stable weekly exports.
+
+---
+
+## Deploy (where things live today)
+
+- **Backend:** Docker/Render-style deploy hook referenced in `ci-backend.yml` (`RENDER_DEPLOY_HOOK_URL`).
+- **Frontend:** Vercel-friendly static build under `frontend/nflstats-pro-ui` (`vercel.json` present); production deploy wiring may be Vercel dashboard or future uncommented workflow—check repo secrets and comments in `ci-frontend.yml`.
+
+---
+
+*Internal use. NFLStatsPro 2026.*
