@@ -18,12 +18,48 @@ data/nfl_stats.db                                     (local build artifact, git
 FastAPI  src/backend/main.py  /api/v1/rankings/...
         │
         ▼  HTTP + CORS
-frontend/nflstats-pro-ui  (Vite, React 19)
+frontend/nflstats-pro-ui  (Vite, React 19)  →  https://pemsports.com
 ```
 
-- **Rankings data:** Parquet on disk → materialized tables in `nfl_stats.db` for stable SQL and low cold-start cost on hosts like Render.
+- **Rankings data:** Parquet on disk → materialized tables in `nfl_stats.db` for stable SQL and low cold-start cost on Render.
 - **Transactional / auth:** PostgreSQL via `psycopg` (`src/backend/data/postgres.py`). In **development**, a missing DB logs a warning and auth features degrade; **staging/production** fail startup if the pool cannot open (`src/backend/core/config.py` policy).
 - **ETL:** Canonical code under **`src/pipelines/`** — operator commands in [`docs/PIPELINE_RUNBOOK.md`](docs/PIPELINE_RUNBOOK.md). Root `pipelines/` is deprecated (redirect README only).
+
+---
+
+## Production (target)
+
+| Surface | URL | Status (2026-06-19) |
+|---------|-----|---------------------|
+| Frontend | https://pemsports.com | **Not live** — 500 until Vercel redeploys SPA (exclude legacy `api/`) |
+| Backend API | https://nflstats-api.onrender.com | **Not live** — apply Render Blueprint from `render.yaml` |
+| Health | https://nflstats-api.onrender.com/health | Pending backend deploy |
+| API docs | https://nflstats-api.onrender.com/docs | Pending backend deploy |
+
+**Environment wiring**
+
+| Platform | Variable | Value |
+|----------|----------|-------|
+| Vercel (frontend) | `VITE_API_BASE` | `https://nflstats-api.onrender.com/api/v1` |
+| Render (backend) | `ALLOWED_ORIGINS` | `https://pemsports.com,https://www.pemsports.com` |
+| Render (backend) | `DATABASE_URL` | Auto-linked from `nflstats-db` via [`render.yaml`](render.yaml) |
+| GitHub (backend CD) | `RENDER_DEPLOY_HOOK_URL` | Deploy hook from Render service settings (optional) |
+
+**Verify when live**
+
+```powershell
+.\scripts\verify_production.ps1
+```
+
+---
+
+## Go-live checklist
+
+1. **Render:** Dashboard → **New Blueprint** → connect GitHub repo → sync [`render.yaml`](render.yaml) → confirm build runs `bake_db.py` and service is **Live**.
+2. **Vercel:** Ensure `.vercelignore` excludes `api/` (prevents legacy serverless 500). Redeploy production after push to `main`.
+3. **Vercel settings:** Root Directory = repo root (uses root [`vercel.json`](vercel.json)) **or** `frontend/nflstats-pro-ui`; set `VITE_API_BASE` in Production env; attach domain `pemsports.com`.
+4. **GitHub (optional):** Secret `RENDER_DEPLOY_HOOK_URL` for CI-triggered Render redeploys on `main`.
+5. **Smoke test:** `.\scripts\verify_production.ps1` — all checks green.
 
 ---
 
@@ -46,9 +82,7 @@ $env:PYTHONPATH="src"
 python scripts/bake_db.py
 ```
 
-- **Optional:** `NFL_STATS_DB_PATH` overrides the default path (`data/nfl_stats.db` under repo root, resolved in `query_engine.py`).
-
-Run API (example):
+Run API:
 
 ```powershell
 $env:PYTHONPATH="src"
@@ -63,17 +97,15 @@ npm ci
 npm run dev
 ```
 
-Copy `.env.example` to `.env.local` if you need a non-default API base. Ensure **`ALLOWED_ORIGINS`** on the server lists your Vite origin (defaults in `main.py` include `http://localhost:5173`).
+Copy `.env.example` to `.env.local` if you need a non-default API base. Dev server proxies `/api` to `http://localhost:8000`.
 
 ### 3. Convenience (Windows)
 
-`scripts/manage_services.py` starts/stops local FastAPI + Vite; it is **Windows-only** as written.
+`scripts/manage_services.py` starts/stops local FastAPI + Vite; **Windows-only**.
 
 ---
 
 ## Testing and data checks
-
-Mirror the backend CI gate locally:
 
 ```powershell
 $env:PYTHONPATH="src"
@@ -82,24 +114,45 @@ python scripts/validate_db_completeness.py --mode both
 python -m pytest tests/ -v --tb=short
 ```
 
-**Backend CI** (`.github/workflows/ci-backend.yml`) runs the same sequence: lint → bake → validate **`both`** → pytest. It does **not** commit `data/nfl_stats.db` (gitignored).
+**Backend CI** (`.github/workflows/ci-backend.yml`): lint → bake → validate **`both`** → pytest → Render deploy hook (if secret set).
 
-**Frontend CI** (`.github/workflows/ci-frontend.yml`) is intended to lint/build the UI under `frontend/nflstats-pro-ui/` — verify workflow paths before relying on it (see Known issues).
+**Frontend CI** (`.github/workflows/ci-frontend.yml`): eslint → vite build in `frontend/nflstats-pro-ui/`.
 
 ---
 
-## Known issues (adversarial review, 2026-06-17)
+## Deploy
+
+### Backend (Render) — primary API host
+
+[`render.yaml`](render.yaml): web service `nflstats-api`, Postgres `nflstats-db`, `buildCommand` includes `bake_db.py`, health check `/health`, `autoDeploy: true`.
+
+Do **not** use root [`api/index.py`](api/index.py) for production — no bake step, read-only FS constraints, requires Postgres at cold start.
+
+### Frontend (Vercel + pemsports.com)
+
+Public UI: Vite SPA under **`frontend/nflstats-pro-ui`**.
+
+- Root-linked projects: [`vercel.json`](vercel.json) + [`.vercelignore`](.vercelignore) (excludes `api/`) + root [`package.json`](package.json) build script.
+- Subdir-linked projects: set Root Directory to `frontend/nflstats-pro-ui` and use [`frontend/nflstats-pro-ui/vercel.json`](frontend/nflstats-pro-ui/vercel.json).
+
+**CD:** Vercel Git integration redeploys on push to `main`. Frontend CI gates PRs.
+
+### Docker (optional)
+
+[`Dockerfile`](Dockerfile) — local/container parity; not the primary production path.
+
+---
+
+## Known issues
 
 | Issue | Status |
 |--------|--------|
-| ~~Health test mismatch~~ | **Fixed** — `/health` returns `positions_available` and `data_files_found` from DuckDB |
-| ~~Frontend CI path~~ | **Fixed** — workflow uses `frontend/nflstats-pro-ui/` |
-| ~~Deploy without bake~~ | **Fixed** — `render.yaml` and `Dockerfile` run `bake_db.py` at build |
-| ~~Weekly CSV route~~ | **Fixed** — `GET /rankings/{pos}/weekly/csv` + frontend client updated |
-| ~~Weekly alias routes in UI~~ | **Fixed** — frontend uses canonical `/rankings/{pos}/weekly` |
-| **Frontend ESLint gate** | `npm run lint` reports pre-existing errors in v3 components — CI may fail until resolved |
+| Production not live | **In progress** — Render Blueprint + Vercel SPA redeploy required |
+| Legacy root `api/` on Vercel | **Mitigated** — `.vercelignore` excludes serverless path |
+| Ranking column contract | **Open** — Roadmap Task 3 (after live) |
+| Handoff / docs local only | `state_handoff.md`, `docs/` gitignored — update locally |
 
-Full findings: [`state_handoff.md`](state_handoff.md).
+Full operator state: [`state_handoff.md`](state_handoff.md).
 
 ---
 
@@ -107,75 +160,20 @@ Full findings: [`state_handoff.md`](state_handoff.md).
 
 | Topic | Detail |
 |--------|--------|
-| **`nfl_stats.db`** | Gitignored. Fresh clones have no API database until you run `bake_db.py`. |
-| **CI parity** | Backend CI bakes and validates Parquet ↔ DuckDB with `--mode both`. Deploy pipelines must bake separately unless extended. |
-| **Postgres** | Optional in development; production/staging expect a real `DATABASE_URL` and strict config. |
-| **DuckDB / SQL edge cases** | Historical non-QB weekly paths hit DuckDB optimizer limits when scanning raw parquet through certain window patterns; **bake** + served tables is the supported mitigation (see `bake_db.py` header). |
-| **Handoff docs** | `state_handoff.md`, `CHLOG.md`, and `docs/` are gitignored — update locally; they are not on remote by default. |
+| **`nfl_stats.db`** | Gitignored; clones and deploy builds must run `bake_db.py`. |
+| **Postgres** | Required in production/staging; Render blueprint links `nflstats-db`. |
+| **Render cold start** | First request after idle may take 30–60s on starter tier. |
 
 ---
 
 ## Roadmap (short)
 
-- [x] CI: bake `nfl_stats.db` + validate **`both`** parquet and DuckDB before merge.
-- [x] Fix backend CI blocker: align `/health` contract with tests.
-- [x] Fix frontend CI paths (`frontend/nflstats-pro-ui/`).
-- [x] Bake DuckDB in Render/Docker deploy build step.
-- [x] Align frontend API client with canonical versioned routes (weekly + CSV).
-- [ ] Fix frontend ESLint errors blocking CI gate.
-- [x] Align frontend CD docs with reality (Vercel Git integration vs stubbed GitHub Actions deploy block in `ci-frontend.yml`).
-- [x] Consolidate pipeline roots + publish ETL runbook (`docs/PIPELINE_RUNBOOK.md`).
-- [ ] Optional: projections / ML layer on top of stable weekly exports.
-
----
-
-## Production
-
-| Surface | URL |
-|---------|-----|
-| Frontend | https://pemsports.com |
-| Backend API | https://nflstats-api.onrender.com |
-| Health | https://nflstats-api.onrender.com/health |
-| API docs | https://nflstats-api.onrender.com/docs |
-
-**Environment wiring**
-
-| Platform | Variable | Value |
-|----------|----------|-------|
-| Vercel (frontend) | `VITE_API_BASE` | `https://nflstats-api.onrender.com/api/v1` |
-| Render (backend) | `ALLOWED_ORIGINS` | `https://pemsports.com,https://www.pemsports.com` |
-| Render (backend) | `DATABASE_URL` | Auto-linked from `nflstats-db` via [`render.yaml`](render.yaml) |
-| GitHub (backend CD) | `RENDER_DEPLOY_HOOK_URL` | Deploy hook from Render service settings |
-
-**Verify after deploy**
-
-```powershell
-.\scripts\verify_production.ps1
-```
-
----
-
-## Deploy
-
-### Backend (Render)
-
-Blueprint: [`render.yaml`](render.yaml) — Python web service `nflstats-api`, Render Postgres `nflstats-db`, bake step in `buildCommand`, health check on `/health`, `autoDeploy: true`.
-
-1. Render Dashboard → **New Blueprint** → connect this GitHub repo.
-2. After first deploy, copy the deploy hook URL into GitHub secret `RENDER_DEPLOY_HOOK_URL` (optional; blueprint `autoDeploy` also redeploys on push to `main`).
-3. Backend CI (`.github/workflows/ci-backend.yml`) runs lint → bake → validate → pytest, then curls the deploy hook on `main` when the secret is set.
-
-### Frontend (Vercel + pemsports.com)
-
-Public UI is the Vite SPA under **`frontend/nflstats-pro-ui`**. Do **not** deploy the repo root as a serverless FastAPI app (`api/index.py` is legacy only).
-
-**Recommended:** Vercel project → Root Directory = `frontend/nflstats-pro-ui`, Production branch = `main`, domain `pemsports.com`. Set `VITE_API_BASE` in Vercel env (also committed in [`frontend/nflstats-pro-ui/vercel.json`](frontend/nflstats-pro-ui/vercel.json) and root [`vercel.json`](vercel.json) for repo-root-linked projects).
-
-**CD:** Vercel Git integration redeploys on push to `main` when frontend paths change. Frontend CI (`.github/workflows/ci-frontend.yml`) gates lint + build on every PR/push.
-
-### Docker (optional)
-
-[`Dockerfile`](Dockerfile) at repo root runs `bake_db.py` at build and serves via gunicorn — useful for local/container parity, not the primary production path.
+- [x] CI: bake + validate **`both`** before merge.
+- [x] Bake DuckDB in Render/Docker deploy build.
+- [x] Production deploy wiring (render.yaml, vercel.json, verify script, README URLs).
+- [ ] **Go live:** Render Blueprint + Vercel redeploy + smoke tests green.
+- [ ] Ranking column contract (Task 3).
+- [ ] Optional: projections / ML layer.
 
 ---
 

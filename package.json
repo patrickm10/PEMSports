@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "name": "nflstats-analyzer",
+  "scripts": {
+    "build": "cd frontend/nflstats-pro-ui && npm ci && npm run build"
+  }
+}
