@@ -15,5 +15,8 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_BASE": "https://nflstats-api.onrender.com/api/v1"
+  }
 }

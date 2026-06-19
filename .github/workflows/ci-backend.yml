@@ -1,11 +1,12 @@
 # Backend CI/CD — Python (FastAPI) → Render
 #
 # Triggers on changes to backend source, tests, or dependencies.
-# Gate job: lint + pytest (runs on every push/PR to main)
+# Gate job: lint + bake DuckDB + validate Parquet/DuckDB parity + pytest
 # Deploy job: Render deploy hook (push to main only, after gate passes)
 #
 # Required secrets for CD:
-#   RENDER_DEPLOY_HOOK_URL — https://render.com/docs/deploy-hooks
+#   RENDER_DEPLOY_HOOK_URL — from Render service → Settings → Deploy Hook
+#   (Blueprint autoDeploy also redeploys on main push when repo is linked)
 
 name: Backend CI/CD
 
@@ -16,8 +17,12 @@ on:
       - "src/backend/**"
       - "backend/**"
       - "tests/**"
+      - "scripts/bake_db.py"
+      - "scripts/validate_db_completeness.py"
+      - "data/rankings/**"
       - "requirements.txt"
       - "Dockerfile"
+      - "render.yaml"
       - ".github/workflows/ci-backend.yml"
   pull_request:
     branches: [main]
@@ -25,8 +30,12 @@ on:
       - "src/backend/**"
       - "backend/**"
       - "tests/**"
+      - "scripts/bake_db.py"
+      - "scripts/validate_db_completeness.py"
+      - "data/rankings/**"
       - "requirements.txt"
       - "Dockerfile"
+      - "render.yaml"
       - ".github/workflows/ci-backend.yml"
 
 concurrency:
@@ -60,15 +69,19 @@ jobs:
         run: |
           pylint --disable=line-too-long --fail-under=0 src/backend/
 
+      - name: Bake DuckDB serving layer
+        run: |
+          python scripts/bake_db.py
+
+      - name: Validate data completeness (Parquet + DuckDB)
+        run: |
+          python scripts/validate_db_completeness.py --mode both
+
       - name: Test (pytest)
         env:
           PYTHONPATH: ${{ github.workspace }}/src
         run: |
           pytest tests/ -v --tb=short
-
-      - name: Validate data completeness (Parquet)
-        run: |
-          python scripts/validate_db_completeness.py --mode parquet
 
   deploy:
     name: Deploy to Render

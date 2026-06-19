@@ -2,12 +2,13 @@
 #
 # Triggers on changes to frontend source.
 # Gate job: eslint + vite build (runs on every push/PR to main)
-# Deploy job: Vercel production deploy (STUBBED — uncomment when ready)
 #
-# Required secrets for CD (when unstubbed):
-#   VERCEL_TOKEN      — personal access token
-#   VERCEL_ORG_ID     — from .vercel/project.json after `vercel link`
-#   VERCEL_PROJECT_ID — from .vercel/project.json after `vercel link`
+# Production deploy: Vercel Git integration (recommended). Connect the repo in the
+# Vercel dashboard with Root Directory = frontend/nflstats-pro-ui (or use root
+# vercel.json which builds the SPA from that path). Pushes to main auto-deploy.
+#
+# Optional GitHub Actions deploy (below, commented): set VERCEL_TOKEN, VERCEL_ORG_ID,
+# VERCEL_PROJECT_ID if you prefer Actions-owned CD instead of Vercel native CD.
 
 name: Frontend CI/CD
 
@@ -15,12 +16,14 @@ on:
   push:
     branches: [main]
     paths:
-      - "frontend/**"
+      - "frontend/nflstats-pro-ui/**"
+      - "vercel.json"
       - ".github/workflows/ci-frontend.yml"
   pull_request:
     branches: [main]
     paths:
-      - "frontend/**"
+      - "frontend/nflstats-pro-ui/**"
+      - "vercel.json"
       - ".github/workflows/ci-frontend.yml"
 
 concurrency:
@@ -36,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: frontend/nflstats-pro-ui
 
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +49,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: "frontend/package-lock.json"
+          cache-dependency-path: "frontend/nflstats-pro-ui/package-lock.json"
 
       - name: Install dependencies
         run: npm ci
@@ -55,6 +58,9 @@ jobs:
         run: npm run lint
 
       - name: Build (Vite)
+        env:
+          # Placeholder baked into the bundle; Vercel sets the real value at deploy time.
+          VITE_API_BASE: https://nflstats-api.onrender.com/api/v1
         run: npm run build
 
   # ────────────────────────────────────────────────────────────────────────────
@@ -87,12 +93,12 @@ jobs:
   #
   #     - name: Pull Vercel environment
   #       run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-  #       working-directory: frontend
+  #       working-directory: frontend/nflstats-pro-ui
   #
   #     - name: Build for Vercel
   #       run: vercel build --prod --token=$VERCEL_TOKEN
-  #       working-directory: frontend
+  #       working-directory: frontend/nflstats-pro-ui
   #
   #     - name: Deploy to production
   #       run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-  #       working-directory: frontend
+  #       working-directory: frontend/nflstats-pro-ui
