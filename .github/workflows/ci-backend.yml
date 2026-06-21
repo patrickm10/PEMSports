@@ -18,6 +18,7 @@ on:
       - "backend/**"
       - "tests/**"
       - "scripts/bake_db.py"
+      - "scripts/build_players_dimension.py"
       - "scripts/validate_db_completeness.py"
       - "data/rankings/**"
       - "requirements.txt"
@@ -31,6 +32,7 @@ on:
       - "backend/**"
       - "tests/**"
       - "scripts/bake_db.py"
+      - "scripts/build_players_dimension.py"
       - "scripts/validate_db_completeness.py"
       - "data/rankings/**"
       - "requirements.txt"
@@ -69,8 +71,9 @@ jobs:
         run: |
           pylint --disable=line-too-long --fail-under=0 src/backend/
 
-      - name: Bake DuckDB serving layer
+      - name: Build players dimension and bake DuckDB
         run: |
+          python scripts/build_players_dimension.py
           python scripts/bake_db.py
 
       - name: Validate data completeness (Parquet + DuckDB)
