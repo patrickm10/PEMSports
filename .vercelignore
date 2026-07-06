@@ -1,8 +1,8 @@
-api/
-src/
-data/
-tests/
-scripts/
+/api/
+/src/
+/data/
+/tests/
+/scripts/
 venv/
 requirements.txt
 render.yaml
