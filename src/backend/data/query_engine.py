@@ -554,6 +554,14 @@ def query_player_weekly(
 
     yards_expr = "CAST(yds AS DOUBLE)" if "yds" in cols else "NULL"
     tds_expr = "CAST(td AS DOUBLE)" if "td" in cols else "NULL"
+    opponent_expr = "opponent" if "opponent" in cols else "NULL"
+    stadium_expr = "stadium_name" if "stadium_name" in cols else "NULL"
+    surface_expr = "surface_type" if "surface_type" in cols else "NULL"
+    venue_expr = "indoor_outdoor" if "indoor_outdoor" in cols else "NULL"
+    temp_expr = "temp" if "temp" in cols else "NULL"
+    humidity_expr = "humidity" if "humidity" in cols else "NULL"
+    wind_expr = "wind" if "wind" in cols else "NULL"
+    weather_expr = "weather_impact" if "weather_impact" in cols else "NULL"
 
     conditions: list[str] = ["player_id = ?"]
     params: list[Any] = [player_id]
@@ -571,16 +579,16 @@ def query_player_weekly(
         CAST(fpts AS DOUBLE) AS fantasy_points,
         {yards_expr} AS yards,
         {tds_expr} AS tds,
-        opponent,
-        stadium_name,
-        surface_type,
-        indoor_outdoor,
+        {opponent_expr} AS opponent,
+        {stadium_expr} AS stadium_name,
+        {surface_expr} AS surface_type,
+        {venue_expr} AS indoor_outdoor,
         NULL AS home_away,
         NULL AS rest_days,
-        temp,
-        humidity,
-        wind,
-        weather_impact
+        {temp_expr} AS temp,
+        {humidity_expr} AS humidity,
+        {wind_expr} AS wind,
+        {weather_expr} AS weather_impact
       FROM {table}
       WHERE {where_clause}
       ORDER BY year DESC, week ASC
