@@ -134,6 +134,12 @@ def bake():
     players_table_loaded = False
     if PLAYERS_CSV.exists():
         try:
+            players_csv_path = str(PLAYERS_CSV).replace("\\", "/")
+            # #region agent log
+            import json as _json, time as _time
+            with open(PROJECT_ROOT / "debug-20f78b.log", "a", encoding="utf-8") as _dbg:
+                _dbg.write(_json.dumps({"sessionId": "20f78b", "hypothesisId": "A", "location": "bake_db.py:players_load", "message": "players_csv_path normalized", "data": {"path": players_csv_path}, "timestamp": int(_time.time() * 1000), "runId": "post-fix"}) + "\n")
+            # #endregion
             conn.execute(
                 f"""
                 CREATE TABLE players AS
@@ -144,7 +150,7 @@ def bake():
                   CAST(team AS VARCHAR) AS team,
                   CAST(position AS VARCHAR) AS position,
                   CAST(NULLIF(espn_player_id, '') AS VARCHAR) AS espn_player_id
-                FROM read_csv_auto('{str(PLAYERS_CSV).replace("\\\\", "/")}', HEADER=TRUE)
+                FROM read_csv_auto('{players_csv_path}', HEADER=TRUE)
                 """
             )
             conn.execute("CREATE UNIQUE INDEX idx_players_player_id ON players(player_id)")
@@ -165,9 +171,11 @@ def bake():
 
             from_clause = f"read_parquet('{path_str}') src"
             if players_table_loaded and "player_id" in {c.lower() for c in columns}:
-                # Replace legacy player_id with canonical UUID.
-                # Left join keeps rows even if mapping is missing (player_id becomes NULL).
-                select_stmt = select_stmt.replace('src."player_id" AS "player_id"', 'p.player_id AS "player_id"')
+                # Upgrade to canonical UUID when mapped; keep legacy id when join misses.
+                select_stmt = select_stmt.replace(
+                    'src."player_id" AS "player_id"',
+                    'COALESCE(p.player_id, CAST(src.player_id AS VARCHAR)) AS "player_id"',
+                )
                 from_clause = (
                     f"read_parquet('{path_str}') src "
                     f"LEFT JOIN players p ON CAST(src.player_id AS VARCHAR) = p.legacy_player_id"
@@ -190,7 +198,10 @@ def bake():
 
             from_clause = f"read_parquet('{path_str}') src"
             if players_table_loaded and "player_id" in {c.lower() for c in columns}:
-                select_stmt = select_stmt.replace('src."player_id" AS "player_id"', 'p.player_id AS "player_id"')
+                select_stmt = select_stmt.replace(
+                    'src."player_id" AS "player_id"',
+                    'COALESCE(p.player_id, CAST(src.player_id AS VARCHAR)) AS "player_id"',
+                )
                 from_clause = (
                     f"read_parquet('{path_str}') src "
                     f"LEFT JOIN players p ON CAST(src.player_id AS VARCHAR) = p.legacy_player_id"
