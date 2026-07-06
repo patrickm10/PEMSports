@@ -1,10 +1,11 @@
 # API Server Dependencies — pinned for reproducible deploys
 # Generated: 2026-03-18
 #
-# Note: pandas is intentionally excluded. It is only used by
-# pipelines/get_weekly_rankings.py (a standalone ETL script, not part of
-# the API server). Install separately when running that script:
+# Note: pandas is intentionally excluded from the API server install. Pipeline
+# scripts that need it (e.g. scripts/player_weekly_roster.py) install separately:
 #   pip install pandas==2.2.3
+# nflreadpy (nflverse rosters) is also pipeline-only:
+#   pip install nflreadpy
 
 # Web framework
 fastapi==0.116.0
@@ -17,6 +18,9 @@ slowapi==0.1.9
 # Data processing (API layer)
 polars==1.30.0
 duckdb==1.3.1
+
+# Terminal table output (scripts/view_rankings.py)
+prettytable==3.17.0
 
 # Data validation
 pydantic==2.11.7
@@ -41,3 +45,8 @@ jinja2==3.1.5
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.20
+email-validator==2.2.0
+# Database
+psycopg[binary]>=3.0.0
+psycopg_pool>=3.0.0
+
