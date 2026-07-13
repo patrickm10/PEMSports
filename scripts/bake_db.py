@@ -44,7 +44,8 @@ MAPPING_MATRIX = {
     "RB": {
         "rushing_yds": "rush_yds", "rushing_td": "rush_td", "rushing_att": "att",
         "rushing_fumbles": "fumbles", "yds": "rush_yds", "td": "rush_td",
-        "R_YDS": "rush_yds", "R_TD": "rush_td", "ATT": "att"
+        # FantasyPros duplicate headers: first YDS/TD block = rushing, R_* = receiving.
+        "R_YDS": "yds", "R_TD": "td", "ATT": "att"
     },
     "WR": {
         "receiving_yds": "yds", "receiving_td": "td", "receiving_rec": "rec",
