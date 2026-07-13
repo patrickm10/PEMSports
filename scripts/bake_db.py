@@ -44,7 +44,8 @@ MAPPING_MATRIX = {
     "RB": {
         "rushing_yds": "rush_yds", "rushing_td": "rush_td", "rushing_att": "att",
         "rushing_fumbles": "fumbles", "yds": "rush_yds", "td": "rush_td",
-        "R_YDS": "rush_yds", "R_TD": "rush_td", "ATT": "att"
+        # FantasyPros duplicate headers: first YDS/TD block = rushing, R_* = receiving.
+        "R_YDS": "yds", "R_TD": "td", "ATT": "att"
     },
     "WR": {
         "receiving_yds": "yds", "receiving_td": "td", "receiving_rec": "rec",
@@ -135,11 +136,6 @@ def bake():
     if PLAYERS_CSV.exists():
         try:
             players_csv_path = str(PLAYERS_CSV).replace("\\", "/")
-            # #region agent log
-            import json as _json, time as _time
-            with open(PROJECT_ROOT / "debug-20f78b.log", "a", encoding="utf-8") as _dbg:
-                _dbg.write(_json.dumps({"sessionId": "20f78b", "hypothesisId": "A", "location": "bake_db.py:players_load", "message": "players_csv_path normalized", "data": {"path": players_csv_path}, "timestamp": int(_time.time() * 1000), "runId": "post-fix"}) + "\n")
-            # #endregion
             conn.execute(
                 f"""
                 CREATE TABLE players AS
