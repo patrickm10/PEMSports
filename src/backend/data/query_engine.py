@@ -335,6 +335,30 @@ def _table_columns(table: str) -> set[str]:
     return cols
 
 
+def _yards_td_sql_exprs(
+    position: str, cols: set[str], *, aggregate: bool = False
+) -> tuple[str, str]:
+    """Return SQL expressions for yards/TD metrics based on baked schema per position."""
+    pos = position.lower()
+    if pos == "rb":
+        yards_col = next((c for c in ("rush_yds", "yds") if c in cols), None)
+        td_col = next((c for c in ("rush_td", "td") if c in cols), None)
+    elif pos == "dst":
+        yards_col = next((c for c in ("yds_allowed", "yds") if c in cols), None)
+        td_col = next((c for c in ("td_allowed", "td") if c in cols), None)
+    else:
+        yards_col = "yds" if "yds" in cols else None
+        td_col = "td" if "td" in cols else None
+
+    if aggregate:
+        yards_expr = f"ROUND(AVG({yards_col}), 2)" if yards_col else "NULL"
+        tds_expr = f"ROUND(AVG({td_col}), 2)" if td_col else "NULL"
+    else:
+        yards_expr = f"CAST({yards_col} AS DOUBLE)" if yards_col else "NULL"
+        tds_expr = f"CAST({td_col} AS DOUBLE)" if td_col else "NULL"
+    return yards_expr, tds_expr
+
+
 def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
     """
     Cross-position search across all *_seasonal tables.
@@ -432,8 +456,7 @@ def query_player_splits(
             "splits": [],
         }
 
-    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
-    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -497,8 +520,7 @@ def query_player_splits_by_year(
             "rows": [],
         }
 
-    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
-    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -552,8 +574,7 @@ def query_player_weekly(
     table = f"{position.lower()}_weekly"
     cols = _table_columns(table)
 
-    yards_expr = "CAST(yds AS DOUBLE)" if "yds" in cols else "NULL"
-    tds_expr = "CAST(td AS DOUBLE)" if "td" in cols else "NULL"
+    yards_expr, tds_expr = _yards_td_sql_exprs(position, cols)
 
     conditions: list[str] = ["player_id = ?"]
     params: list[Any] = [player_id]

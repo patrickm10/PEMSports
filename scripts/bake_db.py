@@ -135,11 +135,6 @@ def bake():
     if PLAYERS_CSV.exists():
         try:
             players_csv_path = str(PLAYERS_CSV).replace("\\", "/")
-            # #region agent log
-            import json as _json, time as _time
-            with open(PROJECT_ROOT / "debug-20f78b.log", "a", encoding="utf-8") as _dbg:
-                _dbg.write(_json.dumps({"sessionId": "20f78b", "hypothesisId": "A", "location": "bake_db.py:players_load", "message": "players_csv_path normalized", "data": {"path": players_csv_path}, "timestamp": int(_time.time() * 1000), "runId": "post-fix"}) + "\n")
-            # #endregion
             conn.execute(
                 f"""
                 CREATE TABLE players AS
