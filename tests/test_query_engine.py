@@ -46,6 +46,15 @@ class TestSeasonalQueries:
         if len(years) > 1:
             assert years[0] > years[1], "Years should be descending"
 
+    def test_query_seasons_includes_weekly_only_years(self):
+        """Weekly baked data can include years absent from seasonal rollup."""
+        years = query_seasons("QB")
+        weekly = query_weekly_rankings("QB", year=2020, week=1, limit=1)
+        if weekly:
+            assert 2020 in years, (
+                "Seasons endpoint must include years present in weekly data"
+            )
+
     def test_all_positions_have_data(self):
         for pos in POSITIONS:
             data = query_rankings(pos, limit=1)

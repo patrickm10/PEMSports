@@ -182,16 +182,27 @@ def query_rankings(
 
 
 def query_seasons(position: str) -> list[int]:
-    """Return available years for a position."""
-    table = f"{position.lower()}_seasonal"
-    rows = _execute(
-        f"SELECT DISTINCT CAST(year AS INTEGER) AS yr FROM {table} ORDER BY yr DESC",
-        context=f"{table} (seasons)",
-    )
-    # Temporary runtime proof: log raw rows before service-layer caching.
-    logger.warning("[query_seasons] table=%s raw_rows=%s", table, rows)
-    seasons = [int(r["yr"]) for r in rows if r.get("yr") is not None]
-    logger.warning("[query_seasons] table=%s seasons=%s", table, seasons)
+    """Return available years for a position.
+
+    Union years from both seasonal and weekly baked tables. Weekly history
+    often spans more seasons than the seasonal rollup (e.g. 2020–2024 weekly
+    with only 2025 seasonal); the UI year picker must expose every year that
+    has queryable data.
+    """
+    pos = position.lower()
+    years: set[int] = set()
+    for table in (f"{pos}_seasonal", f"{pos}_weekly"):
+        try:
+            rows = _execute(
+                f"SELECT DISTINCT CAST(year AS INTEGER) AS yr FROM {table}",
+                context=f"{table} (seasons)",
+            )
+        except NFLStatsException:
+            continue
+        years.update(int(r["yr"]) for r in rows if r.get("yr") is not None)
+
+    seasons = sorted(years, reverse=True)
+    logger.warning("[query_seasons] position=%s seasons=%s", pos, seasons)
     return seasons
 
 
