@@ -225,9 +225,17 @@ function PlayerAvatar({
 }) {
   const pid = row.player_id ?? row.player;
   const apiDefault = staticAssetUrl('/static/players/default-player.png');
-  const src = pid
-    ? staticAssetUrl(`/static/players/${encodeURIComponent(String(pid))}.png`)
-    : PUBLIC_DEFAULT_PLAYER_IMG;
+  const headshotFromApi =
+    typeof row.headshot_url === 'string' && row.headshot_url.trim()
+      ? row.headshot_url.trim()
+      : null;
+  const src = headshotFromApi
+    ? headshotFromApi.startsWith('http')
+      ? headshotFromApi
+      : staticAssetUrl(headshotFromApi)
+    : pid
+      ? staticAssetUrl(`/static/players/${encodeURIComponent(String(pid))}.png`)
+      : PUBLIC_DEFAULT_PLAYER_IMG;
   return (
     <img
       src={src}

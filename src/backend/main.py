@@ -35,10 +35,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from backend.core.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
@@ -91,6 +91,10 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Honor X-Forwarded-For from Render/other reverse proxies so rate limits and
+# logs apply per client, not per proxy IP.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 @app.exception_handler(NFLStatsException)
