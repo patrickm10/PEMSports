@@ -554,6 +554,9 @@ def query_player_weekly(
 
     yards_expr = "CAST(yds AS DOUBLE)" if "yds" in cols else "NULL"
     tds_expr = "CAST(td AS DOUBLE)" if "td" in cols else "NULL"
+    weather_impact_expr = (
+        "CAST(weather_impact AS VARCHAR)" if "weather_impact" in cols else "NULL"
+    )
 
     conditions: list[str] = ["player_id = ?"]
     params: list[Any] = [player_id]
@@ -580,7 +583,7 @@ def query_player_weekly(
         temp,
         humidity,
         wind,
-        weather_impact
+        {weather_impact_expr} AS weather_impact
       FROM {table}
       WHERE {where_clause}
       ORDER BY year DESC, week ASC
