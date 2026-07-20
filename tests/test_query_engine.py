@@ -10,6 +10,8 @@ Tests verify:
 import sys
 from pathlib import Path
 
+import pytest
+
 _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
@@ -19,6 +21,7 @@ from backend.data.query_engine import (
     query_seasons,
     query_weekly_rankings,
     query_available_weeks,
+    query_player_weekly,
 )
 
 POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"]
@@ -80,3 +83,24 @@ class TestWeeklyQueries:
         assert isinstance(weeks, list)
         if len(weeks) > 1:
             assert weeks == sorted(weeks), "Weeks should be ascending"
+
+
+class TestPlayerWeeklyQueries:
+    """Player weekly log queries must not assume optional baked columns exist."""
+
+    def test_query_player_weekly_without_weather_impact_column(self):
+        """Baked weekly tables have temp/humidity/wind but not weather_impact."""
+        weekly = query_weekly_rankings("RB", year=2024, limit=1)
+        if not weekly:
+            pytest.skip("No RB weekly data for 2024")
+        player_id = weekly[0].get("player_id")
+        assert player_id
+
+        result = query_player_weekly(position="RB", player_id=player_id, years=[2024])
+        assert result["player_id"] == player_id
+        assert result["position"] == "rb"
+        assert isinstance(result["seasons"], list)
+        if result["seasons"]:
+            week_row = result["seasons"][0]["weeks"][0]
+            assert "weather_impact" in week_row
+            assert week_row["weather_impact"] is None
