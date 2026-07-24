@@ -34,6 +34,7 @@ from backend.core.exceptions import (
     TableMissingError,
 )
 from backend.utils.team_normalization import normalize_team_abbr
+from backend.data.headshot_urls import attach_headshot_urls
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,6 @@ def query_rankings(
     sql = f"""
     SELECT
         *,
-        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
             PARTITION BY year
             ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
@@ -178,7 +178,7 @@ def query_rankings(
     if limit is not None:
         sql += f" LIMIT {int(limit)} OFFSET {int(offset)}"
 
-    return _execute(sql, params, context=table)
+    return attach_headshot_urls(_execute(sql, params, context=table), get_conn=_get_conn)
 
 
 def query_seasons(position: str) -> list[int]:
@@ -242,7 +242,6 @@ def query_weekly_rankings(
     sql = f"""
     SELECT
         *,
-        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
             PARTITION BY year, week
             ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
@@ -254,7 +253,7 @@ def query_weekly_rankings(
     if limit is not None:
         sql += f" LIMIT {int(limit)} OFFSET {int(offset)}"
 
-    return _execute(sql, params, context=table)
+    return attach_headshot_urls(_execute(sql, params, context=table), get_conn=_get_conn)
 
 
 def query_available_weeks(position: str, year: Optional[int] = None) -> list[int]:
@@ -385,7 +384,6 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
           player_name,
           '{pos.upper()}' AS position,
           team,
-          '/headshots/' || player_id || '.jpg' AS headshot_url,
           {rank_expr} AS current_season_rank
         FROM {table}
         WHERE LOWER(player_name) LIKE ?
@@ -393,7 +391,10 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
         LIMIT 50
         """
         try:
-            rows = _execute(sql, [like], context=f"{table} (player_search)")
+            rows = attach_headshot_urls(
+                _execute(sql, [like], context=f"{table} (player_search)"),
+                get_conn=_get_conn,
+            )
         except PemSportsException:
             continue
 
