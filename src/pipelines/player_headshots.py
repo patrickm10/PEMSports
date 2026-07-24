@@ -6,6 +6,11 @@ Contract:
 - Public path is:       /headshots/{player_id}.jpg
 - No name-based matching is allowed in this pipeline. All joins must use `player_id`.
 
+Serving note:
+- Production prefers ESPN CDN URLs from espn_player_id (see backend.data.headshot_urls).
+- This download pipeline is local/dev only — never run it in Render/Docker buildCommand.
+- data/headshots/ is gitignored; do not ship JPEGs for prod photo coverage.
+
 Source-of-truth:
 - DuckDB table `players` baked into data/nfl_stats.db (see scripts/bake_db.py),
   containing `player_id` (UUID) and nullable `espn_player_id`.

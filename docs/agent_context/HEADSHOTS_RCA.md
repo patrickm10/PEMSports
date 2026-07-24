@@ -7,3 +7,9 @@ FIRST FAILING LAYER: build enrich exit≠0 (then bake players skip, then query_e
 FIX DIRECTION: ALL_VARCHAR bake + fail-open enrich + Python URL attach (no rankings JOIN) + staticAssetUrl http passthrough.
 GATE: bake+validate+/seasons 2020–2025 before UI ships.
 ```
+
+## Local vs production headshots
+
+- **Production:** API attaches ESPN CDN URLs when `espn_player_id` is set; no `data/headshots/` JPEGs required.
+- **Local/dev optional:** `python scripts/player_headshots.py` downloads UUID-keyed JPEGs; `scripts/migrate_headshots.py` migrates legacy team/name trees.
+- **Never** run download/migrate in Render/`Dockerfile` buildCommand.
