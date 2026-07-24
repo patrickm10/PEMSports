@@ -9,6 +9,11 @@ export function getApiBaseUrl(): string {
   if (root) {
     return `${String(root).replace(/\/$/, '')}/api/v1`;
   }
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'Missing API base URL: set VITE_API_BASE (or VITE_API_BASE_URL) for production builds.'
+    );
+  }
   return 'http://localhost:8000/api/v1';
 }
 
@@ -22,6 +27,9 @@ export function getBackendOrigin(): string {
 
 /** Absolute or same-origin path for `/static/...` on the API. */
 export function staticAssetUrl(path: string): string {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
   const p = path.startsWith('/') ? path : `/${path}`;
   const origin = getBackendOrigin();
   return origin ? `${origin}${p}` : p;
