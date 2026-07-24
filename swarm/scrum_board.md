@@ -20,12 +20,12 @@
 |------|--------|
 | G1 Root cause documented | DONE (`DATA_COVERAGE_AUDIT.md`) |
 | G2 Local bake + pytest | DONE (168 passed) |
-| G3 Frontend lint/test/build | **PENDING** |
-| G4 Adversarial reviews + docs | **PENDING** |
-| G5 Commit restored seasonal parquet | **PENDING** (uncommitted) |
-| G6 Render redeploy with validate | **PENDING** |
-| G7 Vercel redeploy (brand + UI) | **PENDING** |
-| G8 Live `/QB/seasons` = 2020–2025 | **PENDING** |
+| G3 Frontend lint/test/build | DONE |
+| G4 Adversarial reviews + docs | DONE (Critical prod deploy still open) |
+| G5 Commit restored seasonal parquet | DONE (`106b561`) |
+| G6 Render redeploy with validate | **BLOCKED** — need push `f0265fd` (3.11 f-string fix) then successful bake |
+| G7 Vercel redeploy (brand + UI) | DONE (`a031228` READY; title PEM Sports) |
+| G8 Live `/QB/seasons` = 2020–2025 | **PENDING** (still `[2025]` until G6) |
 
 **Playbook:** [`coverage_overhaul_orchestration.md`](coverage_overhaul_orchestration.md)  
 **Handoff:** [`../state_handoff.md`](../state_handoff.md)
