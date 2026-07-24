@@ -135,11 +135,6 @@ def bake():
     if PLAYERS_CSV.exists():
         try:
             players_csv_path = str(PLAYERS_CSV).replace("\\", "/")
-            # #region agent log
-            import json as _json, time as _time
-            with open(PROJECT_ROOT / "debug-20f78b.log", "a", encoding="utf-8") as _dbg:
-                _dbg.write(_json.dumps({"sessionId": "20f78b", "hypothesisId": "A", "location": "bake_db.py:players_load", "message": "players_csv_path normalized", "data": {"path": players_csv_path}, "timestamp": int(_time.time() * 1000), "runId": "post-fix"}) + "\n")
-            # #endregion
             conn.execute(
                 f"""
                 CREATE TABLE players AS
@@ -149,8 +144,12 @@ def bake():
                   CAST(player_name AS VARCHAR) AS player_name,
                   CAST(team AS VARCHAR) AS team,
                   CAST(position AS VARCHAR) AS position,
-                  CAST(NULLIF(espn_player_id, '') AS VARCHAR) AS espn_player_id
-                FROM read_csv_auto('{players_csv_path}', HEADER=TRUE)
+                  CAST(NULLIF(CAST(espn_player_id AS VARCHAR), '') AS VARCHAR) AS espn_player_id
+                FROM read_csv_auto(
+                  '{players_csv_path}',
+                  HEADER=TRUE,
+                  ALL_VARCHAR=TRUE
+                )
                 """
             )
             conn.execute("CREATE UNIQUE INDEX idx_players_player_id ON players(player_id)")

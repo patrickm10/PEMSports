@@ -38,6 +38,7 @@ data/nfl_stats.db.bak
 
 # Player headshots (downloaded binary assets; do not commit)
 data/headshots/
+data/headshots_legacy/
 
 # Logs & Debug Output
 logs/
@@ -50,16 +51,21 @@ test_output.txt
 test_hash.txt
 status.txt
 
-# Local-Only Docs & Research
+# Local-Only Docs & Research (docs/agent_context is the committed exception)
 research/
-docs/
+docs/*
+!docs/agent_context/
 artifacts/
 
 # Agent Configuration (local-only)
 .agent/
+.cursor/render-mcp.env
 
 # Dev Handoff State (local-only)
 state_handoff.md
 CHLOG.md
 scratch/
 
+
+.vercel
+.env*

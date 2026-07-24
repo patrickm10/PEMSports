@@ -18,6 +18,12 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function resolveHeadshotSrc(headshot: string | null): string {
+  if (!headshot) return PUBLIC_DEFAULT_PLAYER_IMG;
+  if (headshot.startsWith('http://') || headshot.startsWith('https://')) return headshot;
+  return staticAssetUrl(headshot);
+}
+
 export type GridDensity = 'compact' | 'standard' | 'expert';
 
 type GridRow = Record<string, unknown>;
@@ -234,7 +240,7 @@ function PlayerAvatar({
 }) {
   const headshot = typeof row.headshot_url === 'string' ? row.headshot_url : null;
   const apiDefault = staticAssetUrl('/headshots/default-player.jpg');
-  const src = headshot ? staticAssetUrl(headshot) : PUBLIC_DEFAULT_PLAYER_IMG;
+  const src = resolveHeadshotSrc(headshot);
   return (
     <img
       src={src}
