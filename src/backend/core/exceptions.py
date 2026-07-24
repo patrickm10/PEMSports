@@ -1,8 +1,8 @@
 """
-Domain exception hierarchy for NFL Stats Analyzer.
+Domain exception hierarchy for PEM Sports.
 
 Every failure path inside the serving layer raises a subclass of
-`NFLStatsException`. A single FastAPI exception handler (registered in
+`PemSportsException`. A single FastAPI exception handler (registered in
 `main.py`) maps the exception's `http_status` and `default_detail` into a
 stable JSON envelope. This replaces the prior pattern of swallowing
 errors and returning `[]`, which made empty results indistinguishable
@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Optional
 
 
-class NFLStatsException(Exception):
+class PemSportsException(Exception):
     """Base class for all domain errors."""
 
     http_status: int = 500
@@ -24,29 +24,35 @@ class NFLStatsException(Exception):
         super().__init__(self.detail)
 
 
-class TableMissingError(NFLStatsException):
+class TableMissingError(PemSportsException):
     """A required DuckDB table (e.g. `qb_weekly`) is not present."""
 
     http_status = 404
     default_detail = "Requested dataset has not been baked"
 
 
-class NoDataForFilterError(NFLStatsException):
+class NoDataForFilterError(PemSportsException):
     """Query succeeded but produced zero rows for the given filters."""
 
     http_status = 404
     default_detail = "No data for the requested filters"
 
 
-class QueryEngineError(NFLStatsException):
+class QueryEngineError(PemSportsException):
     """DuckDB raised a binder/parser/IO error that should surface as 500."""
 
     http_status = 500
     default_detail = "DuckDB query failure"
 
 
-class DatabaseUnavailableError(NFLStatsException):
+class DatabaseUnavailableError(PemSportsException):
     """Serving DuckDB file missing or the transactional pool is down."""
 
     http_status = 503
     default_detail = "Serving database not initialized"
+
+
+# Backwards-compatibility alias (pre-PEM Sports brand). Prefer
+# `PemSportsException` in new code; kept so any external/uncommitted
+# consumers importing the old name continue to work.
+NFLStatsException = PemSportsException
