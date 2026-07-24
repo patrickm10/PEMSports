@@ -29,6 +29,14 @@ _VALID_ENVS: tuple[str, ...] = ("development", "staging", "production")
 _DEV_JWT_SECRET = "insecure-dev-secret-do-not-use-in-prod"
 
 
+_DEV_ALLOWED_ORIGINS: tuple[str, ...] = (
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:3000",
+)
+
+
 @dataclass(frozen=True)
 class EnvironmentConfig:
     app_env: Environment
@@ -36,6 +44,7 @@ class EnvironmentConfig:
     jwt_algorithm: str
     database_url: str
     access_token_expire_minutes: int
+    allowed_origins: tuple[str, ...]
 
     @property
     def is_production(self) -> bool:
@@ -62,13 +71,19 @@ def _load() -> EnvironmentConfig:
     app_env: Environment = raw_env  # type: ignore[assignment]
 
     jwt_secret = os.getenv("JWT_SECRET", "").strip()
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    raw_database_url = os.getenv("DATABASE_URL", "").strip()
+    database_url = raw_database_url
+
+    raw_origins = os.getenv("ALLOWED_ORIGINS", "").strip()
+    allowed_origins: tuple[str, ...] = tuple(
+        o.strip().rstrip("/") for o in raw_origins.split(",") if o.strip()
+    )
 
     if app_env == "development":
         if not jwt_secret:
             jwt_secret = _DEV_JWT_SECRET
-        if not database_url:
-            database_url = "postgresql://postgres:postgres@localhost:5432/nflstats"
+        if not allowed_origins:
+            allowed_origins = _DEV_ALLOWED_ORIGINS
     else:
         if not jwt_secret or jwt_secret == _DEV_JWT_SECRET:
             _abort(
@@ -80,6 +95,8 @@ def _load() -> EnvironmentConfig:
             )
         if not database_url:
             _abort(f"DATABASE_URL must be set when APP_ENV={app_env}")
+        if not allowed_origins:
+            _abort(f"ALLOWED_ORIGINS must be set when APP_ENV={app_env}")
 
     return EnvironmentConfig(
         app_env=app_env,
@@ -89,6 +106,7 @@ def _load() -> EnvironmentConfig:
         access_token_expire_minutes=int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
         ),
+        allowed_origins=allowed_origins,
     )
 
 
