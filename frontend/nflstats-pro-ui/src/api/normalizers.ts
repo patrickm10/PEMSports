@@ -181,7 +181,7 @@ export function toYearlyCategoricalChartModel(
   const valueByYearKey = new Map<string, Map<number, number | null>>();
   for (const r of primary.rows) {
     if (!valueByYearKey.has(r.key)) valueByYearKey.set(r.key, new Map());
-    valueByYearKey.get(r.key)!.set(r.year, (r as any)[metric] as number | null);
+    valueByYearKey.get(r.key)!.set(r.year, r[metric]);
   }
 
   const series = years.map((year) => ({
@@ -198,7 +198,7 @@ export function toYearlyCategoricalChartModel(
     const cmpValueByYearKey = new Map<string, Map<number, number | null>>();
     for (const r of comparison.rows) {
       if (!cmpValueByYearKey.has(r.key)) cmpValueByYearKey.set(r.key, new Map());
-      cmpValueByYearKey.get(r.key)!.set(r.year, (r as any)[metric] as number | null);
+      cmpValueByYearKey.get(r.key)!.set(r.year, r[metric]);
     }
 
     const cmpSeries = cmpYears.map((year) => ({

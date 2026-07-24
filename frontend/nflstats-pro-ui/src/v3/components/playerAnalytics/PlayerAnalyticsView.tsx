@@ -48,9 +48,9 @@ export const PlayerAnalyticsView: React.FC<PlayerAnalyticsViewProps> = ({
     if (!selectedPlayer) onBack();
   }, [selectedPlayer, onBack]);
 
-  if (!selectedPlayer) return null;
-
   const panelItems = useMemo(() => {
+    if (!selectedPlayer) return [];
+
     const items = [
       {
         key: 'weekly' as const,
@@ -128,34 +128,9 @@ export const PlayerAnalyticsView: React.FC<PlayerAnalyticsViewProps> = ({
         if (br !== ar) return br - ar;
         return 0;
       });
-  }, [
-    activePanels,
-    result.metadata.data,
-    result.metadata.error,
-    result.metadata.isLoading,
-    result.stadium.data,
-    result.stadium.error,
-    result.stadium.isLoading,
-    result.surface.data,
-    result.surface.error,
-    result.surface.isLoading,
-    result.vsOpponent.data,
-    result.vsOpponent.error,
-    result.vsOpponent.isLoading,
-    result.weekly.data,
-    result.weekly.error,
-    result.weekly.isLoading,
-    result.volumes.metadata,
-    result.volumes.opponent,
-    result.volumes.stadium,
-    result.volumes.surface,
-    result.volumes.weekly,
-    result.recency.metadata,
-    result.recency.opponent,
-    result.recency.stadium,
-    result.recency.surface,
-    result.recency.weekly,
-  ]);
+  }, [selectedPlayer, activePanels, result]);
+
+  if (!selectedPlayer) return null;
 
   const halfKeys = panelItems
     .filter((p) => p.kind === 'half')
