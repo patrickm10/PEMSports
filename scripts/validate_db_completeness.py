@@ -1,5 +1,5 @@
 """
-Deterministic completeness validator for NFLStatsAnalyzer.
+Deterministic completeness validator for PEM Sports.
 
 Scope:
 - Validate the committed Parquet sources under data/rankings/.
@@ -263,7 +263,9 @@ def validate(*, mode: str, db_path: Path) -> dict[str, Any]:
 
     for pos, kinds in parquets.items():
         for kind, p in kinds.items():
-            source_sql = f"SELECT * FROM read_parquet('{str(p).replace('\\', '/')}')"
+            # Python <3.12 forbids backslashes inside f-string expressions (Render = 3.11).
+            parquet_path = str(p).replace("\\", "/")
+            source_sql = f"SELECT * FROM read_parquet('{parquet_path}')"
             cols = _columns_for_query(mem, source_sql)
             required = ["year", "player_id", "player_name", "team"]
             if kind == "weekly":

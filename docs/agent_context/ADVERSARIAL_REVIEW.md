@@ -17,7 +17,8 @@
 
 | ID | Severity | Finding | Evidence | Disposition |
 |----|----------|---------|----------|-------------|
-| C1 | **Critical** | Production still 2025-only until restored seasonal parquet is **committed and baked on Render** | Live 2026-07-23 `/QB/seasons` → `[2025]`; git HEAD seasonal skill positions 2025-only | **Resolve via deploy** — commit parquet + push; Render `buildCommand` now includes validate |
+| C1 | **Critical** | Production still 2025-only until restored seasonal parquet is **committed and baked on Render** | Live 2026-07-23 `/QB/seasons` → `[2025]`; git HEAD seasonal skill positions 2025-only | **Code committed**; Render redeploy blocked 2026-07-24 by `SyntaxError` in `validate_db_completeness.py` f-string (Python 3.11) — fixed by extracting path before f-string |
+| C7 | **Critical** | Render build fail: `f-string expression part cannot include a backslash` | Render log `validate_db_completeness.py:266` on Python 3.11 | **Fixed** — `parquet_path = str(p).replace(...)` then f-string |
 | C2 | High | `query_seasons` unions weekly years → UI can list a year whose **seasonal** table is empty | `query_engine.py:184-215` | **Accepted/mitigated** — UI empty state explains empty combo; `validate_db_completeness` fails deploy if seasonal years missing; seasonal parquet restored |
 | C3 | High | Partial CSV convert could wipe multi-year seasonal | Pre-fix `convert_seasonal.py` | **Fixed** — expected-year assert + `tests/test_convert_seasonal_guard.py` |
 | C4 | Medium | Weekly row tests sample week=1 / subset of years, not every week×year | `tests/test_coverage_contract.py` | **Accepted** — weeks metadata asserts 1–18 for sampled years; full year×week matrix is validate script’s job |
