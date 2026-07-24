@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN python scripts/build_players_dimension.py && python scripts/enrich_espn_player_ids.py && python scripts/bake_db.py
+RUN python scripts/build_players_dimension.py && python scripts/bake_db.py
 
 EXPOSE 8000
 

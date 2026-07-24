@@ -46,50 +46,6 @@ _DB_PATH = Path(
 _thread_local = threading.local()
 _logged_db_path = False
 
-# ESPN CDN headshot (96x96 crop) — used when players.espn_player_id is present so
-# production UI does not depend on shipping gitignored JPEGs with the API image.
-_ESPN_HEADSHOT_SQL = (
-    "'https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/' "
-    "|| CAST(p.espn_player_id AS VARCHAR) || '.png&h=96&w=96&scale=crop'"
-)
-
-
-def _players_table_ready(conn: duckdb.DuckDBPyConnection) -> bool:
-    try:
-        tables = {r[0] for r in conn.execute("SHOW TABLES").fetchall()}
-        if "players" not in tables:
-            return False
-        cols = {d[0].lower() for d in conn.execute("SELECT * FROM players LIMIT 0").description}
-        return "player_id" in cols and "espn_player_id" in cols
-    except Exception:  # noqa: BLE001
-        return False
-
-
-def _headshot_select_sql(table_alias: str = "t") -> tuple[str, str]:
-    """
-    Return (from_clause_suffix, headshot_url_select_expr).
-
-    When `players` is baked with espn_player_id, prefer the ESPN CDN URL so the
-    frontend can render photos without a local /headshots file. Otherwise fall
-    back to the canonical static path `/headshots/{player_id}.jpg`.
-    """
-    conn = _get_conn()
-    if _players_table_ready(conn):
-        join = (
-            f" LEFT JOIN players p ON CAST({table_alias}.player_id AS VARCHAR) "
-            f"= CAST(p.player_id AS VARCHAR)"
-        )
-        expr = (
-            "COALESCE("
-            "CASE WHEN p.espn_player_id IS NOT NULL "
-            "AND CAST(p.espn_player_id AS VARCHAR) <> '' "
-            f"THEN {_ESPN_HEADSHOT_SQL} END, "
-            f"'/headshots/' || CAST({table_alias}.player_id AS VARCHAR) || '.jpg'"
-            ") AS headshot_url"
-        )
-        return join, expr
-    return "", f"'/headshots/' || CAST({table_alias}.player_id AS VARCHAR) || '.jpg' AS headshot_url"
-
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
     """Return a thread-local, read-only connection to the serving database.
@@ -202,22 +158,21 @@ def query_rankings(
     params: list[Any] = []
 
     if year is not None:
-        conditions.append("t.year = ?")
+        conditions.append("year = ?")
         params.append(float(year))
 
     where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-    join_sql, headshot_expr = _headshot_select_sql("t")
 
     sql = f"""
     SELECT
-        t.*,
-        {headshot_expr},
+        *,
+        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
-            PARTITION BY t.year
-            ORDER BY t.fpts_ppr DESC NULLS LAST, t.fpts DESC NULLS LAST
+            PARTITION BY year
+            ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
         ) AS rank
-    FROM {table} t{join_sql}{where_clause}
-    ORDER BY t.year DESC, rank ASC
+    FROM {table}{where_clause}
+    ORDER BY year DESC, rank ASC
     """
 
     if limit is not None:
@@ -276,25 +231,24 @@ def query_weekly_rankings(
     params: list[Any] = []
 
     if year is not None:
-        conditions.append("t.year = ?")
+        conditions.append("year = ?")
         params.append(float(year))
     if week is not None:
-        conditions.append("t.week = ?")
+        conditions.append("week = ?")
         params.append(float(week))
 
     where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-    join_sql, headshot_expr = _headshot_select_sql("t")
 
     sql = f"""
     SELECT
-        t.*,
-        {headshot_expr},
+        *,
+        '/headshots/' || player_id || '.jpg' AS headshot_url,
         ROW_NUMBER() OVER (
-            PARTITION BY t.year, t.week
-            ORDER BY t.fpts_ppr DESC NULLS LAST, t.fpts DESC NULLS LAST
+            PARTITION BY year, week
+            ORDER BY fpts_ppr DESC NULLS LAST, fpts DESC NULLS LAST
         ) AS rank
-    FROM {table} t{join_sql}{where_clause}
-    ORDER BY t.year DESC, t.week DESC, rank ASC
+    FROM {table}{where_clause}
+    ORDER BY year DESC, week DESC, rank ASC
     """
 
     if limit is not None:
@@ -423,20 +377,19 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
             continue
 
         # rank may not exist in baked tables; compute a lightweight current-season rank proxy if present.
-        rank_expr = "CAST(t.rank AS INTEGER)" if "rank" in cols else "NULL"
-        join_sql, headshot_expr = _headshot_select_sql("t")
+        rank_expr = "CAST(rank AS INTEGER)" if "rank" in cols else "NULL"
 
         sql = f"""
         SELECT
-          t.player_id,
-          t.player_name,
+          player_id,
+          player_name,
           '{pos.upper()}' AS position,
-          t.team,
-          {headshot_expr},
+          team,
+          '/headshots/' || player_id || '.jpg' AS headshot_url,
           {rank_expr} AS current_season_rank
-        FROM {table} t{join_sql}
-        WHERE LOWER(t.player_name) LIKE ?
-        ORDER BY t.year DESC
+        FROM {table}
+        WHERE LOWER(player_name) LIKE ?
+        ORDER BY year DESC
         LIMIT 50
         """
         try:
