@@ -29,7 +29,7 @@ import duckdb
 
 from backend.core.exceptions import (
     DatabaseUnavailableError,
-    NFLStatsException,
+    PemSportsException,
     QueryEngineError,
     TableMissingError,
 )
@@ -136,7 +136,7 @@ def _execute(sql: str, params: list[Any] | None = None, *, context: str) -> list
             raise DatabaseUnavailableError(
                 f"DuckDB IO failure while querying {context}: {exc2}"
             ) from exc2
-    except NFLStatsException:
+    except PemSportsException:
         raise
     except Exception as exc:  # noqa: BLE001 - final safety net, re-raised as typed
         logger.exception("Unexpected error in query engine (%s)", context)
@@ -182,17 +182,37 @@ def query_rankings(
 
 
 def query_seasons(position: str) -> list[int]:
-    """Return available years for a position."""
-    table = f"{position.lower()}_seasonal"
-    rows = _execute(
-        f"SELECT DISTINCT CAST(year AS INTEGER) AS yr FROM {table} ORDER BY yr DESC",
-        context=f"{table} (seasons)",
-    )
-    # Temporary runtime proof: log raw rows before service-layer caching.
-    logger.warning("[query_seasons] table=%s raw_rows=%s", table, rows)
-    seasons = [int(r["yr"]) for r in rows if r.get("yr") is not None]
-    logger.warning("[query_seasons] table=%s seasons=%s", table, seasons)
-    return seasons
+    """
+    Return available years for a position (newest first).
+
+    Unions distinct years from both seasonal and weekly tables so the
+    metadata contract stays usable if one table regresses (e.g. seasonal
+    truncated to a single year while weekly history remains intact).
+    """
+    pos = position.lower()
+    years: set[int] = set()
+    found_any_table = False
+
+    for kind in ("seasonal", "weekly"):
+        table = f"{pos}_{kind}"
+        try:
+            rows = _execute(
+                f"SELECT DISTINCT CAST(year AS INTEGER) AS yr FROM {table} "
+                f"WHERE year IS NOT NULL",
+                context=f"{table} (seasons)",
+            )
+        except TableMissingError:
+            continue
+        found_any_table = True
+        for r in rows:
+            yr = r.get("yr")
+            if yr is not None:
+                years.add(int(yr))
+
+    if not found_any_table:
+        raise TableMissingError(f"Table for {pos}_seasonal is not baked.")
+
+    return sorted(years, reverse=True)
 
 
 # ── Weekly Rankings ───────────────────────────────────────────────────────────
@@ -353,7 +373,7 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
         table = f"{pos}_seasonal"
         try:
             cols = _table_columns(table)
-        except NFLStatsException:
+        except PemSportsException:
             continue
 
         # rank may not exist in baked tables; compute a lightweight current-season rank proxy if present.
@@ -374,7 +394,7 @@ def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         try:
             rows = _execute(sql, [like], context=f"{table} (player_search)")
-        except NFLStatsException:
+        except PemSportsException:
             continue
 
         for r in rows:

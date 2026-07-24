@@ -46,7 +46,7 @@ async function fetchWithRetry(url: string, signal?: AbortSignal, retries = 2): P
 }
 
 /**
- * Type-safe API client for the NFL rankings backend.
+ * Type-safe API client for the PEM Sports rankings backend.
  *
  * API_BASE points to /api/v1 — set VITE_API_BASE in production
  * (e.g. https://nflstats-api.onrender.com/api/v1).

@@ -94,6 +94,20 @@ html, body, #root {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .app-mesh-root::before {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Glassmorphism — cards & analysis surfaces */
 .glass-card {
   background: rgba(255, 255, 255, 0.05);

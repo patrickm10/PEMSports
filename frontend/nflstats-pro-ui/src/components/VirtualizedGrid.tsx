@@ -6,7 +6,7 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { CellContext, ColumnDef, SortingState } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -20,11 +20,20 @@ function cn(...inputs: ClassValue[]) {
 
 export type GridDensity = 'compact' | 'standard' | 'expert';
 
+type GridRow = Record<string, unknown>;
+
+interface GridColumnMeta {
+  kind: ColumnKind;
+  align: 'left' | 'right' | 'center';
+  optional: boolean;
+}
+
 interface VirtualizedGridProps {
-  data: any[];
-  onRowClick?: (row: any) => void;
+  data: GridRow[];
+  onRowClick?: (row: GridRow) => void;
   viewMode?: 'season' | 'weekly';
   density?: GridDensity;
+  emptyMessage?: string;
 }
 
 // ── Column classification ────────────────────────────────────────────────────
@@ -223,11 +232,9 @@ function PlayerAvatar({
   row: Record<string, unknown>;
   imgClassName: string;
 }) {
-  const pid = row.player_id ?? row.player;
-  const apiDefault = staticAssetUrl('/static/players/default-player.png');
-  const src = pid
-    ? staticAssetUrl(`/static/players/${encodeURIComponent(String(pid))}.png`)
-    : PUBLIC_DEFAULT_PLAYER_IMG;
+  const headshot = typeof row.headshot_url === 'string' ? row.headshot_url : null;
+  const apiDefault = staticAssetUrl('/headshots/default-player.jpg');
+  const src = headshot ? staticAssetUrl(headshot) : PUBLIC_DEFAULT_PLAYER_IMG;
   return (
     <img
       src={src}
@@ -329,13 +336,14 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   onRowClick,
   viewMode = 'season',
   density = 'standard',
+  emptyMessage = 'No player data for this view.',
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'rank', desc: false },
   ]);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const columns = useMemo<ColumnDef<any>[]>(() => {
+  const columns = useMemo<ColumnDef<GridRow>[]>(() => {
     if (!data.length) return [];
 
     const keys = Object.keys(data[0]);
@@ -395,11 +403,11 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             </span>
           );
         },
-        cell: (info: any) => {
+        cell: (info: CellContext<GridRow, unknown>) => {
           const val = info.getValue();
 
           if (key === 'player_name' || key === 'name') {
-            const row = info.row.original as Record<string, unknown>;
+            const row = info.row.original;
             const label =
               val === null || val === undefined || val === ''
                 ? '—'
@@ -437,15 +445,15 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             }
             return <span className="text-slate-400">{formatted}</span>;
           }
-          return val;
+          return String(val);
         },
         size: WIDTH_BY_KEY[key] ?? WIDTH_BY_KIND[kind],
         meta: {
           kind,
           align: ALIGN_BY_KIND[kind],
           optional: OPTIONAL_UNDER_1200.has(key),
-        } as { kind: ColumnKind; align: 'left' | 'right' | 'center'; optional: boolean },
-      } satisfies ColumnDef<any>;
+        } satisfies GridColumnMeta,
+      } satisfies ColumnDef<GridRow>;
     });
   }, [data, viewMode, density]);
 
@@ -474,7 +482,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   const visibleLeafColumns = table.getVisibleLeafColumns();
   const rankIdx = visibleLeafColumns.findIndex((c) => c.id === 'rank');
   const rankWidth =
-    rankIdx !== -1 ? (visibleLeafColumns[rankIdx] as any).getSize() : 0;
+    rankIdx !== -1 ? visibleLeafColumns[rankIdx]!.getSize() : 0;
 
   const shellStyle: React.CSSProperties = {
     height: '100%',
@@ -491,10 +499,13 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   if (!data.length) {
     return (
       <div
-        className="analysis-grid-shell glass-card flex items-center justify-center min-h-[240px] rounded-2xl border border-white/10"
+        className="analysis-grid-shell glass-card flex items-center justify-center min-h-[240px] rounded-2xl border border-white/10 px-6"
         data-density={density}
+        role="status"
       >
-        <p className="text-slate-400 text-sm font-medium">No player data for this view.</p>
+        <p className="text-slate-400 text-sm font-medium text-center max-w-md leading-relaxed">
+          {emptyMessage}
+        </p>
       </div>
     );
   }
@@ -548,10 +559,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
               {headerGroup.headers.map((header) => {
                 const colId = header.column.id;
                 const isRightSticky = colId === 'fpts_ppr';
-                const meta = (header.column.columnDef.meta ?? {}) as {
-                  align?: 'left' | 'right' | 'center';
-                  optional?: boolean;
-                };
+                const meta = (header.column.columnDef.meta ?? {}) as Partial<GridColumnMeta>;
                 const align = meta.align ?? 'center';
 
                 const leftOffset =
@@ -566,7 +574,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                     key={header.id}
                     colSpan={header.colSpan}
                     onClick={header.column.getToggleSortingHandler()}
-                    data-kind={(header.column.columnDef.meta as any)?.kind}
+                    data-kind={(header.column.columnDef.meta as GridColumnMeta | undefined)?.kind}
                     data-optional={meta.optional || undefined}
                     className={cn(
                       'cursor-pointer select-none transition-colors hover:bg-slate-800/80',
@@ -641,10 +649,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                 {row.getVisibleCells().map((cell) => {
                   const colId = cell.column.id;
                   const isRightSticky = colId === 'fpts_ppr';
-                  const meta = (cell.column.columnDef.meta ?? {}) as {
-                    align?: 'left' | 'right' | 'center';
-                    optional?: boolean;
-                  };
+                  const meta = (cell.column.columnDef.meta ?? {}) as Partial<GridColumnMeta>;
                   const align = meta.align ?? 'center';
                   const leftOffset =
                     colId === 'rank'
@@ -656,7 +661,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                   return (
                     <td
                       key={cell.id}
-                      data-kind={(cell.column.columnDef.meta as any)?.kind}
+                      data-kind={(cell.column.columnDef.meta as GridColumnMeta | undefined)?.kind}
                       data-optional={meta.optional || undefined}
                       className={cn(
                         'transition-all duration-200 group-hover/row:text-white tabular-nums',

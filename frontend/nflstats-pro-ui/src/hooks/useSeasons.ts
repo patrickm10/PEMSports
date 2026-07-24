@@ -9,8 +9,8 @@ export function useSeasons(position: string) {
   return useQuery<number[], Error>({
     queryKey: ['seasons', position],
     queryFn: () => RankingsApi.fetchSeasons(position),
-    staleTime: 60 * 60 * 1000,
-    gcTime: 120 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: 1,
     enabled: !!position,
   });

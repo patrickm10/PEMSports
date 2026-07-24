@@ -44,7 +44,7 @@ from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
 from backend.api.players_routes import router as players_router
 from backend.core.config import config
-from backend.core.exceptions import NFLStatsException
+from backend.core.exceptions import PemSportsException
 from backend.core.health import check_health
 from backend.data.postgres import DatabaseUnavailable, init_db, close_db
 
@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
 
 # ── Application ───────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="NFL Stats Analyzer API",
+    title="PEM Sports API",
     description="Historical NFL fantasy performance analytics.",
     version="1.0.0",
     docs_url="/docs",
@@ -93,8 +93,8 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-@app.exception_handler(NFLStatsException)
-async def _nfl_stats_exception_handler(request: Request, exc: NFLStatsException):
+@app.exception_handler(PemSportsException)
+async def _pem_sports_exception_handler(request: Request, exc: PemSportsException):
     """Map every domain exception to a stable JSON envelope + HTTP status."""
     return JSONResponse(
         status_code=exc.http_status,
@@ -102,12 +102,10 @@ async def _nfl_stats_exception_handler(request: Request, exc: NFLStatsException)
     )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-_raw_origins = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000",
-)
-# Strip whitespace and trailing slashes for exact origin matching in CORSMiddleware
-_allowed_origins: list[str] = [o.strip().rstrip("/") for o in _raw_origins.split(",") if o.strip()]
+# Allowed origins are validated and parsed once in backend.core.config. In
+# production an unset ALLOWED_ORIGINS aborts startup; in development it defaults
+# to the local Vite/CRA ports.
+_allowed_origins: list[str] = list(config.allowed_origins)
 
 app.add_middleware(
     CORSMiddleware,
@@ -151,7 +149,7 @@ def health(request: Request):
 @app.get("/", include_in_schema=False)
 @limiter.limit("30/minute")
 def root(request: Request):
-    return {"message": "NFL Stats Analyzer API", "version": "1.0.0", "docs": "/docs"}
+    return {"message": "PEM Sports API", "version": "1.0.0", "docs": "/docs"}
 
 
 # Versioned routers

@@ -7,6 +7,7 @@ All subagents MUST complete this checklist before reporting a task as "Completed
 - [ ] **Schema Validation**: All component props and API responses pass `Zod` or `Marshmallow` schemas.
 - [ ] **Null Safety Check**: Verification that participation gaps render as `-` and do NOT affect averages (No implicit `0`s).
 - [ ] **Deterministic Summary**: Confirmed `Total = Sum(Weekly)` for seasonal aggregates within the DuckDB kernel.
+- [ ] **Coverage contract**: `validate_db_completeness.py --mode both` PASS; `/rankings/{pos}/seasons` includes every year in `EXPECTED_YEARS` for all six positions (see `.agents/skills/pem-data-coverage/SKILL.md`). Do not sign off on “years work” from weekly-only probes.
 
 ## Gate 2: Midnight Slate UI/UX
 

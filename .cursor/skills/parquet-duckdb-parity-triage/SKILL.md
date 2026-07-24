@@ -7,7 +7,7 @@ description: >-
   rankings drift, or asks to compare parquet to the baked database.
 ---
 
-# Parquet–DuckDB parity triage (NFLStatsAnalyzer)
+# Parquet–DuckDB parity triage (PEM Sports)
 
 ## When this applies
 
@@ -25,6 +25,20 @@ User reports any of: wrong row counts, missing weeks/years, UI/API empty while f
 6. If DB path ambiguity: state explicit `NFL_STATS_DB_PATH` at runtime vs path in validator output; do not assume match without both values.
 7. Maximum three hypotheses; each maps to one artifact path or one script outcome.
 8. Do not expand into unrelated pipelines (`enrichment.py`, scrapers) unless the user names them or validator output references those tables.
+9. **2025-only UI symptom:** always compare seasonal vs weekly for the same year, and `GET /rankings/{pos}/seasons` vs git HEAD seasonal parquet years. Do not blame the year selector first. See `.agents/skills/pem-data-coverage/SKILL.md`.
+10. Confirm whether incomplete seasonal files are **committed** (production bake source) vs only fixed in a local worktree.
+
+## Evidence sources
+
+Use these repo scripts instead of ad-hoc scans:
+
+- `scripts/validate_db_completeness.py` (`--mode both`) — parquet vs baked DuckDB parity
+- `scripts/inspect_active_db_seasons.py` — seasons/weeks actually present in the active DB
+- `tests/validate_schema_consistency.py` — schema drift between layers
+
+## Binary-file visibility rule
+
+Never conclude a parquet/data file is missing based on Glob/search results — those tools can miss binary files. Verify with `git ls-files data/` and a direct directory listing before reporting a missing-data finding.
 
 ## Required output shape
 

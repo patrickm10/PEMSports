@@ -1,19 +1,36 @@
-# High-Hardness Implementation Reasoning: V3 Foundation
+# Coverage + UI Overhaul — Reasoning Log
 
-## Null-Safety Strategy
-- **Standard**: Zero-transformation passthrough is enforced at the API boundary.
-- **Handling**: The `Zod` schema in the Virtualized Grid transforms `null` values from DuckDB to `-` strings for the UI. numeric `0` is preserved for performance stats.
-- **Backend Correlation**: Python query engine utilizes `NULLS LAST` to ensure participating players are prioritized over participation gaps.
+**Date:** 2026-07-23  
+**Status:** STOPPED for handoff (FE validation + deploy incomplete)
 
-## UI Token Compliance
-- **Midnight Slate**: Background is locked to `#020617` (Deep Navy).
-- **Primary Accent**: All active elements use `#38bdf8` (Sky Blue).
-- **Glassmorphism**: Cards and drawers implement `bg-slate-900/40` with `backdrop-filter: blur(8px)` and white/10 borders.
+## Discovery conclusion
 
-## Verification Steps
-- **Step 1**: [UI Audit] Navigate to `localhost:5173` and verify "Vite Error" is cleared.
-- **Step 2**: [Integrity Audit] Run `python scripts/verify_swarm.py` and ensure a 3/3 PASS on all gates.
-- **Step 3**: [Visual Audit] Confirm that Delta columns correctly highlight positive Yardage gains in Sky Blue.
+Earliest loss = **committed seasonal parquet** (QB/RB/WR/TE/K = 2025 only), not frontend year hardcoding and not API `year` default.
 
----
-*Owner: Foundation Agent | Approved by Sovereign Architect*
+## Implemented in worktree (uncommitted)
+
+| Change | Why |
+|--------|-----|
+| Restored seasonal parquet (worktree) | Restore source of truth for bake |
+| `query_seasons` union seasonal+weekly | Defensive metadata if seasonal regresses |
+| `convert_seasonal.py` expected-year guard | Prevent 2025-only overwrite |
+| `render.yaml` + validate `--mode both` | Fail deploy on coverage loss |
+| `tests/test_coverage_contract.py` | Regression protection |
+| UI ControlBar/App/ResponsiveDock/filterState | Global filters, a11y, errors, mobile nav |
+| Vitest `filterState.test.ts` | Filter persistence/reset contract |
+
+## Verification
+
+- Backend chain: **PASS** (bake + validate both + pytest 168)
+- Frontend lint/test/build: **NOT RUN to completion** (aborted)
+
+## Remaining for next session
+
+1. FE lint → test → build  
+2. Adversarial reviewers + `ADVERSARIAL_REVIEW.md` + `UI_IMPLEMENTATION_SUMMARY.md`  
+3. Commit parquet + code; push; Render/Vercel redeploy  
+4. Live probe `/seasons` + `year=2024` seasonal non-empty  
+
+## Architect compliance
+
+- `filteredData` preserved; DuckDB rankings; Neon auth-only; no URL renames.

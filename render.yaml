@@ -19,7 +19,7 @@ services:
     name: nflstats-api
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python scripts/build_players_dimension.py && python scripts/bake_db.py
+    buildCommand: pip install -r requirements.txt && python scripts/build_players_dimension.py && python scripts/bake_db.py && python scripts/validate_db_completeness.py --mode both
     startCommand: gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 1 --timeout 60 backend.main:app
     envVars:
       - key: PYTHON_VERSION

@@ -29,7 +29,7 @@ const itemVariants = {
   visible: { 
     opacity: 1, 
     y: 0, 
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as any } 
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
   }
 
 };
@@ -73,7 +73,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
           className="flex items-center gap-3 px-4 py-2 rounded-full border border-slate-800 bg-slate-900/50 mb-12"
         >
           <BarChart3 size={18} className="text-sky-400" />
-          <span className="text-xs font-bold tracking-[0.2em] uppercase text-slate-400">NFLStatsPro V3</span>
+          <span className="text-xs font-bold tracking-[0.2em] uppercase text-slate-400">PEM Sports</span>
         </motion.div>
 
         {/* Hero Title */}
@@ -89,8 +89,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
           variants={itemVariants}
           className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl leading-relaxed"
         >
-          The world's most advanced NFL data exploration suite. 
-          Harness the power of DuckDB to visualize high-density performance metrics in real-time.
+          PEM Sports fantasy analytics — seasonal and weekly rankings across every supported season,
+          powered by a DuckDB analytical kernel.
         </motion.p>
 
         {/* Launch Button */}
@@ -127,7 +127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
         transition={{ delay: 2 }}
         className="absolute bottom-10 text-[10px] font-bold text-slate-600 tracking-[0.4em] uppercase"
       >
-        Verified Analytical Kernel &copy; 2025
+        Verified Analytical Kernel &copy; 2026
       </motion.footer>
     </div>
   );

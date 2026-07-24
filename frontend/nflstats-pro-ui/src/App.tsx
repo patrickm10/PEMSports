@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
-import type { Ranking, SortField, SortOrder } from './models/Ranking';
+import type { Ranking } from './models/Ranking';
 
 import { useRankings } from './hooks/useRankings';
 import { useSeasons } from './hooks/useSeasons';
@@ -21,6 +21,16 @@ import {
   buildRankingsTopTenOption,
 } from './components/charts/chartOptions';
 import { resolvePrimaryMetric } from './utils/metrics';
+import {
+  buildResetFilters,
+  formatActiveFilterSummary,
+  isValidWeek,
+  isValidYear,
+  persistLandingSkip,
+  pickDefaultWeek,
+  pickDefaultYear,
+  shouldSkipLanding,
+} from './utils/filterState';
 
 import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
 import { SearchModal } from './v3/components/search/SearchModal';
@@ -40,14 +50,12 @@ const POSITION_TABS: ReadonlySet<string> = new Set([
 ]);
 
 export default function App() {
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(() => !shouldSkipLanding());
   const [activeTab, setActiveTab] = useState('qb');
   const [viewMode, setViewMode] = useState<'season' | 'weekly'>('season');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedWeek, setSelectedWeek] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortField>('rank');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [density, setDensity] = useState<GridDensity>('standard');
   const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('rankings');
@@ -56,66 +64,55 @@ export default function App() {
   const analyticsPlayer = usePlayerAnalyticsStore((s) => s.selectedPlayer);
   const clearAnalytics = usePlayerAnalyticsStore((s) => s.clear);
 
-  // App owns navigation. The store mutates UI state only; this effect
-  // reacts to store changes and updates navigation imperatively. The
-  // store does NOT call setWorkspaceView or setActiveTab.
   useEffect(() => {
     if (!analyticsPlayer) return;
     const pos = analyticsPlayer.position?.toLowerCase();
     if (pos && POSITION_TABS.has(pos) && pos !== activeTab) {
       setActiveTab(pos);
-      setSortBy('rank');
-      setSortOrder('asc');
     }
     setWorkspaceView('player');
-    // intentionally no dep on activeTab — we only react to selection changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyticsPlayer]);
 
-  const { data: rawYears = [] } = useSeasons(activeTab);
-  const availableYears = useMemo(() => rawYears, [rawYears]);
-
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.debug('[seasons chain]', { activeTab, rawYears, availableYears });
-    }
-  }, [activeTab, rawYears, availableYears]);
+  const {
+    data: availableYears = [],
+    isLoading: seasonsLoading,
+    isError: seasonsError,
+    refetch: refetchSeasons,
+  } = useSeasons(activeTab);
 
   const { data: availableWeeks = [] } = useWeeks(activeTab, selectedYear);
 
   useEffect(() => {
-    if (availableYears.length > 0) {
-      const parsed = Number.parseInt(selectedYear, 10);
-      const selectedIsValid = Number.isFinite(parsed) && availableYears.includes(parsed);
-      if (!selectedIsValid) setSelectedYear(availableYears[0].toString());
-    }
+    const next = pickDefaultYear(availableYears, selectedYear);
+    if (next !== selectedYear) setSelectedYear(next);
   }, [availableYears, selectedYear]);
 
   useEffect(() => {
-    if (availableWeeks.length > 0) {
-      if (!selectedWeek || !availableWeeks.includes(parseInt(selectedWeek))) {
-        setSelectedWeek(availableWeeks[0].toString());
-      }
-    }
+    const next = pickDefaultWeek(availableWeeks, selectedWeek);
+    if (next !== selectedWeek) setSelectedWeek(next);
   }, [availableWeeks, selectedWeek]);
 
-  const isYearValid = Boolean(selectedYear && availableYears.includes(parseInt(selectedYear)));
-  const isWeekValid = Boolean(selectedWeek && availableWeeks.includes(parseInt(selectedWeek)));
-  const validYearInput = isYearValid ? selectedYear : '';
-  const validWeekInput = isWeekValid ? selectedWeek : '';
+  const yearOk = isValidYear(selectedYear, availableYears);
+  const weekOk = isValidWeek(selectedWeek, availableWeeks);
+  const validYearInput = yearOk ? selectedYear : '';
+  const validWeekInput = weekOk ? selectedWeek : '';
 
-  const seasonQuery = useRankings(activeTab, validYearInput, sortBy, sortOrder);
+  const seasonQuery = useRankings(activeTab, validYearInput);
   const weeklyQuery = useWeeklyRankings(
     activeTab,
     viewMode === 'weekly' ? validYearInput : '',
     viewMode === 'weekly' ? validWeekInput : '',
-    sortBy,
-    sortOrder
   );
 
-  const activeQuery = (viewMode === 'season' ? seasonQuery : weeklyQuery) as any;
-  const { data: sortedData = [], isLoading } = activeQuery;
+  const activeQuery = viewMode === 'season' ? seasonQuery : weeklyQuery;
+  const {
+    data: sortedData = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = activeQuery;
 
   const filteredData = useMemo<Ranking[]>(() => {
     if (!searchQuery) return sortedData as Ranking[];
@@ -126,6 +123,7 @@ export default function App() {
         (p.team?.toLowerCase() || '').includes(q),
     );
   }, [sortedData, searchQuery]);
+
   const resolvedMetric = useMemo(
     () => resolvePrimaryMetric(filteredData),
     [filteredData],
@@ -147,18 +145,32 @@ export default function App() {
     [filteredData, resolvedMetric],
   );
 
+  const activeFilterSummary = formatActiveFilterSummary(
+    activeTab,
+    viewMode,
+    selectedYear,
+    selectedWeek,
+    filteredData.length,
+    availableYears.length,
+  );
+
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
-    setSortBy('rank');
-    setSortOrder('asc');
     setSelectedPlayer(null);
     setWorkspaceView('rankings');
   };
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
-    setSortBy('rank');
-    setSortOrder('asc');
+    setSelectedPlayer(null);
+  };
+
+  const handleResetFilters = () => {
+    const next = buildResetFilters(availableYears, availableWeeks);
+    setViewMode(next.viewMode);
+    setSelectedYear(next.year);
+    setSelectedWeek(next.week);
+    setSearchQuery(next.searchQuery);
     setSelectedPlayer(null);
   };
 
@@ -175,12 +187,44 @@ export default function App() {
     setWorkspaceView('rankings');
   };
 
+  const handleLaunch = () => {
+    persistLandingSkip();
+    setShowLanding(false);
+  };
+
+  const emptyMessage = (() => {
+    if (isError || seasonsError) {
+      return 'API request failed. Check connectivity to the rankings service and retry.';
+    }
+    if (isLoading || seasonsLoading || isFetching) {
+      return 'Loading rankings…';
+    }
+    if (!validYearInput) {
+      return 'No seasons available from the API for this position yet.';
+    }
+    if (viewMode === 'weekly' && !validWeekInput) {
+      return `No weeks available for ${selectedYear || 'the selected year'}.`;
+    }
+    if (searchQuery && sortedData.length > 0 && filteredData.length === 0) {
+      return `No players match “${searchQuery}” in the current filters.`;
+    }
+    return `No records for ${activeTab.toUpperCase()} · ${
+      viewMode === 'weekly' ? `${selectedYear} Week ${selectedWeek}` : `${selectedYear} season`
+    }. This combination is empty in the serving database.`;
+  })();
+
   if (showLanding) {
-    return <LandingPage onLaunch={() => setShowLanding(false)} />;
+    return <LandingPage onLaunch={handleLaunch} />;
   }
 
   return (
     <AuthProvider>
+      <a
+        href="#pem-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-3 focus:py-2 focus:rounded-lg focus:bg-sky-500 focus:text-white"
+      >
+        Skip to main content
+      </a>
       <ResponsiveDock
         activePosition={activeTab}
         onPositionChange={handleTabChange}
@@ -191,7 +235,7 @@ export default function App() {
         density={density}
         setDensity={setDensity}
       >
-        <div className="w-full max-w-[1600px] mx-auto space-y-6">
+        <div id="pem-main-content" className="w-full max-w-[1600px] mx-auto space-y-6">
           <header className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               {workspaceView === 'dashboard' && 'Command center'}
@@ -210,12 +254,12 @@ export default function App() {
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
               {workspaceView === 'player' && analyticsPlayer
-                ? `${analyticsPlayer.position?.toUpperCase() ?? '—'} · ${analyticsPlayer.team?.toUpperCase() ?? '—'} · DuckDB Analytical Kernel`
-                : `${selectedYear} ${viewMode === 'weekly' ? `Week ${selectedWeek}` : 'Season'} · DuckDB Analytical Kernel`}
+                ? `${analyticsPlayer.position?.toUpperCase() ?? '—'} · ${analyticsPlayer.team?.toUpperCase() ?? '—'} · PEM Sports`
+                : `${activeFilterSummary}`}
             </p>
           </header>
 
-          {workspaceView === 'rankings' && (
+          {workspaceView !== 'player' && (
             <ControlBar
               viewMode={viewMode}
               setViewMode={handleViewModeChange}
@@ -230,6 +274,14 @@ export default function App() {
               totalPlayers={filteredData.length}
               density={density}
               setDensity={setDensity}
+              onResetFilters={handleResetFilters}
+              isLoading={isLoading || seasonsLoading}
+              isError={isError || seasonsError}
+              onRetry={() => {
+                void refetchSeasons();
+                void refetch();
+              }}
+              activeFilterSummary={activeFilterSummary}
             />
           )}
 
@@ -250,7 +302,7 @@ export default function App() {
                 isLoading={isLoading}
                 emptyMessage={
                   viewMode === 'weekly'
-                    ? 'No opponent metadata for the current filters'
+                    ? emptyMessage
                     : 'Switch to weekly rankings to compare opponents'
                 }
               />
@@ -261,7 +313,7 @@ export default function App() {
                 isLoading={isLoading}
                 emptyMessage={
                   viewMode === 'weekly'
-                    ? 'No surface metadata for the current filters'
+                    ? emptyMessage
                     : 'Switch to weekly rankings to compare surfaces'
                 }
               />
@@ -272,7 +324,7 @@ export default function App() {
                 isLoading={isLoading}
                 emptyMessage={
                   viewMode === 'weekly'
-                    ? 'No venue metadata for the current filters'
+                    ? emptyMessage
                     : 'Switch to weekly rankings to compare venue types'
                 }
               />
@@ -287,14 +339,15 @@ export default function App() {
                 option={rankingsTopTenOption}
                 isLoading={isLoading}
                 height={260}
-                emptyMessage="No ranking data for the current filters"
+                emptyMessage={emptyMessage}
               />
               <div className="rounded-2xl overflow-hidden min-h-[360px] h-[calc(100vh-600px)] glass-card border-white/10">
                 <VirtualizedGrid
                   data={filteredData}
-                  onRowClick={setSelectedPlayer}
+                  onRowClick={(row) => setSelectedPlayer(row as Ranking)}
                   viewMode={viewMode}
                   density={density}
+                  emptyMessage={emptyMessage}
                 />
               </div>
             </>

@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import {
+  buildResetFilters,
+  formatActiveFilterSummary,
+  isValidWeek,
+  isValidYear,
+  pickDefaultWeek,
+  pickDefaultYear,
+} from './filterState';
+
+describe('filterState', () => {
+  const years = [2025, 2024, 2023, 2022, 2021, 2020];
+  const weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+  it('defaults year to newest available without hardcoding 2025', () => {
+    expect(pickDefaultYear(years, '')).toBe('2025');
+    expect(pickDefaultYear([2024, 2023], '')).toBe('2024');
+  });
+
+  it('preserves a valid selected year across metadata refresh', () => {
+    expect(pickDefaultYear(years, '2022')).toBe('2022');
+  });
+
+  it('does not force year back to 2025 when 2022 is valid', () => {
+    expect(pickDefaultYear(years, '2022')).not.toBe('2025');
+  });
+
+  it('defaults week to the latest available week', () => {
+    expect(pickDefaultWeek(weeks, '')).toBe('18');
+  });
+
+  it('reset clears search and returns season mode with metadata defaults', () => {
+    const reset = buildResetFilters(years, weeks);
+    expect(reset).toEqual({
+      viewMode: 'season',
+      year: '2025',
+      week: '18',
+      searchQuery: '',
+    });
+  });
+
+  it('validates years and weeks against API metadata only', () => {
+    expect(isValidYear('2020', years)).toBe(true);
+    expect(isValidYear('2019', years)).toBe(false);
+    expect(isValidWeek('18', weeks)).toBe(true);
+    expect(isValidWeek('19', weeks)).toBe(false);
+  });
+
+  it('formats active filter summary with row and coverage counts', () => {
+    const summary = formatActiveFilterSummary('qb', 'weekly', '2024', '3', 42, 6);
+    expect(summary).toContain('QB');
+    expect(summary).toContain('2024');
+    expect(summary).toContain('Week 3');
+    expect(summary).toContain('42 rows');
+    expect(summary).toContain('6 seasons available');
+  });
+});
