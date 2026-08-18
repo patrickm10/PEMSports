@@ -1,36 +1,47 @@
 """
 RB bake mapping must preserve receiving yards (R_YDS) separately from rush_yds.
+
+Runs _discover_and_build against parquet in-memory. Does not unlink or rewrite
+data/nfl_stats.db.
 """
-import subprocess
-import sys
+from __future__ import annotations
+
+import importlib.util
 from pathlib import Path
 
 import duckdb
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "nfl_stats.db"
 RB_PARQUET = PROJECT_ROOT / "data" / "rankings" / "RB_weekly.parquet"
 
 
-@pytest.fixture(scope="module")
-def baked_db():
+def _load_bake_db():
+    path = PROJECT_ROOT / "scripts" / "bake_db.py"
+    spec = importlib.util.spec_from_file_location("bake_db", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_rb_weekly_preserves_receiving_yds():
     if not RB_PARQUET.exists():
         pytest.skip("RB weekly parquet not present")
-    subprocess.run(
-        [sys.executable, str(PROJECT_ROOT / "scripts" / "bake_db.py")],
-        check=True,
-        cwd=PROJECT_ROOT,
-    )
-    return DB_PATH
 
-
-def test_rb_weekly_preserves_receiving_yds(baked_db):
-    conn = duckdb.connect(str(baked_db), read_only=True)
+    bake_db = _load_bake_db()
+    conn = duckdb.connect(":memory:")
     try:
-        cols = {d[0].lower() for d in conn.execute("SELECT * FROM rb_weekly LIMIT 0").description}
-        assert "yds" in cols, "receiving yards column (from R_YDS) missing after bake"
+        columns, select_stmt = bake_db._discover_and_build(conn, RB_PARQUET, "RB")
+        colset = {c.lower() for c in columns}
+        assert "rush_yds" in colset
+        assert "yds" in colset, "receiving yards column (from R_YDS) missing after mapping"
 
+        path_str = str(RB_PARQUET).replace("\\", "/")
+        conn.execute(
+            f"CREATE TABLE rb_weekly AS SELECT {select_stmt} "
+            f"FROM read_parquet('{path_str}') src"
+        )
         row = conn.execute(
             """
             SELECT rush_yds, yds, rec

@@ -18,6 +18,7 @@ if str(_SRC) not in sys.path:
 
 from backend.data import query_engine as query_engine_mod
 from backend.data.query_engine import (
+    _yards_td_column_names,
     query_rankings,
     query_seasons,
     query_weekly_rankings,
@@ -125,3 +126,15 @@ class TestPlayerWeeklyQueries:
         week_row = result["seasons"][0]["weeks"][0]
         assert "weather_impact" in week_row
         assert week_row["weather_impact"] is None
+
+
+class TestYardsTdColumnNames:
+    def test_rb_does_not_fall_back_to_receiving_yds(self):
+        yds, td = _yards_td_column_names("RB", {"yds", "td", "fpts_ppr"})
+        assert yds is None
+        assert td is None
+
+    def test_rb_uses_rush_columns_when_present(self):
+        yds, td = _yards_td_column_names("RB", {"rush_yds", "rush_td", "yds", "td"})
+        assert yds == "rush_yds"
+        assert td == "rush_td"

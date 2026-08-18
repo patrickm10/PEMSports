@@ -358,14 +358,15 @@ def _yards_td_column_names(position: str, cols: set[str]) -> tuple[str | None, s
     """Map baked columns to semantic yards/TDs for player analytics.
 
     Kicker parquet stores FGM/FGA in `yds`/`td`; those must not surface as yards/TDs.
-    RB/DST bake to rush_* / *_allowed columns instead of generic yds/td.
+    RB rush_* only (baked `yds`/`td` are receiving). DST uses *_allowed.
     """
     pos = position.lower()
     if pos == "k":
         return None, None
     if pos == "rb":
-        yds_col = "rush_yds" if "rush_yds" in cols else ("yds" if "yds" in cols else None)
-        td_col = "rush_td" if "rush_td" in cols else ("td" if "td" in cols else None)
+        # After bake, yds/td are receiving; do not fall back to them for "yards"/"tds".
+        yds_col = "rush_yds" if "rush_yds" in cols else None
+        td_col = "rush_td" if "rush_td" in cols else None
         return yds_col, td_col
     if pos == "dst":
         yds_col = "yds_allowed" if "yds_allowed" in cols else None

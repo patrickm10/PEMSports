@@ -4,6 +4,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
@@ -11,13 +13,16 @@ if str(_SRC) not in sys.path:
 import duckdb
 
 from backend.data.query_engine import (
+    _DB_PATH,
     query_player_splits,
     query_player_weekly,
 )
 
 
 def _sample_player_id(position: str) -> str:
-    conn = duckdb.connect("data/nfl_stats.db", read_only=True)
+    if not _DB_PATH.exists():
+        pytest.skip(f"Serving DB missing at {_DB_PATH}")
+    conn = duckdb.connect(str(_DB_PATH), read_only=True)
     try:
         row = conn.execute(
             f"SELECT player_id FROM {position.lower()}_weekly WHERE year = 2024 LIMIT 1"
