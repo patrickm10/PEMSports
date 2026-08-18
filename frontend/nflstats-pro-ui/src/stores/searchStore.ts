@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PlayerRef } from './types';
+import { dropLegacyRecents } from './searchRecents';
 
 const RECENT_LIMIT = 5;
 
@@ -53,8 +54,20 @@ export const useSearchStore = create<SearchState & SearchActions>()(
     }),
     {
       name: 'nflstats:search',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ recentPlayers: s.recentPlayers }),
+      migrate: (persisted, version) => {
+        const state = persisted as SearchState;
+        if (version < 2) {
+          return {
+            ...DEFAULT_STATE,
+            ...state,
+            recentPlayers: dropLegacyRecents(state.recentPlayers ?? []),
+          };
+        }
+        return state;
+      },
     },
   ),
 );

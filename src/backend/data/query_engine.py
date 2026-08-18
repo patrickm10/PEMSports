@@ -354,6 +354,43 @@ def _table_columns(table: str) -> set[str]:
     return cols
 
 
+def _yards_td_column_names(position: str, cols: set[str]) -> tuple[str | None, str | None]:
+    """Map baked columns to semantic yards/TDs for player analytics.
+
+    Kicker parquet stores FGM/FGA in `yds`/`td`; those must not surface as yards/TDs.
+    RB rush_* only (baked `yds`/`td` are receiving). DST uses *_allowed.
+    """
+    pos = position.lower()
+    if pos == "k":
+        return None, None
+    if pos == "rb":
+        # After bake, yds/td are receiving; do not fall back to them for "yards"/"tds".
+        yds_col = "rush_yds" if "rush_yds" in cols else None
+        td_col = "rush_td" if "rush_td" in cols else None
+        return yds_col, td_col
+    if pos == "dst":
+        yds_col = "yds_allowed" if "yds_allowed" in cols else None
+        td_col = "td_allowed" if "td_allowed" in cols else None
+        return yds_col, td_col
+    yds_col = "yds" if "yds" in cols else None
+    td_col = "td" if "td" in cols else None
+    return yds_col, td_col
+
+
+def _yards_td_sql_exprs(
+    position: str, cols: set[str], *, aggregate: bool = False
+) -> tuple[str, str]:
+    """Build SQL fragments for yards/TDs in weekly logs or split aggregates."""
+    yds_col, td_col = _yards_td_column_names(position, cols)
+    if aggregate:
+        yds_expr = f"ROUND(AVG({yds_col}), 2)" if yds_col else "NULL"
+        td_expr = f"ROUND(AVG({td_col}), 2)" if td_col else "NULL"
+    else:
+        yds_expr = f"CAST({yds_col} AS DOUBLE)" if yds_col else "NULL"
+        td_expr = f"CAST({td_col} AS DOUBLE)" if td_col else "NULL"
+    return yds_expr, td_expr
+
+
 def query_player_search(q: str, limit: int = 10) -> list[dict[str, Any]]:
     """
     Cross-position search across all *_seasonal tables.
@@ -453,8 +490,7 @@ def query_player_splits(
             "splits": [],
         }
 
-    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
-    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -518,8 +554,7 @@ def query_player_splits_by_year(
             "rows": [],
         }
 
-    avg_yards_expr = "ROUND(AVG(yds), 2)" if "yds" in cols else "NULL"
-    avg_tds_expr = "ROUND(AVG(td), 2)" if "td" in cols else "NULL"
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -573,8 +608,10 @@ def query_player_weekly(
     table = f"{position.lower()}_weekly"
     cols = _table_columns(table)
 
-    yards_expr = "CAST(yds AS DOUBLE)" if "yds" in cols else "NULL"
-    tds_expr = "CAST(td AS DOUBLE)" if "td" in cols else "NULL"
+    yards_expr, tds_expr = _yards_td_sql_exprs(position, cols)
+    weather_impact_expr = (
+        "CAST(weather_impact AS VARCHAR)" if "weather_impact" in cols else "NULL"
+    )
 
     conditions: list[str] = ["player_id = ?"]
     params: list[Any] = [player_id]
@@ -601,7 +638,7 @@ def query_player_weekly(
         temp,
         humidity,
         wind,
-        weather_impact
+        {weather_impact_expr} AS weather_impact
       FROM {table}
       WHERE {where_clause}
       ORDER BY year DESC, week ASC

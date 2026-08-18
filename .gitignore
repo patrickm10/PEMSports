@@ -57,6 +57,7 @@ artifacts/
 
 # Agent Configuration (local-only)
 .agent/
+.cursor/render-mcp.env
 
 # Dev Handoff State (local-only)
 state_handoff.md

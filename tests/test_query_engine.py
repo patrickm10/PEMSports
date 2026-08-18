@@ -10,15 +10,20 @@ Tests verify:
 import sys
 from pathlib import Path
 
+import pytest
+
 _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from backend.data import query_engine as query_engine_mod
 from backend.data.query_engine import (
+    _yards_td_column_names,
     query_rankings,
     query_seasons,
     query_weekly_rankings,
     query_available_weeks,
+    query_player_weekly,
 )
 
 POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"]
@@ -80,3 +85,56 @@ class TestWeeklyQueries:
         assert isinstance(weeks, list)
         if len(weeks) > 1:
             assert weeks == sorted(weeks), "Weeks should be ascending"
+
+
+class TestPlayerWeeklyQueries:
+    """Player weekly log queries must not assume optional baked columns exist."""
+
+    def test_query_player_weekly_weather_impact_key_is_stable(self):
+        """Contract: weather_impact is always present (value may be null or a string)."""
+        weekly = query_weekly_rankings("RB", year=2024, limit=1)
+        if not weekly:
+            pytest.skip("No RB weekly data for 2024")
+        player_id = weekly[0].get("player_id")
+        assert player_id
+
+        result = query_player_weekly(position="RB", player_id=player_id, years=[2024])
+        assert result["player_id"] == player_id
+        assert result["position"] == "rb"
+        assert isinstance(result["seasons"], list)
+        if result["seasons"]:
+            week_row = result["seasons"][0]["weeks"][0]
+            assert "weather_impact" in week_row
+
+    def test_query_player_weekly_without_weather_impact_column(self, monkeypatch):
+        """Missing baked column must not 500; key stays present as null."""
+        weekly = query_weekly_rankings("RB", year=2024, limit=1)
+        if not weekly:
+            pytest.skip("No RB weekly data for 2024")
+        player_id = weekly[0].get("player_id")
+        assert player_id
+
+        orig = query_engine_mod._table_columns
+
+        def without_weather(table: str):
+            return orig(table) - {"weather_impact"}
+
+        monkeypatch.setattr(query_engine_mod, "_table_columns", without_weather)
+
+        result = query_player_weekly(position="RB", player_id=player_id, years=[2024])
+        assert result["seasons"], "Expected weekly rows after dropping weather_impact from schema"
+        week_row = result["seasons"][0]["weeks"][0]
+        assert "weather_impact" in week_row
+        assert week_row["weather_impact"] is None
+
+
+class TestYardsTdColumnNames:
+    def test_rb_does_not_fall_back_to_receiving_yds(self):
+        yds, td = _yards_td_column_names("RB", {"yds", "td", "fpts_ppr"})
+        assert yds is None
+        assert td is None
+
+    def test_rb_uses_rush_columns_when_present(self):
+        yds, td = _yards_td_column_names("RB", {"rush_yds", "rush_td", "yds", "td"})
+        assert yds == "rush_yds"
+        assert td == "rush_td"
