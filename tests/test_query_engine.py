@@ -16,6 +16,7 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from backend.data import query_engine as query_engine_mod
 from backend.data.query_engine import (
     query_rankings,
     query_seasons,
@@ -88,8 +89,8 @@ class TestWeeklyQueries:
 class TestPlayerWeeklyQueries:
     """Player weekly log queries must not assume optional baked columns exist."""
 
-    def test_query_player_weekly_without_weather_impact_column(self):
-        """Baked weekly tables have temp/humidity/wind but not weather_impact."""
+    def test_query_player_weekly_weather_impact_key_is_stable(self):
+        """Contract: weather_impact is always present (value may be null or a string)."""
         weekly = query_weekly_rankings("RB", year=2024, limit=1)
         if not weekly:
             pytest.skip("No RB weekly data for 2024")
@@ -103,4 +104,24 @@ class TestPlayerWeeklyQueries:
         if result["seasons"]:
             week_row = result["seasons"][0]["weeks"][0]
             assert "weather_impact" in week_row
-            assert week_row["weather_impact"] is None
+
+    def test_query_player_weekly_without_weather_impact_column(self, monkeypatch):
+        """Missing baked column must not 500; key stays present as null."""
+        weekly = query_weekly_rankings("RB", year=2024, limit=1)
+        if not weekly:
+            pytest.skip("No RB weekly data for 2024")
+        player_id = weekly[0].get("player_id")
+        assert player_id
+
+        orig = query_engine_mod._table_columns
+
+        def without_weather(table: str):
+            return orig(table) - {"weather_impact"}
+
+        monkeypatch.setattr(query_engine_mod, "_table_columns", without_weather)
+
+        result = query_player_weekly(position="RB", player_id=player_id, years=[2024])
+        assert result["seasons"], "Expected weekly rows after dropping weather_impact from schema"
+        week_row = result["seasons"][0]["weeks"][0]
+        assert "weather_impact" in week_row
+        assert week_row["weather_impact"] is None
