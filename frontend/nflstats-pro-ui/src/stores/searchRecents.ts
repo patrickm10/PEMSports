@@ -11,3 +11,8 @@ export function isLegacyPlayerId(playerId: string): boolean {
 export function dropLegacyRecents(recents: PlayerRef[]): PlayerRef[] {
   return recents.filter((p) => !isLegacyPlayerId(p.player_id));
 }
+
+/** Recents must not persist legacy ids — they 404 against a UUID-baked DB. */
+export function shouldPersistRecent(player: PlayerRef): boolean {
+  return !isLegacyPlayerId(player.player_id);
+}

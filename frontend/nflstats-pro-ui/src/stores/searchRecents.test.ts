@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { dropLegacyRecents, isLegacyPlayerId } from './searchRecents';
+import {
+  dropLegacyRecents,
+  isLegacyPlayerId,
+  shouldPersistRecent,
+} from './searchRecents';
 import type { PlayerRef } from './types';
 
 const sample = (player_id: string): PlayerRef => ({
@@ -22,5 +26,14 @@ describe('searchRecents', () => {
       sample('3b508539-0c0a-5aa2-9848-5c9a5af16e18'),
     ];
     expect(dropLegacyRecents(recents)).toEqual([recents[1]]);
+  });
+
+  it('refuses to persist legacy ids into v3 search recents', () => {
+    expect(
+      shouldPersistRecent(sample('9ba88f3c919407fbf98aa6b04da73a53')),
+    ).toBe(false);
+    expect(
+      shouldPersistRecent(sample('3b508539-0c0a-5aa2-9848-5c9a5af16e18')),
+    ).toBe(true);
   });
 });
