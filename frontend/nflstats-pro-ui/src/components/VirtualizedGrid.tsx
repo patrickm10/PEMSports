@@ -1,5 +1,4 @@
 import React, { useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,6 +12,9 @@ import { twMerge } from 'tailwind-merge';
 
 import { PUBLIC_DEFAULT_PLAYER_IMG, staticAssetUrl } from '../utils/backendOrigin';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import type { Ranking } from '../models/Ranking';
+import type { ResolvedMetric } from '../utils/metrics';
+import { formatMetricValue } from '../utils/metrics';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,6 +41,7 @@ interface VirtualizedGridProps {
   viewMode?: 'season' | 'weekly';
   density?: GridDensity;
   emptyMessage?: string;
+  resolvedMetric?: ResolvedMetric | null;
 }
 
 // ── Column classification ────────────────────────────────────────────────────
@@ -268,12 +271,18 @@ function MobilePlayerCard({
   row,
   tier,
   density,
+  metric,
+  tabIndex,
   onClick,
+  onKeyDown,
 }: {
   row: Record<string, unknown>;
   tier?: 'elite' | 'solid';
   density: GridDensity;
+  metric: ResolvedMetric | null;
+  tabIndex: number;
   onClick: () => void;
+  onKeyDown: (event: React.KeyboardEvent) => void;
 }) {
   const name = String(row.player_name ?? row.name ?? '—');
   const team = row.team != null ? String(row.team) : '—';
@@ -284,15 +293,16 @@ function MobilePlayerCard({
       : '—';
   const pad = density === 'compact' ? 'p-3' : density === 'expert' ? 'p-4' : 'p-3.5';
   const imgSize = density === 'compact' ? 'h-10 w-10' : density === 'expert' ? 'h-14 w-14' : 'h-12 w-12';
+  const primaryValue = metric ? metric.getValue(row as Ranking) : null;
 
   return (
-    <motion.button
+    <button
       type="button"
-      layout={false}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      data-row-activator="true"
+      tabIndex={tabIndex}
+      aria-label={`Open analytics for ${name}`}
       onClick={onClick}
+      onKeyDown={onKeyDown}
       data-tier={tier}
       className={cn(
         'w-full text-left player-card-shell group/row',
@@ -320,8 +330,12 @@ function MobilePlayerCard({
       </div>
       <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/[0.06]">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">PPR</p>
-          <p className="text-sm font-bold text-white tabular-nums">{fmt(row.fpts_ppr)}</p>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+            {metric?.shortLabel ?? 'Stat'}
+          </p>
+          <p className="text-sm font-bold text-white tabular-nums">
+            {metric ? formatMetricValue(primaryValue) : '—'}
+          </p>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">YDS</p>
@@ -332,7 +346,7 @@ function MobilePlayerCard({
           <p className="text-sm font-bold text-white tabular-nums">{fmt(row.td, 0)}</p>
         </div>
       </div>
-    </motion.button>
+    </button>
   );
 }
 
@@ -342,10 +356,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   viewMode = 'season',
   density = 'standard',
   emptyMessage = 'No player data for this view.',
+  resolvedMetric = null,
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'rank', desc: false },
   ]);
+  const [activeRowIndex, setActiveRowIndex] = React.useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const columns = useMemo<ColumnDef<GridRow>[]>(() => {
@@ -476,12 +492,45 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   const preset = DENSITY[density];
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  React.useEffect(() => {
+    if (rows.length === 0) {
+      if (activeRowIndex !== 0) setActiveRowIndex(0);
+      return;
+    }
+    if (activeRowIndex > rows.length - 1) {
+      setActiveRowIndex(0);
+    }
+  }, [rows.length, activeRowIndex]);
+
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => (isMobile ? MOBILE_CARD_H[density] : preset.rowHeight),
     overscan: isMobile ? 8 : 20,
   });
+
+  const focusRow = (index: number) => {
+    if (rows.length === 0) return;
+    const next = Math.max(0, Math.min(rows.length - 1, index));
+    setActiveRowIndex(next);
+    rowVirtualizer.scrollToIndex(next);
+    window.requestAnimationFrame(() => {
+      const el = parentRef.current?.querySelector<HTMLElement>(
+        `[data-row-index="${next}"] [data-row-activator="true"]`,
+      );
+      el?.focus();
+    });
+  };
+
+  const handleRovingKey = (event: React.KeyboardEvent, index: number) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      focusRow(index + 1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      focusRow(index - 1);
+    }
+  };
 
   // Compute sticky offsets up-front so left-frozen columns stack correctly.
   const visibleLeafColumns = table.getVisibleLeafColumns();
@@ -531,12 +580,19 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             const row = rows[virtualRow.index];
             const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
             return (
-              <div key={virtualRow.key} style={{ minHeight: virtualRow.size }}>
+              <div
+                key={virtualRow.key}
+                data-row-index={virtualRow.index}
+                style={{ minHeight: virtualRow.size }}
+              >
                 <MobilePlayerCard
                   row={row.original as Record<string, unknown>}
                   tier={tier}
                   density={density}
+                  metric={resolvedMetric}
+                  tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
                   onClick={() => onRowClick?.(row.original)}
+                  onKeyDown={(event) => handleRovingKey(event, virtualRow.index)}
                 />
               </div>
             );
@@ -574,15 +630,24 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                     ? rankWidth
                     : undefined;
 
+                const sorted = header.column.getIsSorted();
+                const ariaSort =
+                  sorted === 'asc'
+                    ? 'ascending'
+                    : sorted === 'desc'
+                      ? 'descending'
+                      : undefined;
+
                 return (
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
-                    onClick={header.column.getToggleSortingHandler()}
+                    scope="col"
+                    aria-sort={ariaSort}
                     data-kind={(header.column.columnDef.meta as GridColumnMeta | undefined)?.kind}
                     data-optional={meta.optional || undefined}
                     className={cn(
-                      'cursor-pointer select-none transition-colors hover:bg-slate-800/80',
+                      'select-none transition-colors hover:bg-slate-800/80',
                       (colId === 'rank' ||
                         colId === 'player_name' ||
                         colId === 'name' ||
@@ -602,9 +667,11 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       right: isRightSticky ? 0 : undefined,
                     }}
                   >
-                    <div
+                    <button
+                      type="button"
+                      onClick={header.column.getToggleSortingHandler()}
                       className={cn(
-                        'flex items-center gap-1.5 w-full',
+                        'flex items-center gap-1.5 w-full bg-transparent border-0 p-0 text-inherit cursor-pointer',
                         align === 'right' && 'justify-end',
                         align === 'center' && 'justify-center',
                         align === 'left' && 'justify-start',
@@ -616,8 +683,8 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       {{
                         asc: <span className="text-sky-400 text-[10px]">▲</span>,
                         desc: <span className="text-sky-400 text-[10px]">▼</span>,
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
+                      }[sorted as string] ?? null}
+                    </button>
                   </th>
                 );
               })}
@@ -639,27 +706,31 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
             const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
+            const playerLabel = String(
+              (row.original as Record<string, unknown>).player_name ??
+                (row.original as Record<string, unknown>).name ??
+                'player',
+            );
             return (
-              <motion.tr
+              <tr
                 key={virtualRow.key}
                 data-index={virtualRow.index}
+                data-row-index={virtualRow.index}
                 data-tier={tier}
                 onClick={() => onRowClick?.(row.original)}
                 className="group/row cursor-pointer transition-colors"
                 style={{ height: `${virtualRow.size}px` }}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               >
                 {row.getVisibleCells().map((cell) => {
                   const colId = cell.column.id;
                   const isRightSticky = colId === 'fpts_ppr';
+                  const isName = colId === 'player_name' || colId === 'name';
                   const meta = (cell.column.columnDef.meta ?? {}) as Partial<GridColumnMeta>;
                   const align = meta.align ?? 'center';
                   const leftOffset =
                     colId === 'rank'
                       ? 0
-                      : (colId === 'player_name' || colId === 'name') && rankIdx !== -1
+                      : isName && rankIdx !== -1
                       ? rankWidth
                       : undefined;
 
@@ -670,14 +741,9 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       data-optional={meta.optional || undefined}
                       className={cn(
                         'transition-all duration-200 group-hover/row:text-white tabular-nums',
-                        (colId === 'rank' ||
-                          colId === 'player_name' ||
-                          colId === 'name' ||
-                          isRightSticky) &&
-                          'sticky-col',
+                        (colId === 'rank' || isName || isRightSticky) && 'sticky-col',
                         colId === 'rank' && 'border-[#ffffff10]',
-                        (colId === 'player_name' || colId === 'name') &&
-                          'sticky-name-col',
+                        isName && 'sticky-name-col',
                         isRightSticky && 'sticky-col-right border-[#ffffff10]',
                       )}
                       style={{
@@ -689,11 +755,28 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                         right: isRightSticky ? 0 : undefined,
                       }}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {isName ? (
+                        <button
+                          type="button"
+                          data-row-activator="true"
+                          tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
+                          aria-label={`Open analytics for ${playerLabel}`}
+                          className="flex items-center gap-2 min-w-0 w-full text-left bg-transparent border-0 p-0 cursor-pointer"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRowClick?.(row.original);
+                          }}
+                          onKeyDown={(event) => handleRovingKey(event, virtualRow.index)}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </button>
+                      ) : (
+                        flexRender(cell.column.columnDef.cell, cell.getContext())
+                      )}
                     </td>
                   );
                 })}
-              </motion.tr>
+              </tr>
             );
           })}
 

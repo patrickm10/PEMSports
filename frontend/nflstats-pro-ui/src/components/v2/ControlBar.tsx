@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { persistLandingSkip } from '../../utils/filterState';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoginModal } from './Auth/LoginModal';
 import type { GridDensity } from '../VirtualizedGrid';
@@ -36,6 +37,8 @@ interface ControlBarProps {
   isError?: boolean;
   onRetry?: () => void;
   activeFilterSummary?: string;
+  /** Table density is Rankings-only. Hidden on Dashboard. */
+  showDensity?: boolean;
 }
 
 const DENSITY_LABELS: Record<GridDensity, string> = {
@@ -63,6 +66,7 @@ export function ControlBar({
   isError = false,
   onRetry,
   activeFilterSummary,
+  showDensity = true,
 }: ControlBarProps) {
   const { user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
@@ -219,29 +223,33 @@ export function ControlBar({
             </button>
           )}
 
-          <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
-          <div className="flex items-center gap-2 bg-slate-950/40 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
-            <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" aria-hidden />
-            <div className="flex bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="Table density">
-              {(['compact', 'standard', 'expert'] as const).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  aria-pressed={density === d}
-                  onClick={() => setDensity(d)}
-                  className={cn(
-                    'px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors',
-                    density === d
-                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
-                      : 'text-slate-500 hover:text-slate-300',
-                  )}
-                  title={`${DENSITY_LABELS[d]} density`}
-                >
-                  {DENSITY_LABELS[d].slice(0, 3)}
-                </button>
-              ))}
-            </div>
-          </div>
+          {showDensity && (
+            <>
+              <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
+              <div className="flex items-center gap-2 bg-slate-950/40 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
+                <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" aria-hidden />
+                <div className="flex bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="Table density">
+                  {(['compact', 'standard', 'expert'] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      aria-pressed={density === d}
+                      onClick={() => setDensity(d)}
+                      className={cn(
+                        'px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors',
+                        density === d
+                          ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
+                          : 'text-slate-500 hover:text-slate-300',
+                      )}
+                      title={`${DENSITY_LABELS[d]} density`}
+                    >
+                      {DENSITY_LABELS[d].slice(0, 3)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0 lg:flex-1 max-w-lg justify-end ml-auto">
@@ -310,7 +318,12 @@ export function ControlBar({
           )}
         </div>
 
-        {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+        {showLogin && (
+          <LoginModal
+            onClose={() => setShowLogin(false)}
+            onSuccess={persistLandingSkip}
+          />
+        )}
       </div>
 
       {(activeFilterSummary || isError) && (

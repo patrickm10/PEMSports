@@ -9,10 +9,11 @@ interface SearchState {
   isOpen: boolean;
   query: string;
   recentPlayers: PlayerRef[];
+  pickMode: 'primary' | 'compare';
 }
 
 interface SearchActions {
-  open: () => void;
+  open: (mode?: 'primary' | 'compare') => void;
   close: () => void;
   toggle: () => void;
   setQuery: (q: string) => void;
@@ -25,6 +26,7 @@ const DEFAULT_STATE: SearchState = {
   isOpen: false,
   query: '',
   recentPlayers: [],
+  pickMode: 'primary',
 };
 
 /**
@@ -36,9 +38,13 @@ export const useSearchStore = create<SearchState & SearchActions>()(
   persist(
     (set) => ({
       ...DEFAULT_STATE,
-      open: () => set({ isOpen: true }),
-      close: () => set({ isOpen: false }),
-      toggle: () => set((s) => ({ isOpen: !s.isOpen })),
+      open: (mode = 'primary') => set({ isOpen: true, pickMode: mode }),
+      close: () => set({ isOpen: false, pickMode: 'primary' }),
+      toggle: () =>
+        set((s) => ({
+          isOpen: !s.isOpen,
+          pickMode: s.isOpen ? 'primary' : s.pickMode,
+        })),
       setQuery: (q) => set({ query: q }),
       clearQuery: () => set({ query: '' }),
       pushRecent: (p) =>

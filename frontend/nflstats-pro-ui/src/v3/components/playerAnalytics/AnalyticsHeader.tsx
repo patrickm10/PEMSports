@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, GitCompareArrows, X, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, GitCompareArrows, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { AnalyticsPanel, PlayerRef } from '../../../stores/types';
@@ -34,6 +34,7 @@ interface AnalyticsHeaderProps {
   onOpenComparison: () => void;
   onClearComparison: () => void;
   onTogglePanel: (k: AnalyticsPanel) => void;
+  backButtonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 /**
@@ -48,12 +49,14 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   onOpenComparison,
   onClearComparison,
   onTogglePanel,
+  backButtonRef,
 }) => {
   return (
     <section className="flex flex-col gap-4 p-5 rounded-2xl glass-card border-white/10">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4 min-w-0">
+        <div className="flex items-start gap-4 min-w-0">
           <button
+            ref={backButtonRef}
             type="button"
             onClick={onBack}
             aria-label="Back to rankings"
@@ -89,6 +92,10 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
                 </>
               )}
             </div>
+            <p className="mt-2 text-xs text-slate-400 normal-case tracking-normal font-medium">
+              Charts use this player&apos;s available games, not the rankings year
+              or week.
+            </p>
           </div>
         </div>
 
@@ -115,7 +122,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mr-1">
-          Panels
+          Charts
         </span>
         {ALL_ANALYTICS_PANELS.map((p) => {
           const active = activePanels.has(p);
@@ -125,6 +132,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
               type="button"
               onClick={() => onTogglePanel(p)}
               aria-pressed={active}
+              aria-label={`${active ? 'Hide' : 'Show'} ${PANEL_LABELS[p]} chart`}
               className={cn(
                 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider border transition-colors',
                 active
@@ -132,7 +140,6 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
                   : 'bg-slate-950/40 border-white/[0.05] text-slate-500 hover:text-slate-300',
               )}
             >
-              {active ? <Eye size={12} /> : <EyeOff size={12} />}
               {PANEL_LABELS[p]}
             </button>
           );

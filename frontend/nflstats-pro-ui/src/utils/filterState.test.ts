@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildResetFilters,
   formatActiveFilterSummary,
   isValidWeek,
   isValidYear,
+  persistLandingSkip,
   pickDefaultWeek,
   pickDefaultYear,
+  shouldSkipLanding,
 } from './filterState';
 
 describe('filterState', () => {
@@ -53,5 +55,50 @@ describe('filterState', () => {
     expect(summary).toContain('Week 3');
     expect(summary).toContain('42 rows');
     expect(summary).toContain('6 seasons available');
+  });
+});
+
+describe('landing skip persistence', () => {
+  const store = new Map<string, string>();
+
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => store.clear(),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('does not skip landing before persist', () => {
+    expect(shouldSkipLanding()).toBe(false);
+  });
+
+  it('skips landing after persistLandingSkip', () => {
+    persistLandingSkip();
+    expect(shouldSkipLanding()).toBe(true);
+    expect(store.get('pem-sports:skip-landing')).toBe('1');
+  });
+
+  it('returns false when localStorage throws', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+    });
+    expect(shouldSkipLanding()).toBe(false);
+    expect(() => persistLandingSkip()).not.toThrow();
   });
 });

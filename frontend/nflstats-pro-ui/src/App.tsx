@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
 
 import type { Ranking } from './models/Ranking';
 
@@ -13,14 +12,13 @@ import { VirtualizedGrid } from './components/VirtualizedGrid';
 import type { GridDensity } from './components/VirtualizedGrid';
 import { ControlBar } from './components/v2/ControlBar';
 import { StatsSummary } from './components/v2/StatsSummary';
-import { PlayerDetail } from './components/PlayerDetail';
-import { AuthProvider } from './contexts/AuthContext';
 import { EChart } from './components/charts/EChart';
 import {
   buildMetricByFacetOption,
   buildRankingsTopTenOption,
 } from './components/charts/chartOptions';
 import { resolvePrimaryMetric } from './utils/metrics';
+import { rankingToPlayerRef } from './utils/rankingToPlayerRef';
 import {
   buildResetFilters,
   formatActiveFilterSummary,
@@ -37,6 +35,7 @@ import { SearchModal } from './v3/components/search/SearchModal';
 import { PlayerAnalyticsView } from './v3/components/playerAnalytics/PlayerAnalyticsView';
 import { useSearchStore } from './stores/searchStore';
 import { usePlayerAnalyticsStore } from './stores/playerAnalyticsStore';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 type WorkspaceView = 'dashboard' | 'rankings' | 'player';
 
@@ -57,12 +56,15 @@ export default function App() {
   const [selectedWeek, setSelectedWeek] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [density, setDensity] = useState<GridDensity>('standard');
-  const [selectedPlayer, setSelectedPlayer] = useState<Ranking | null>(null);
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('rankings');
 
   const openSearch = useSearchStore((s) => s.open);
+  const pushRecent = useSearchStore((s) => s.pushRecent);
   const analyticsPlayer = usePlayerAnalyticsStore((s) => s.selectedPlayer);
+  const selectPlayer = usePlayerAnalyticsStore((s) => s.selectPlayer);
   const clearAnalytics = usePlayerAnalyticsStore((s) => s.clear);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const lockRankingsFill = workspaceView === 'rankings' && !isMobile;
 
   useEffect(() => {
     if (!analyticsPlayer) return;
@@ -156,13 +158,11 @@ export default function App() {
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
-    setSelectedPlayer(null);
     setWorkspaceView('rankings');
   };
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
-    setSelectedPlayer(null);
   };
 
   const handleResetFilters = () => {
@@ -171,7 +171,6 @@ export default function App() {
     setSelectedYear(next.year);
     setSelectedWeek(next.week);
     setSearchQuery(next.searchQuery);
-    setSelectedPlayer(null);
   };
 
   const handleWorkspaceViewChange = (v: WorkspaceView) => {
@@ -185,6 +184,12 @@ export default function App() {
   const handleBackFromAnalytics = () => {
     clearAnalytics();
     setWorkspaceView('rankings');
+  };
+
+  const handleRankingsRowClick = (row: Record<string, unknown>) => {
+    const player = rankingToPlayerRef(row, activeTab);
+    selectPlayer(player);
+    pushRecent(player);
   };
 
   const handleLaunch = () => {
@@ -218,7 +223,7 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
+    <>
       <a
         href="#pem-main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-3 focus:py-2 focus:rounded-lg focus:bg-sky-500 focus:text-white"
@@ -232,125 +237,125 @@ export default function App() {
         onWorkspaceViewChange={handleWorkspaceViewChange}
         hasSelectedPlayer={Boolean(analyticsPlayer)}
         onOpenSearch={openSearch}
-        density={density}
-        setDensity={setDensity}
       >
-        <div id="pem-main-content" className="w-full max-w-[1600px] mx-auto space-y-6">
-          <header className="space-y-1">
+        <div
+          id="pem-main-content"
+          className={
+            lockRankingsFill
+              ? 'w-full max-w-[1600px] mx-auto h-full min-h-0 flex flex-col gap-6'
+              : 'w-full max-w-[1600px] mx-auto space-y-6'
+          }
+        >
+          <header className={`space-y-1${lockRankingsFill ? ' shrink-0' : ''}`}>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              {workspaceView === 'dashboard' && 'Command center'}
+              {workspaceView === 'dashboard' && 'Dashboard'}
               {workspaceView === 'rankings' && (
                 <>
                   {activeTab.toUpperCase()}{' '}
-                  <span className="text-sky-400">performance</span>
+                  <span className="text-sky-400">rankings</span>
                 </>
               )}
-              {workspaceView === 'player' && analyticsPlayer && (
-                <>
-                  {analyticsPlayer.player_name}{' '}
-                  <span className="text-sky-400">analytics</span>
-                </>
-              )}
+              {workspaceView === 'player' && 'Player analytics'}
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
-              {workspaceView === 'player' && analyticsPlayer
-                ? `${analyticsPlayer.position?.toUpperCase() ?? '—'} · ${analyticsPlayer.team?.toUpperCase() ?? '—'} · PEM Sports`
+              {workspaceView === 'player'
+                ? 'Weekly trends and situational splits'
                 : `${activeFilterSummary}`}
             </p>
           </header>
 
           {workspaceView !== 'player' && (
-            <ControlBar
-              viewMode={viewMode}
-              setViewMode={handleViewModeChange}
-              selectedYear={selectedYear}
-              setSelectedYear={setSelectedYear}
-              availableYears={availableYears}
-              selectedWeek={selectedWeek}
-              setSelectedWeek={setSelectedWeek}
-              availableWeeks={availableWeeks}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              totalPlayers={filteredData.length}
-              density={density}
-              setDensity={setDensity}
-              onResetFilters={handleResetFilters}
-              isLoading={isLoading || seasonsLoading}
-              isError={isError || seasonsError}
-              onRetry={() => {
-                void refetchSeasons();
-                void refetch();
-              }}
-              activeFilterSummary={activeFilterSummary}
-            />
+            <div className={lockRankingsFill ? 'shrink-0' : undefined}>
+              <ControlBar
+                viewMode={viewMode}
+                setViewMode={handleViewModeChange}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                availableYears={availableYears}
+                selectedWeek={selectedWeek}
+                setSelectedWeek={setSelectedWeek}
+                availableWeeks={availableWeeks}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                totalPlayers={filteredData.length}
+                density={density}
+                setDensity={setDensity}
+                showDensity={workspaceView === 'rankings'}
+                onResetFilters={handleResetFilters}
+                isLoading={isLoading || seasonsLoading}
+                isError={isError || seasonsError}
+                onRetry={() => {
+                  void refetchSeasons();
+                  void refetch();
+                }}
+                activeFilterSummary={activeFilterSummary}
+              />
+            </div>
           )}
 
           {workspaceView !== 'player' && (
-            <StatsSummary
-              data={filteredData}
-              metric={resolvedMetric}
+            <div className={lockRankingsFill ? 'shrink-0' : undefined}>
+              <StatsSummary
+                data={filteredData}
+                metric={resolvedMetric}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
+
+          {workspaceView === 'dashboard' && viewMode === 'season' && (
+            <EChart
+              title="Top 10"
+              subtitle={`Highest ${resolvedMetric?.label ?? 'metric'} within current filters`}
+              option={rankingsTopTenOption}
               isLoading={isLoading}
+              emptyMessage={emptyMessage}
             />
           )}
 
-          {workspaceView === 'dashboard' && (
+          {workspaceView === 'dashboard' && viewMode === 'weekly' && (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <EChart
                 title="Opponent Efficiency"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by opponent`}
                 option={opponentOption}
                 isLoading={isLoading}
-                emptyMessage={
-                  viewMode === 'weekly'
-                    ? emptyMessage
-                    : 'Switch to weekly rankings to compare opponents'
-                }
+                emptyMessage={emptyMessage}
               />
               <EChart
                 title="Surface Split"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by surface`}
                 option={surfaceOption}
                 isLoading={isLoading}
-                emptyMessage={
-                  viewMode === 'weekly'
-                    ? emptyMessage
-                    : 'Switch to weekly rankings to compare surfaces'
-                }
+                emptyMessage={emptyMessage}
               />
               <EChart
                 title="Venue Split"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by venue type`}
                 option={venueOption}
                 isLoading={isLoading}
-                emptyMessage={
-                  viewMode === 'weekly'
-                    ? emptyMessage
-                    : 'Switch to weekly rankings to compare venue types'
-                }
+                emptyMessage={emptyMessage}
               />
             </div>
           )}
 
           {workspaceView === 'rankings' && (
-            <>
-              <EChart
-                title="Top 10 Rankings"
-                subtitle={`Highest ${resolvedMetric?.label ?? 'metric'} within current filters`}
-                option={rankingsTopTenOption}
-                isLoading={isLoading}
-                height={260}
-                emptyMessage={emptyMessage}
-              />
-              <div className="rounded-2xl overflow-hidden min-h-[360px] h-[calc(100vh-600px)] glass-card border-white/10">
+            <div
+              className={
+                lockRankingsFill
+                  ? 'flex-1 min-h-0 min-w-0'
+                  : 'h-[70vh] min-h-[360px]'
+              }
+            >
                 <VirtualizedGrid
                   data={filteredData}
-                  onRowClick={(row) => setSelectedPlayer(row as Ranking)}
+                  onRowClick={handleRankingsRowClick}
                   viewMode={viewMode}
                   density={density}
                   emptyMessage={emptyMessage}
+                  resolvedMetric={resolvedMetric}
                 />
-              </div>
-            </>
+            </div>
           )}
 
           {workspaceView === 'player' && (
@@ -360,15 +365,6 @@ export default function App() {
       </ResponsiveDock>
 
       <SearchModal />
-
-      <AnimatePresence>
-        {selectedPlayer && (
-          <PlayerDetail
-            player={selectedPlayer}
-            onClose={() => setSelectedPlayer(null)}
-          />
-        )}
-      </AnimatePresence>
-    </AuthProvider>
+    </>
   );
 }
