@@ -5,8 +5,83 @@ Fixtures provide:
 - A FastAPI test client (no real server needed)
 - Isolated test assertions without network dependencies
 """
+import json
 import sys
+import time
 from pathlib import Path
+
+# #region agent log
+def _agent_dbg(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+    try:
+        payload = {
+            "sessionId": "d2039e",
+            "runId": "post-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        log_path = Path(__file__).resolve().parent.parent / "debug-d2039e.log"
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+
+
+_httpx_ok = False
+_httpx_err = None
+try:
+    import httpx  # noqa: F401
+
+    _httpx_ok = True
+except Exception as exc:  # noqa: BLE001
+    _httpx_err = f"{type(exc).__name__}: {exc}"
+
+_agent_dbg(
+    "H1",
+    "tests/conftest.py:httpx-import",
+    "httpx import probe before TestClient",
+    {"httpx_ok": _httpx_ok, "httpx_err": _httpx_err, "python": sys.version.split()[0]},
+)
+
+try:
+    import fastapi
+    import starlette
+    from importlib.metadata import version as _pkg_version
+
+    _agent_dbg(
+        "H3",
+        "tests/conftest.py:pkg-versions",
+        "resolved web-stack versions",
+        {
+            "fastapi": getattr(fastapi, "__version__", None),
+            "starlette": getattr(starlette, "__version__", None),
+            "fastapi_meta": _pkg_version("fastapi"),
+            "starlette_meta": _pkg_version("starlette"),
+        },
+    )
+except Exception as exc:  # noqa: BLE001
+    _agent_dbg(
+        "H3",
+        "tests/conftest.py:pkg-versions",
+        "failed to read package versions",
+        {"err": f"{type(exc).__name__}: {exc}"},
+    )
+
+_req_txt = Path(__file__).resolve().parent.parent / "requirements.txt"
+_req_has_httpx = False
+try:
+    _req_has_httpx = "httpx" in _req_txt.read_text(encoding="utf-8").lower()
+except Exception:
+    pass
+_agent_dbg(
+    "H2",
+    "tests/conftest.py:requirements",
+    "requirements.txt httpx declaration",
+    {"requirements_exists": _req_txt.exists(), "httpx_declared": _req_has_httpx},
+)
+# #endregion
 
 import pytest
 from fastapi.testclient import TestClient

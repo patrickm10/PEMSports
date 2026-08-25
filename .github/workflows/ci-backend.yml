@@ -72,6 +72,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pylint
+          python -c "import httpx, starlette.testclient; print('httpx', httpx.__version__)"
 
       - name: Lint (pylint)
         run: |
