@@ -72,7 +72,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pylint
-          python -c "import httpx, starlette.testclient; print('httpx', httpx.__version__)"
+          # pandas is excluded from the API image; convert_seasonal tests need it in CI only.
+          pip install pandas==2.2.3 pyarrow==19.0.1
+          python -c "import httpx, starlette.testclient, pandas, pyarrow; print('httpx', httpx.__version__, 'pandas', pandas.__version__, 'pyarrow', pyarrow.__version__)"
 
       - name: Lint (pylint)
         run: |

@@ -15,7 +15,7 @@ def _agent_dbg(hypothesis_id: str, location: str, message: str, data: dict) -> N
     try:
         payload = {
             "sessionId": "d2039e",
-            "runId": "post-fix",
+            "runId": "post-fix-pandas",
             "hypothesisId": hypothesis_id,
             "location": location,
             "message": message,
@@ -80,6 +80,43 @@ _agent_dbg(
     "tests/conftest.py:requirements",
     "requirements.txt httpx declaration",
     {"requirements_exists": _req_txt.exists(), "httpx_declared": _req_has_httpx},
+)
+
+_pandas_ok = False
+_pandas_err = None
+_pyarrow_ok = False
+_pyarrow_err = None
+try:
+    import pandas as _pandas  # noqa: F401
+
+    _pandas_ok = True
+except Exception as exc:  # noqa: BLE001
+    _pandas_err = f"{type(exc).__name__}: {exc}"
+try:
+    import pyarrow as _pyarrow  # noqa: F401
+
+    _pyarrow_ok = True
+except Exception as exc:  # noqa: BLE001
+    _pyarrow_err = f"{type(exc).__name__}: {exc}"
+_req_pandas_declared = False
+try:
+    _req_pandas_declared = any(
+        (not line.strip().startswith("#")) and "pandas==" in line
+        for line in _req_txt.read_text(encoding="utf-8").lower().splitlines()
+    )
+except Exception:
+    pass
+_agent_dbg(
+    "H6",
+    "tests/conftest.py:pandas-import",
+    "pandas/pyarrow probe before collecting pipeline tests",
+    {
+        "pandas_ok": _pandas_ok,
+        "pandas_err": _pandas_err,
+        "pyarrow_ok": _pyarrow_ok,
+        "pyarrow_err": _pyarrow_err,
+        "pandas_declared_in_requirements": _req_pandas_declared,
+    },
 )
 # #endregion
 
