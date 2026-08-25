@@ -7,6 +7,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { sessionStatusCopy } from '../../utils/authSession';
 import { LoginModal } from './Auth/LoginModal';
 
 interface LandingPageProps {
@@ -37,7 +38,7 @@ function displayName(email: string): string {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
-  const { user, token } = useAuth();
+  const { user, isLoading } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
   const signedIn = Boolean(user);
@@ -85,7 +86,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
             <button
               type="button"
               onClick={onLaunch}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_16px_40px_rgba(56,189,248,0.28)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_16px_40px_rgba(56,189,248,0.28)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200"
             >
               {primaryLabel}
               <ChevronRight size={16} aria-hidden />
@@ -94,7 +95,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
               <button
                 type="button"
                 onClick={() => setShowLogin(true)}
-                className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-200 transition-colors hover:border-sky-500/40 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-500/50"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-200 transition-colors hover:border-sky-500/40 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-500/50"
               >
                 Sign in
               </button>
@@ -102,9 +103,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
           </div>
 
           <p className="mt-4 text-sm text-slate-500">
-            {token && !user
-              ? 'Checking your session. You can enter now — sign in does not change the data.'
-              : 'Sign in does not unlock different rankings. Same board either way.'}
+            {sessionStatusCopy(isLoading, signedIn)}
           </p>
         </motion.div>
 

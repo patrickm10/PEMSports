@@ -1,12 +1,20 @@
 import React, { useRef, useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { AuthApiError } from '../../../models/Auth';
 import { Modal } from '../../../v3/components/modals/Modal';
 
 interface LoginModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   onContinueAsGuest?: () => void;
+}
+
+function errorMessage(err: unknown, isRegistering: boolean): string {
+  if (err instanceof AuthApiError && err.detail) {
+    return err.detail;
+  }
+  return isRegistering ? 'Could not create the account.' : 'Email or password is incorrect.';
 }
 
 export function LoginModal({
@@ -22,10 +30,21 @@ export function LoginModal({
   const [loading, setLoading] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
+  const switchMode = (registering: boolean) => {
+    setIsRegistering(registering);
+    setError('');
+    setPassword('');
+    requestAnimationFrame(() => emailRef.current?.focus());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Enter an email and password.');
+      return;
+    }
+    if (isRegistering && password.length < 8) {
+      setError('Use at least 8 characters for the password.');
       return;
     }
 
@@ -41,28 +60,14 @@ export function LoginModal({
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      let msg = isRegistering ? 'Could not create the account.' : 'Email or password is incorrect.';
-      if (err && typeof err === 'object' && 'response' in err) {
-        const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-        if (typeof detail === 'string') {
-          msg = detail;
-        } else if (
-          Array.isArray(detail) &&
-          detail[0] &&
-          typeof detail[0] === 'object' &&
-          detail[0] !== null &&
-          'msg' in detail[0]
-        ) {
-          msg = String((detail[0] as { msg: unknown }).msg);
-        }
-      }
-      setError(msg || 'Something went wrong. Try again.');
+      setError(errorMessage(err, isRegistering) || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const title = isRegistering ? 'Create account' : 'Sign in';
+  const invalid = Boolean(error);
 
   return (
     <Modal
@@ -71,12 +76,45 @@ export function LoginModal({
       size="sm"
       title={title}
       initialFocusRef={emailRef as React.RefObject<HTMLElement | null>}
+      className="max-h-[min(90dvh,40rem)] overflow-y-auto"
       contentClassName="px-6 pb-7 pt-1"
     >
+      <div
+        className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-slate-950/80 p-1"
+        role="tablist"
+        aria-label="Sign in or create account"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!isRegistering}
+          onClick={() => switchMode(false)}
+          className={`min-h-11 rounded-lg px-3 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 ${
+            !isRegistering
+              ? 'bg-sky-500 text-white'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isRegistering}
+          onClick={() => switchMode(true)}
+          className={`min-h-11 rounded-lg px-3 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 ${
+            isRegistering
+              ? 'bg-sky-500 text-white'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Create account
+        </button>
+      </div>
+
       <p className="mb-6 text-sm leading-relaxed text-slate-400">
-        {isRegistering
-          ? 'Same rankings and analytics as a guest. An account just remembers you next time.'
-          : 'Welcome back. Rankings are the same whether you sign in or not.'}
+        An account is optional identity. Rankings and analytics are the same
+        whether you sign in or continue as a guest.
       </p>
 
       {error && (
@@ -101,7 +139,8 @@ export function LoginModal({
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-sky-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+            aria-invalid={invalid}
+            className="block min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-sky-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
             placeholder="you@example.com"
             required
           />
@@ -117,35 +156,28 @@ export function LoginModal({
             autoComplete={isRegistering ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="block w-full rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-sky-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+            aria-invalid={invalid}
+            aria-describedby={isRegistering ? 'pem-auth-password-hint' : undefined}
+            className="block min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-sky-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
             placeholder="••••••••"
             required
           />
+          {isRegistering && (
+            <p id="pem-auth-password-hint" className="text-xs text-slate-500">
+              At least 8 characters.
+            </p>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 flex w-full items-center justify-center rounded-xl bg-sky-500 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_12px_28px_rgba(56,189,248,0.25)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xl bg-sky-500 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_12px_28px_rgba(56,189,248,0.25)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {isRegistering ? 'Create account' : 'Sign in'}
         </button>
       </form>
-
-      <p className="mt-5 text-center text-sm text-slate-400">
-        {isRegistering ? 'Already have an account?' : 'New here?'}{' '}
-        <button
-          type="button"
-          onClick={() => {
-            setIsRegistering(!isRegistering);
-            setError('');
-          }}
-          className="font-semibold text-sky-400 hover:text-sky-300 focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
-        >
-          {isRegistering ? 'Sign in' : 'Create an account'}
-        </button>
-      </p>
 
       {onContinueAsGuest && (
         <button
@@ -154,7 +186,7 @@ export function LoginModal({
             onClose();
             onContinueAsGuest();
           }}
-          className="mt-3 w-full py-2 text-center text-sm font-medium text-slate-500 hover:text-slate-300"
+          className="mt-3 min-h-11 w-full py-2.5 text-center text-sm font-medium text-slate-500 hover:text-slate-300"
         >
           Skip — enter as guest
         </button>

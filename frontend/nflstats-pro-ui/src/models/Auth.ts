@@ -3,9 +3,8 @@ export interface UserProfile {
   email: string;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
+export interface SessionAck {
+  ok: boolean;
 }
 
 export interface LoginCredentials {
@@ -16,4 +15,16 @@ export interface LoginCredentials {
 export interface RegisterCredentials {
   email: string;
   password: string;
+}
+
+export class AuthApiError extends Error {
+  status: number;
+  detail: string;
+
+  constructor(status: number, detail: string) {
+    super(detail);
+    this.name = 'AuthApiError';
+    this.status = status;
+    this.detail = detail;
+  }
 }
