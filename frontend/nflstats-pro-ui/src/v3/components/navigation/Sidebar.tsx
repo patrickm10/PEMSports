@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   BarChart3,
   Search,
-  Settings,
   Shield,
   Crosshair,
   Zap,
@@ -17,8 +16,6 @@ import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useState } from 'react';
-import type { GridDensity } from '../../../components/VirtualizedGrid';
 import type { WorkspaceView } from '../layout/ResponsiveDock';
 
 function cn(...inputs: ClassValue[]) {
@@ -98,8 +95,6 @@ interface SidebarProps {
   onWorkspaceViewChange: (v: WorkspaceView) => void;
   hasSelectedPlayer: boolean;
   onOpenSearch: () => void;
-  density: GridDensity;
-  setDensity: (d: GridDensity) => void;
 }
 
 export const Sidebar = ({
@@ -111,10 +106,7 @@ export const Sidebar = ({
   onWorkspaceViewChange,
   hasSelectedPlayer,
   onOpenSearch,
-  density,
-  setDensity,
 }: SidebarProps) => {
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <motion.div
@@ -144,7 +136,7 @@ export const Sidebar = ({
               exit={{ opacity: 0 }}
               className="font-bold text-lg tracking-tight text-white whitespace-nowrap"
             >
-              NFLStats <span className="text-sky-400">PRO</span>
+              PEM <span className="text-sky-400">Sports</span>
             </motion.h1>
           )}
         </AnimatePresence>
@@ -173,7 +165,7 @@ export const Sidebar = ({
           label="Search"
           collapsed={collapsed}
           onClick={onOpenSearch}
-          hint="Open search modal"
+          hint="Find a player"
         />
         <SidebarItem
           icon={UserSearch}
@@ -182,46 +174,8 @@ export const Sidebar = ({
           collapsed={collapsed}
           onClick={() => onWorkspaceViewChange('player')}
           disabled={!hasSelectedPlayer}
-          hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from search to enable'}
+          hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from Rankings or Search'}
         />
-        <div className="relative">
-          <SidebarItem
-            icon={Settings}
-            label="Settings"
-            active={settingsOpen}
-            collapsed={collapsed}
-            onClick={() => setSettingsOpen((o) => !o)}
-          />
-          <AnimatePresence>
-            {settingsOpen && !collapsed && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="mt-2 ml-1 p-3 rounded-xl bg-slate-950/60 border border-white/10 backdrop-blur-md"
-              >
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Table density</div>
-                <div className="flex gap-1 p-0.5 rounded-lg bg-slate-900/80 border border-white/5">
-                  {(['compact', 'standard', 'expert'] as const).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setDensity(d)}
-                      className={cn(
-                        'flex-1 px-2 py-1.5 text-[10px] font-bold uppercase rounded-md transition-colors',
-                        density === d
-                          ? 'bg-sky-600 text-white shadow shadow-sky-500/20'
-                          : 'text-slate-500 hover:text-slate-300',
-                      )}
-                    >
-                      {d.slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         <div className="h-px bg-white/[0.06] my-2 mx-1" />
 
@@ -242,30 +196,6 @@ export const Sidebar = ({
               collapsed={collapsed}
             />
           ))}
-        </div>
-      </div>
-
-      <div className="px-3 shrink-0">
-        <div
-          className={cn(
-            'flex items-center gap-3 p-3 rounded-xl border border-white/[0.06] bg-white/[0.03] transition-all overflow-hidden',
-            collapsed && 'justify-center p-2',
-          )}
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-800 shrink-0 border border-sky-500/20" />
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col min-w-0"
-              >
-                <span className="text-sm font-semibold text-slate-200 truncate">Analyst</span>
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest">Pro workspace</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </motion.div>

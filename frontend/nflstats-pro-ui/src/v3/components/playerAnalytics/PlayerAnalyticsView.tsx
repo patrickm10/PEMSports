@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerAnalyticsStore } from '../../../stores/playerAnalyticsStore';
 import { useSearchStore } from '../../../stores/searchStore';
@@ -43,10 +43,16 @@ export const PlayerAnalyticsView: React.FC<PlayerAnalyticsViewProps> = ({
   const openSearch = useSearchStore((s) => s.open);
 
   const result = usePlayerAnalytics(selectedPlayer, comparisonPlayer);
+  const backButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!selectedPlayer) onBack();
   }, [selectedPlayer, onBack]);
+
+  useEffect(() => {
+    if (!selectedPlayer) return;
+    backButtonRef.current?.focus();
+  }, [selectedPlayer]);
 
   const panelItems = useMemo(() => {
     if (!selectedPlayer) return [];
@@ -145,9 +151,10 @@ export const PlayerAnalyticsView: React.FC<PlayerAnalyticsViewProps> = ({
         comparison={comparisonPlayer}
         activePanels={activePanels}
         onBack={onBack}
-        onOpenComparison={openSearch}
+        onOpenComparison={() => openSearch('compare')}
         onClearComparison={() => setComparison(null)}
         onTogglePanel={togglePanel}
+        backButtonRef={backButtonRef}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

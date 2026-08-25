@@ -51,7 +51,7 @@ export const MetadataOverlayPanel: React.FC<Props> = ({
       <div>
         <h3 className="text-white font-bold text-base">Context overlays</h3>
         <p className="text-slate-400 text-xs mt-1">
-          Home/away, rest days, weather impact — null buckets render as "—".
+          Home/away, rest days, and weather. Missing values show as —.
         </p>
       </div>
 

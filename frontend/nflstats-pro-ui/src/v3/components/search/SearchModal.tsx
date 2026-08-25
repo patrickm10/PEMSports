@@ -102,6 +102,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
   const pushRecent = useSearchStore((s) => s.pushRecent);
 
   const selectPlayer = usePlayerAnalyticsStore((s) => s.selectPlayer);
+  const setComparison = usePlayerAnalyticsStore((s) => s.setComparison);
+  const selectedPlayer = usePlayerAnalyticsStore((s) => s.selectedPlayer);
+  const pickMode = useSearchStore((s) => s.pickMode);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const { results, isLoading, isReady, error } = usePlayerSearch(query);
@@ -136,7 +139,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
   }, [isOpen]);
 
   const handleSelect = (player: PlayerRef) => {
-    selectPlayer(player);
+    if (
+      pickMode === 'compare' &&
+      selectedPlayer &&
+      selectedPlayer.player_id !== player.player_id
+    ) {
+      setComparison(player);
+    } else {
+      selectPlayer(player);
+    }
     pushRecent(player);
     onPlayerSelected?.(player);
     close();

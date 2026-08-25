@@ -15,7 +15,11 @@ const POS_SPECIFIC_COLS: Record<string, string[]> = {
 /**
  * Validates that all expected columns exist and are not 100% null across the dataset.
  */
-export function verifyDataPopulation(data: any[], position: string, isWeekly: boolean) {
+export function verifyDataPopulation(
+  data: Array<Record<string, unknown>>,
+  position: string,
+  isWeekly: boolean,
+) {
   if (data.length === 0) return { passed: true, warning: 'Empty dataset (expected for some future years/weeks)' };
 
   const firstRow = data[0];
@@ -91,8 +95,9 @@ async function runExhaustive() {
           }
         }
       }
-    } catch (e: any) {
-      console.error(`❌ Fatal error for ${pos}: ${e.message}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error(`❌ Fatal error for ${pos}: ${message}`);
       totalFailures++;
     }
   }

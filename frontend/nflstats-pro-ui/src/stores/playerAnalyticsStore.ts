@@ -33,7 +33,12 @@ export const usePlayerAnalyticsStore = create<
   PlayerAnalyticsState & PlayerAnalyticsActions
 >()((set) => ({
   ...DEFAULT_STATE,
-  selectPlayer: (p) => set({ selectedPlayer: p }),
+  selectPlayer: (p) =>
+    set((s) => ({
+      selectedPlayer: p,
+      comparisonPlayer:
+        s.selectedPlayer?.player_id === p.player_id ? s.comparisonPlayer : null,
+    })),
   setComparison: (p) => set({ comparisonPlayer: p }),
   togglePanel: (k) =>
     set((s) => {

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import type { GridDensity } from '../../../components/VirtualizedGrid';
 import { Sidebar } from '../navigation/Sidebar';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
@@ -14,8 +13,6 @@ interface ResponsiveDockProps {
   onWorkspaceViewChange: (v: WorkspaceView) => void;
   hasSelectedPlayer: boolean;
   onOpenSearch: () => void;
-  density: GridDensity;
-  setDensity: (d: GridDensity) => void;
 }
 
 export const ResponsiveDock = ({
@@ -26,8 +23,6 @@ export const ResponsiveDock = ({
   onWorkspaceViewChange,
   hasSelectedPlayer,
   onOpenSearch,
-  density,
-  setDensity,
 }: ResponsiveDockProps) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -48,12 +43,8 @@ export const ResponsiveDock = ({
     onWorkspaceViewChange(v);
   };
 
-  const headerSubtitle =
-    workspaceView === 'dashboard'
-      ? 'Overview'
-      : workspaceView === 'player'
-        ? 'Player'
-        : 'Leaderboard';
+  const lockRankingsFill = workspaceView === 'rankings' && !isMobile;
+  const headerSubtitle = 'Rankings, dashboard, and player analytics';
 
   const sidebar = (
     <Sidebar
@@ -74,8 +65,6 @@ export const ResponsiveDock = ({
         closeMobileNav();
         onOpenSearch();
       }}
-      density={density}
-      setDensity={setDensity}
     />
   );
 
@@ -121,7 +110,13 @@ export const ResponsiveDock = ({
           </div>
         </header>
 
-        <section className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-5 lg:px-8 lg:py-8 custom-scrollbar">
+        <section
+          className={
+            lockRankingsFill
+              ? 'flex-1 min-h-0 overflow-hidden px-3 py-5 lg:px-8 lg:py-8'
+              : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-5 lg:px-8 lg:py-8 custom-scrollbar'
+          }
+        >
           {children}
         </section>
       </main>
