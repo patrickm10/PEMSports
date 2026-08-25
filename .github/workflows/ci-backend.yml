@@ -18,8 +18,11 @@ on:
       - "backend/**"
       - "tests/**"
       - "scripts/bake_db.py"
+      - "scripts/bake_draft_lab.py"
       - "scripts/build_players_dimension.py"
       - "scripts/validate_db_completeness.py"
+      - "src/pipelines/draft_lab/**"
+      - "src/pipelines/http_client.py"
       - "data/rankings/**"
       - "requirements.txt"
       - "Dockerfile"
@@ -32,8 +35,11 @@ on:
       - "backend/**"
       - "tests/**"
       - "scripts/bake_db.py"
+      - "scripts/bake_draft_lab.py"
       - "scripts/build_players_dimension.py"
       - "scripts/validate_db_completeness.py"
+      - "src/pipelines/draft_lab/**"
+      - "src/pipelines/http_client.py"
       - "data/rankings/**"
       - "requirements.txt"
       - "Dockerfile"
@@ -66,6 +72,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pylint
+          # pandas is excluded from the API image; convert_seasonal tests need it in CI only.
+          pip install pandas==2.2.3 pyarrow==19.0.1
+          python -c "import httpx, starlette.testclient, pandas, pyarrow; print('httpx', httpx.__version__, 'pandas', pandas.__version__, 'pyarrow', pyarrow.__version__)"
 
       - name: Lint (pylint)
         run: |

@@ -80,6 +80,11 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     return _thread_local.conn
 
 
+def get_serving_conn() -> duckdb.DuckDBPyConnection:
+    """Public read-only serving connection for non-ranking readers (Draft Lab)."""
+    return _get_conn()
+
+
 def _serialize_rows(cursor) -> list[dict[str, Any]]:
     """Convert cursor results to serialized dicts with NaN/Inf handling."""
     if cursor is None:

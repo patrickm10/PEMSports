@@ -1,0 +1,936 @@
+{
+  "id": 424242,
+  "seasonId": 2024,
+  "settings": {
+    "name": "PEM Draft Lab Fixture League",
+    "size": 10,
+    "scoringType": "PPR",
+    "scoringSettings": {
+      "scoringItems": [
+        {
+          "statId": 53,
+          "points": 1.0
+        }
+      ]
+    },
+    "rosterSettings": {
+      "lineupSlotCounts": {
+        "0": 1,
+        "2": 2,
+        "4": 2,
+        "6": 1,
+        "16": 1,
+        "17": 1,
+        "20": 6,
+        "23": 1
+      }
+    },
+    "draftSettings": {
+      "type": "SNAKE",
+      "rounds": 3,
+      "pickOrder": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  },
+  "members": [
+    {
+      "id": "{SWID-OWNER-1}",
+      "displayName": "Manager 1"
+    },
+    {
+      "id": "{SWID-OWNER-2}",
+      "displayName": "Manager 2"
+    },
+    {
+      "id": "{SWID-OWNER-3}",
+      "displayName": "Manager 3"
+    },
+    {
+      "id": "{SWID-OWNER-4}",
+      "displayName": "Manager 4"
+    },
+    {
+      "id": "{SWID-OWNER-5}",
+      "displayName": "Manager 5"
+    },
+    {
+      "id": "{SWID-OWNER-6}",
+      "displayName": "Manager 6"
+    },
+    {
+      "id": "{SWID-OWNER-7}",
+      "displayName": "Manager 7"
+    },
+    {
+      "id": "{SWID-OWNER-8}",
+      "displayName": "Manager 8"
+    },
+    {
+      "id": "{SWID-OWNER-9}",
+      "displayName": "Manager 9"
+    },
+    {
+      "id": "{SWID-OWNER-10}",
+      "displayName": "Manager 10"
+    }
+  ],
+  "teams": [
+    {
+      "id": 1,
+      "abbrev": "T01",
+      "location": "City1",
+      "nickname": "Team1",
+      "owners": [
+        "{SWID-OWNER-1}"
+      ]
+    },
+    {
+      "id": 2,
+      "abbrev": "T02",
+      "location": "City2",
+      "nickname": "Team2",
+      "owners": [
+        "{SWID-OWNER-2}"
+      ]
+    },
+    {
+      "id": 3,
+      "abbrev": "T03",
+      "location": "City3",
+      "nickname": "Team3",
+      "owners": [
+        "{SWID-OWNER-3}"
+      ]
+    },
+    {
+      "id": 4,
+      "abbrev": "T04",
+      "location": "City4",
+      "nickname": "Team4",
+      "owners": [
+        "{SWID-OWNER-4}"
+      ]
+    },
+    {
+      "id": 5,
+      "abbrev": "T05",
+      "location": "City5",
+      "nickname": "Team5",
+      "owners": [
+        "{SWID-OWNER-5}"
+      ]
+    },
+    {
+      "id": 6,
+      "abbrev": "T06",
+      "location": "City6",
+      "nickname": "Team6",
+      "owners": [
+        "{SWID-OWNER-6}"
+      ]
+    },
+    {
+      "id": 7,
+      "abbrev": "T07",
+      "location": "City7",
+      "nickname": "Team7",
+      "owners": [
+        "{SWID-OWNER-7}"
+      ]
+    },
+    {
+      "id": 8,
+      "abbrev": "T08",
+      "location": "City8",
+      "nickname": "Team8",
+      "owners": [
+        "{SWID-OWNER-8}"
+      ]
+    },
+    {
+      "id": 9,
+      "abbrev": "T09",
+      "location": "City9",
+      "nickname": "Team9",
+      "owners": [
+        "{SWID-OWNER-9}"
+      ]
+    },
+    {
+      "id": 10,
+      "abbrev": "T10",
+      "location": "City10",
+      "nickname": "Team10",
+      "owners": [
+        "{SWID-OWNER-10}"
+      ]
+    }
+  ],
+  "players": [
+    {
+      "id": 1001,
+      "player": {
+        "id": 1001,
+        "fullName": "Christian McCaffrey",
+        "defaultPositionId": 2,
+        "proTeamId": 25,
+        "draftRanksById": {
+          "0": {
+            "rank": 1,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1002,
+      "player": {
+        "id": 1002,
+        "fullName": "Tyreek Hill",
+        "defaultPositionId": 3,
+        "proTeamId": 15,
+        "draftRanksById": {
+          "0": {
+            "rank": 2,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1003,
+      "player": {
+        "id": 1003,
+        "fullName": "Justin Jefferson",
+        "defaultPositionId": 3,
+        "proTeamId": 16,
+        "draftRanksById": {
+          "0": {
+            "rank": 3,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1004,
+      "player": {
+        "id": 1004,
+        "fullName": "JaMarr Chase",
+        "defaultPositionId": 3,
+        "proTeamId": 4,
+        "draftRanksById": {
+          "0": {
+            "rank": 4,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1005,
+      "player": {
+        "id": 1005,
+        "fullName": "Bijan Robinson",
+        "defaultPositionId": 2,
+        "proTeamId": 1,
+        "draftRanksById": {
+          "0": {
+            "rank": 5,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1006,
+      "player": {
+        "id": 1006,
+        "fullName": "CeeDee Lamb",
+        "defaultPositionId": 3,
+        "proTeamId": 6,
+        "draftRanksById": {
+          "0": {
+            "rank": 6,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1007,
+      "player": {
+        "id": 1007,
+        "fullName": "Breece Hall",
+        "defaultPositionId": 2,
+        "proTeamId": 20,
+        "draftRanksById": {
+          "0": {
+            "rank": 7,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1008,
+      "player": {
+        "id": 1008,
+        "fullName": "Amon-Ra St. Brown",
+        "defaultPositionId": 3,
+        "proTeamId": 8,
+        "draftRanksById": {
+          "0": {
+            "rank": 8,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1009,
+      "player": {
+        "id": 1009,
+        "fullName": "Travis Kelce",
+        "defaultPositionId": 4,
+        "proTeamId": 12,
+        "draftRanksById": {
+          "0": {
+            "rank": 9,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1010,
+      "player": {
+        "id": 1010,
+        "fullName": "Saquon Barkley",
+        "defaultPositionId": 2,
+        "proTeamId": 21,
+        "draftRanksById": {
+          "0": {
+            "rank": 10,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1011,
+      "player": {
+        "id": 1011,
+        "fullName": "Garrett Wilson",
+        "defaultPositionId": 3,
+        "proTeamId": 20,
+        "draftRanksById": {
+          "0": {
+            "rank": 11,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1012,
+      "player": {
+        "id": 1012,
+        "fullName": "A.J. Brown",
+        "defaultPositionId": 3,
+        "proTeamId": 21,
+        "draftRanksById": {
+          "0": {
+            "rank": 12,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1013,
+      "player": {
+        "id": 1013,
+        "fullName": "Jahmyr Gibbs",
+        "defaultPositionId": 2,
+        "proTeamId": 8,
+        "draftRanksById": {
+          "0": {
+            "rank": 13,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1014,
+      "player": {
+        "id": 1014,
+        "fullName": "Puka Nacua",
+        "defaultPositionId": 3,
+        "proTeamId": 14,
+        "draftRanksById": {
+          "0": {
+            "rank": 14,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1015,
+      "player": {
+        "id": 1015,
+        "fullName": "Patrick Mahomes",
+        "defaultPositionId": 1,
+        "proTeamId": 12,
+        "draftRanksById": {
+          "0": {
+            "rank": 15,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1016,
+      "player": {
+        "id": 1016,
+        "fullName": "Josh Allen",
+        "defaultPositionId": 1,
+        "proTeamId": 2,
+        "draftRanksById": {
+          "0": {
+            "rank": 16,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1017,
+      "player": {
+        "id": 1017,
+        "fullName": "Davante Adams",
+        "defaultPositionId": 3,
+        "proTeamId": 13,
+        "draftRanksById": {
+          "0": {
+            "rank": 17,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1018,
+      "player": {
+        "id": 1018,
+        "fullName": "Chris Olave",
+        "defaultPositionId": 3,
+        "proTeamId": 18,
+        "draftRanksById": {
+          "0": {
+            "rank": 18,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1019,
+      "player": {
+        "id": 1019,
+        "fullName": "Sam LaPorta",
+        "defaultPositionId": 4,
+        "proTeamId": 8,
+        "draftRanksById": {
+          "0": {
+            "rank": 19,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1020,
+      "player": {
+        "id": 1020,
+        "fullName": "Kyren Williams",
+        "defaultPositionId": 2,
+        "proTeamId": 14,
+        "draftRanksById": {
+          "0": {
+            "rank": 20,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1021,
+      "player": {
+        "id": 1021,
+        "fullName": "Jalen Hurts",
+        "defaultPositionId": 1,
+        "proTeamId": 21,
+        "draftRanksById": {
+          "0": {
+            "rank": 21,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1022,
+      "player": {
+        "id": 1022,
+        "fullName": "Deebo Samuel",
+        "defaultPositionId": 3,
+        "proTeamId": 25,
+        "draftRanksById": {
+          "0": {
+            "rank": 22,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1023,
+      "player": {
+        "id": 1023,
+        "fullName": "Derrick Henry",
+        "defaultPositionId": 2,
+        "proTeamId": 33,
+        "draftRanksById": {
+          "0": {
+            "rank": 23,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1024,
+      "player": {
+        "id": 1024,
+        "fullName": "Stefon Diggs",
+        "defaultPositionId": 3,
+        "proTeamId": 34,
+        "draftRanksById": {
+          "0": {
+            "rank": 24,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1025,
+      "player": {
+        "id": 1025,
+        "fullName": "Mark Andrews",
+        "defaultPositionId": 4,
+        "proTeamId": 33,
+        "draftRanksById": {
+          "0": {
+            "rank": 25,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1026,
+      "player": {
+        "id": 1026,
+        "fullName": "Lamar Jackson",
+        "defaultPositionId": 1,
+        "proTeamId": 33,
+        "draftRanksById": {
+          "0": {
+            "rank": 26,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1027,
+      "player": {
+        "id": 1027,
+        "fullName": "Isiah Pacheco",
+        "defaultPositionId": 2,
+        "proTeamId": 12,
+        "draftRanksById": {
+          "0": {
+            "rank": 27,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1028,
+      "player": {
+        "id": 1028,
+        "fullName": "DK Metcalf",
+        "defaultPositionId": 3,
+        "proTeamId": 26,
+        "draftRanksById": {
+          "0": {
+            "rank": 28,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1029,
+      "player": {
+        "id": 1029,
+        "fullName": "T.J. Hockenson",
+        "defaultPositionId": 4,
+        "proTeamId": 16,
+        "draftRanksById": {
+          "0": {
+            "rank": 29,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1030,
+      "player": {
+        "id": 1030,
+        "fullName": "Rachaad White",
+        "defaultPositionId": 2,
+        "proTeamId": 27,
+        "draftRanksById": {
+          "0": {
+            "rank": 30,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1031,
+      "player": {
+        "id": 1031,
+        "fullName": "Mike Evans",
+        "defaultPositionId": 3,
+        "proTeamId": 27,
+        "draftRanksById": {
+          "0": {
+            "rank": 31,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1032,
+      "player": {
+        "id": 1032,
+        "fullName": "George Kittle",
+        "defaultPositionId": 4,
+        "proTeamId": 25,
+        "draftRanksById": {
+          "0": {
+            "rank": 32,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1033,
+      "player": {
+        "id": 1033,
+        "fullName": "Chiefs D/ST",
+        "defaultPositionId": 16,
+        "proTeamId": 12,
+        "draftRanksById": {
+          "0": {
+            "rank": 33,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1034,
+      "player": {
+        "id": 1034,
+        "fullName": "Brandon Aubrey",
+        "defaultPositionId": 5,
+        "proTeamId": 6,
+        "draftRanksById": {
+          "0": {
+            "rank": 34,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1035,
+      "player": {
+        "id": 1035,
+        "fullName": "C.J. Stroud",
+        "defaultPositionId": 1,
+        "proTeamId": 34,
+        "draftRanksById": {
+          "0": {
+            "rank": 35,
+            "auctionValue": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 1036,
+      "player": {
+        "id": 1036,
+        "fullName": "Unknown Prospect",
+        "defaultPositionId": 3,
+        "proTeamId": 0,
+        "draftRanksById": {
+          "0": {
+            "rank": 36,
+            "auctionValue": 0
+          }
+        }
+      }
+    }
+  ],
+  "draftDetail": {
+    "drafted": true,
+    "picks": [
+      {
+        "playerId": 1015,
+        "teamId": 1,
+        "overallPickNumber": 1,
+        "roundId": 1,
+        "roundPickNumber": 1
+      },
+      {
+        "playerId": 1001,
+        "teamId": 2,
+        "overallPickNumber": 2,
+        "roundId": 1,
+        "roundPickNumber": 2
+      },
+      {
+        "playerId": 1002,
+        "teamId": 3,
+        "overallPickNumber": 3,
+        "roundId": 1,
+        "roundPickNumber": 3
+      },
+      {
+        "playerId": 1003,
+        "teamId": 4,
+        "overallPickNumber": 4,
+        "roundId": 1,
+        "roundPickNumber": 4
+      },
+      {
+        "playerId": 1004,
+        "teamId": 5,
+        "overallPickNumber": 5,
+        "roundId": 1,
+        "roundPickNumber": 5
+      },
+      {
+        "playerId": 1005,
+        "teamId": 6,
+        "overallPickNumber": 6,
+        "roundId": 1,
+        "roundPickNumber": 6
+      },
+      {
+        "playerId": 1006,
+        "teamId": 7,
+        "overallPickNumber": 7,
+        "roundId": 1,
+        "roundPickNumber": 7
+      },
+      {
+        "playerId": 1007,
+        "teamId": 8,
+        "overallPickNumber": 8,
+        "roundId": 1,
+        "roundPickNumber": 8
+      },
+      {
+        "playerId": 1008,
+        "teamId": 9,
+        "overallPickNumber": 9,
+        "roundId": 1,
+        "roundPickNumber": 9
+      },
+      {
+        "playerId": 1009,
+        "teamId": 10,
+        "overallPickNumber": 10,
+        "roundId": 1,
+        "roundPickNumber": 10
+      },
+      {
+        "playerId": 1010,
+        "teamId": 10,
+        "overallPickNumber": 11,
+        "roundId": 2,
+        "roundPickNumber": 1
+      },
+      {
+        "playerId": 1011,
+        "teamId": 9,
+        "overallPickNumber": 12,
+        "roundId": 2,
+        "roundPickNumber": 2
+      },
+      {
+        "playerId": 1012,
+        "teamId": 8,
+        "overallPickNumber": 13,
+        "roundId": 2,
+        "roundPickNumber": 3
+      },
+      {
+        "playerId": 1013,
+        "teamId": 7,
+        "overallPickNumber": 14,
+        "roundId": 2,
+        "roundPickNumber": 4
+      },
+      {
+        "playerId": 1014,
+        "teamId": 6,
+        "overallPickNumber": 15,
+        "roundId": 2,
+        "roundPickNumber": 5
+      },
+      {
+        "playerId": 1016,
+        "teamId": 5,
+        "overallPickNumber": 16,
+        "roundId": 2,
+        "roundPickNumber": 6
+      },
+      {
+        "playerId": 1017,
+        "teamId": 4,
+        "overallPickNumber": 17,
+        "roundId": 2,
+        "roundPickNumber": 7
+      },
+      {
+        "playerId": 1018,
+        "teamId": 3,
+        "overallPickNumber": 18,
+        "roundId": 2,
+        "roundPickNumber": 8
+      },
+      {
+        "playerId": 1019,
+        "teamId": 2,
+        "overallPickNumber": 19,
+        "roundId": 2,
+        "roundPickNumber": 9
+      },
+      {
+        "playerId": 1020,
+        "teamId": 1,
+        "overallPickNumber": 20,
+        "roundId": 2,
+        "roundPickNumber": 10
+      },
+      {
+        "playerId": 1021,
+        "teamId": 1,
+        "overallPickNumber": 21,
+        "roundId": 3,
+        "roundPickNumber": 1
+      },
+      {
+        "playerId": 1022,
+        "teamId": 2,
+        "overallPickNumber": 22,
+        "roundId": 3,
+        "roundPickNumber": 2
+      },
+      {
+        "playerId": 1023,
+        "teamId": 3,
+        "overallPickNumber": 23,
+        "roundId": 3,
+        "roundPickNumber": 3
+      },
+      {
+        "playerId": 1024,
+        "teamId": 4,
+        "overallPickNumber": 24,
+        "roundId": 3,
+        "roundPickNumber": 4
+      },
+      {
+        "playerId": 1025,
+        "teamId": 5,
+        "overallPickNumber": 25,
+        "roundId": 3,
+        "roundPickNumber": 5
+      },
+      {
+        "playerId": 1026,
+        "teamId": 6,
+        "overallPickNumber": 26,
+        "roundId": 3,
+        "roundPickNumber": 6
+      },
+      {
+        "playerId": 1027,
+        "teamId": 7,
+        "overallPickNumber": 27,
+        "roundId": 3,
+        "roundPickNumber": 7
+      },
+      {
+        "playerId": 1028,
+        "teamId": 8,
+        "overallPickNumber": 28,
+        "roundId": 3,
+        "roundPickNumber": 8
+      },
+      {
+        "playerId": 1029,
+        "teamId": 9,
+        "overallPickNumber": 29,
+        "roundId": 3,
+        "roundPickNumber": 9
+      },
+      {
+        "playerId": 1036,
+        "teamId": 10,
+        "overallPickNumber": 30,
+        "roundId": 3,
+        "roundPickNumber": 10
+      }
+    ]
+  }
+}

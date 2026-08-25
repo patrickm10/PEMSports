@@ -26,6 +26,10 @@ tmp/
 data_local/
 *.csv
 !data_local/.gitkeep
+!tests/fixtures/**/*.csv
+
+# Draft Lab operator lake (CI uses tests/fixtures/draft_lab)
+data/draft_lab/*.parquet
 
 # Tracked Optimized Data (Keep Parquet, ignore CSV)
 data/official_rankings/

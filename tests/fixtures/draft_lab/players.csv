@@ -1,0 +1,36 @@
+player_id,legacy_player_id,player_name,team,position,espn_player_id
+3d3b6fbf-0323-57a1-a448-199bb927d9f2,fix_1001,Christian McCaffrey,SF,RB,1001
+363473b1-193e-5472-a68d-22a8c342ef96,fix_1002,Tyreek Hill,MIA,WR,1002
+c5cd0ebf-c38e-5557-b5ea-c3fd690df56b,fix_1003,Justin Jefferson,MIN,WR,1003
+5a09401a-74a6-5997-8b5f-def9217b4cea,fix_1004,JaMarr Chase,CIN,WR,1004
+9d0455f7-5ac3-5f36-8197-65a512a60e6c,fix_1005,Bijan Robinson,ATL,RB,1005
+f9f3e463-a1f7-5f85-bcfc-11783dd36a05,fix_1006,CeeDee Lamb,DAL,WR,1006
+c4f99049-b134-5ecb-bd6b-c2019541cb0f,fix_1007,Breece Hall,NYJ,RB,1007
+acc28995-80ec-5f94-9206-67fff6ca7b23,fix_1008,Amon-Ra St. Brown,DET,WR,1008
+20accab6-1a54-5002-a7a5-f83fa9fe1091,fix_1009,Travis Kelce,KC,TE,1009
+dbada6d6-730d-5bee-ab42-5dcc0b75fbe6,fix_1010,Saquon Barkley,PHI,RB,1010
+31df7725-64e5-56b2-9b2a-54f8b05f9a34,fix_1011,Garrett Wilson,NYJ,WR,1011
+36e52efc-6431-5175-9c64-27d8e1a051d0,fix_1012,A.J. Brown,PHI,WR,1012
+fec4a0ac-7944-58f6-b702-bc2f75144e95,fix_1013,Jahmyr Gibbs,DET,RB,1013
+8d2d1705-1889-5ef2-bd13-ca5b66932557,fix_1014,Puka Nacua,LAR,WR,1014
+25be733e-2986-5d64-828f-b1839df197be,fix_1015,Patrick Mahomes,KC,QB,1015
+4ed47707-2caf-540d-be2e-6bdde49ee6e4,fix_1016,Josh Allen,BUF,QB,1016
+cffaf712-6db8-538a-bdcd-45a72aec57b5,fix_1017,Davante Adams,LV,WR,1017
+f012bb6b-3c92-5dca-b8db-22c3da8c0403,fix_1018,Chris Olave,NO,WR,1018
+a9467fb9-de05-53b6-8347-9d884c50bf09,fix_1019,Sam LaPorta,DET,TE,1019
+41989e5f-e012-5a22-9734-a922d868c1c3,fix_1020,Kyren Williams,LAR,RB,1020
+bea32183-f8ea-5ac0-9ff5-a7c222c4c735,fix_1021,Jalen Hurts,PHI,QB,1021
+d6beec4e-babe-5392-94f7-a7eadde1a93b,fix_1022,Deebo Samuel,SF,WR,1022
+2963f6d0-c85b-560f-b894-927a22fd3d1a,fix_1023,Derrick Henry,BAL,RB,1023
+21af283a-1202-5624-92bf-e1658fcb59ff,fix_1024,Stefon Diggs,HOU,WR,1024
+f0fad8d3-0b93-58f3-a628-2198a5f653f3,fix_1025,Mark Andrews,BAL,TE,1025
+3c11d6e9-ff2d-544e-85f0-a0c27c04befe,fix_1026,Lamar Jackson,BAL,QB,1026
+da796aa2-fb75-523f-b912-086b6e4ad263,fix_1027,Isiah Pacheco,KC,RB,1027
+87b1a540-1c43-5042-b536-b6ba6acc5081,fix_1028,DK Metcalf,SEA,WR,1028
+2c333236-39ae-54b6-ac3e-777af83e4130,fix_1029,T.J. Hockenson,MIN,TE,1029
+74403dee-f674-58c5-a1f2-68a1539b9773,fix_1030,Rachaad White,TB,RB,1030
+9c7545be-4612-59f4-9d75-bb452a88c4f4,fix_1031,Mike Evans,TB,WR,1031
+f6a798aa-8dd5-58fb-a475-defe8ebeb78c,fix_1032,George Kittle,SF,TE,1032
+b1a23ce9-0251-59a2-ac08-15487378bb96,fix_1033,Chiefs D/ST,KC,DST,1033
+4c6a3d60-1449-59a2-98be-50b0c66ac26e,fix_1034,Brandon Aubrey,DAL,K,1034
+ffce2ac9-ffab-5bfa-963d-5b488a7b594a,fix_1035,C.J. Stroud,HOU,QB,1035
