@@ -310,7 +310,7 @@ export function ControlBar({
             <button
               type="button"
               onClick={() => setShowLogin(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-300"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-300"
             >
               <User className="w-3.5 h-3.5" aria-hidden />
               Sign In

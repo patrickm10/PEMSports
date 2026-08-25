@@ -5,7 +5,6 @@ import type { UserProfile, LoginCredentials, RegisterCredentials } from '../mode
 
 interface AuthContextType {
   user: UserProfile | null;
-  token: string | null;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
@@ -14,50 +13,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function clearLegacyToken(): void {
+  try {
+    localStorage.removeItem('auth_token');
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('auth_token'));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    clearLegacyToken();
     let mounted = true;
-    
+
     const initializeAuth = async () => {
-      if (token) {
-        try {
-          const profile = await authApi.getProfile(token);
-          if (mounted) {
-            setUser(profile);
-          }
-        } catch (error) {
-          console.error("Session expired or invalid token", error);
-          if (mounted) {
-            setToken(null);
-            setUser(null);
-            localStorage.removeItem('auth_token');
-          }
+      try {
+        const profile = await authApi.getProfile();
+        if (mounted) {
+          setUser(profile);
         }
-      } else {
+      } catch {
         if (mounted) {
           setUser(null);
         }
-      }
-      if (mounted) {
-        setIsLoading(false);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    initializeAuth();
-    
+    void initializeAuth();
+
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, []);
 
   const login = async (credentials: LoginCredentials) => {
-    const response = await authApi.login(credentials);
-    setToken(response.access_token);
-    localStorage.setItem('auth_token', response.access_token);
+    await authApi.login(credentials);
+    const profile = await authApi.getProfile();
+    setUser(profile);
   };
 
   const register = async (credentials: RegisterCredentials) => {
@@ -67,12 +66,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
+    void authApi.logout().catch(() => {
+      /* cookie clear is best-effort; UI is already signed out */
+    });
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

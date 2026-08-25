@@ -1,42 +1,50 @@
 """
-Authentication API endpoints for registration and token login.
+Authentication API endpoints for registration and cookie session login.
 
 Environment policy:
-- The dev fallbacks (mint a token without hitting Postgres, accept any
+- The dev fallbacks (mint a session without hitting Postgres, accept any
   password) are only active when `config.app_env == 'development'`.
 - In staging/production, if the database is unreachable we return 503
-  instead of minting tokens. Startup would normally have aborted already
+  instead of minting sessions. Startup would normally have aborted already
   (see `main.py` lifespan), but defense-in-depth: never let a running
   process issue credentials without a backing user record.
+
+Session transport:
+- POST /token sets httpOnly cookie `pem_session` (SameSite=Lax). The JWT
+  is never returned in JSON.
+- SameSite=None is forbidden; that would need a CSRF token.
 """
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from backend.core.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     UserProfile,
+    apply_session_cookie,
+    clear_session_cookie,
     create_access_token,
     get_current_user,
-    get_password_hash,
     verify_password,
 )
 from backend.core.config import config
+from backend.core.limiter import limiter
 from backend.data.postgres import is_db_connected
 from backend.services.user_service import create_user, get_user_by_email
 
 router = APIRouter()
 
+
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=72)
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+
+class SessionAck(BaseModel):
+    ok: bool
 
 
 def _db_unavailable_response() -> HTTPException:
@@ -46,8 +54,18 @@ def _db_unavailable_response() -> HTTPException:
     )
 
 
+def _mint_session(response: Response, subject: str) -> SessionAck:
+    access_token = create_access_token(
+        data={"sub": subject},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    apply_session_cookie(response, access_token)
+    return SessionAck(ok=True)
+
+
 @router.post("/register", response_model=UserProfile)
-async def register(user_in: UserCreate) -> Any:
+@limiter.limit("10/minute")
+async def register(request: Request, user_in: UserCreate) -> Any:
     """Register a new user account."""
     if not is_db_connected():
         if config.allow_mock_auth:
@@ -59,7 +77,7 @@ async def register(user_in: UserCreate) -> Any:
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="The user with this email already exists."
+            detail="The user with this email already exists.",
         )
 
     user = await create_user(user_in.email, user_in.password)
@@ -68,22 +86,20 @@ async def register(user_in: UserCreate) -> Any:
     return UserProfile(id=user["id"], email=user["email"])
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", response_model=SessionAck)
+@limiter.limit("10/minute")
 async def login_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends()
+    request: Request,
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
-    OAuth2 compatible token login — returns a signed JWT for future requests.
-    Expects application/x-www-form-urlencoded data.
+    Form login — sets httpOnly `pem_session`. JWT is not in the JSON body.
+    Expects application/x-www-form-urlencoded data (username = email).
     """
     if not is_db_connected():
         if config.allow_mock_auth:
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = create_access_token(
-                data={"sub": form_data.username},
-                expires_delta=access_token_expires,
-            )
-            return {"access_token": access_token, "token_type": "bearer"}
+            return _mint_session(response, form_data.username)
         raise _db_unavailable_response()
 
     user = await get_user_by_email(form_data.username)
@@ -94,16 +110,22 @@ async def login_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["email"]}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return _mint_session(response, user["email"])
+
+
+@router.post("/logout", response_model=SessionAck)
+@limiter.limit("20/minute")
+async def logout(request: Request, response: Response) -> SessionAck:
+    """Clear the session cookie. Idempotent; does not require a valid session."""
+    clear_session_cookie(response)
+    return SessionAck(ok=True)
 
 
 @router.get("/me", response_model=UserProfile)
+@limiter.limit("30/minute")
 async def read_current_user(
-    current_user: UserProfile = Depends(get_current_user)
+    request: Request,
+    current_user: UserProfile = Depends(get_current_user),
 ) -> Any:
     """Get current logged in user."""
     return current_user

@@ -6,17 +6,20 @@ Design:
   from `backend.core.config` which refuses to start the process in
   production without a real `JWT_SECRET`.
 - `get_current_user` is the single FastAPI dependency for protected
-  routes. It reads the `Authorization: Bearer <token>` header via
-  `OAuth2PasswordBearer`, validates the JWT, and looks up the user in
-  Postgres. Any failure raises 401.
+  routes. It prefers the httpOnly `pem_session` cookie, then
+  `Authorization: Bearer`. Missing or invalid credentials are always 401
+  (including development) so guest `/auth/me` probes stay guest.
+- Session cookies are first-party (SameSite=Lax). SameSite=None is
+  forbidden here — that would require a CSRF token and third-party cookies.
 - Password hashing uses `passlib` with bcrypt.
+- Never log cookie values, Authorization headers, or JWT strings.
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -25,6 +28,8 @@ from pydantic import BaseModel
 from backend.core.config import config
 
 ACCESS_TOKEN_EXPIRE_MINUTES = config.access_token_expire_minutes
+SESSION_COOKIE_NAME = "pem_session"
+SESSION_COOKIE_PATH = "/api/v1/auth"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
@@ -79,15 +84,41 @@ def get_password_hash(password: str) -> str:
     return _pwd_context.hash(password)
 
 
+def apply_session_cookie(response: Response, token: str) -> None:
+    """Set the httpOnly session cookie. Do not log `token`."""
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
+        path=SESSION_COOKIE_PATH,
+        httponly=True,
+        secure=not config.is_development,
+        samesite="lax",
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    """Expire the session cookie (logout)."""
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value="",
+        max_age=0,
+        expires=0,
+        path=SESSION_COOKIE_PATH,
+        httponly=True,
+        secure=not config.is_development,
+        samesite="lax",
+    )
+
+
 async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    bearer: Optional[str] = Depends(oauth2_scheme),
+    pem_session: Optional[str] = Cookie(default=None),
 ) -> UserProfile:
     """FastAPI dependency: resolve the caller to a UserProfile or raise 401.
 
-    In `development` mode, if no token is supplied we return a stable mock
-    profile so the frontend can be iterated on without standing up
-    Postgres. In staging/production, a missing or invalid token is always
-    401.
+    Cookie wins when present. Bearer remains for tests and break-glass.
+    A missing cookie/header is always 401 so guests are not mocked as signed in.
     """
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -95,9 +126,8 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if token is None:
-        if config.allow_mock_auth:
-            return UserProfile(id="dev-user", email="dev@example.com")
+    token = pem_session or bearer
+    if not token:
         raise credentials_exc
 
     try:
