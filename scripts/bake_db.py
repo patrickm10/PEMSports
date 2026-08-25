@@ -217,6 +217,13 @@ def bake():
             row_count = conn.execute(f"SELECT COUNT(*) FROM {pos.lower()}_seasonal").fetchone()[0]
             logger.info(f"  -> {pos} Seasonal: {row_count} rows, {len(columns)} columns")
 
+    try:
+        from bake_draft_lab import bake_draft_lab_tables
+
+        bake_draft_lab_tables(conn)
+    except Exception as exc:  # noqa: BLE001 - rankings bake must not fail
+        logger.warning("Draft Lab bake skipped (fail-open): %s", exc)
+
     # Final schema audit
     logger.info("--- Bake Audit ---")
     tables = conn.execute("SHOW TABLES").fetchall()

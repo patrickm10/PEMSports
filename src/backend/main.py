@@ -43,6 +43,7 @@ from slowapi.util import get_remote_address
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
 from backend.api.players_routes import router as players_router
+from backend.api.draft_lab_routes import router as draft_lab_router
 from backend.core.config import config
 from backend.core.exceptions import PemSportsException
 from backend.core.health import check_health
@@ -156,6 +157,7 @@ def root(request: Request):
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 app.include_router(players_router, prefix="/api/v1", tags=["players"])
+app.include_router(draft_lab_router, prefix="/api/v1", tags=["draft-lab"])
 
 # Backwards-compatible alias — keeps existing frontend/consumers working
 # while they migrate to /api/v1/

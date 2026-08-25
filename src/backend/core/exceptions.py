@@ -52,6 +52,13 @@ class DatabaseUnavailableError(PemSportsException):
     default_detail = "Serving database not initialized"
 
 
+class InvalidRequestError(PemSportsException):
+    """Request failed validation after the FastAPI boundary (Draft Lab simulate)."""
+
+    http_status = 422
+    default_detail = "Invalid request"
+
+
 # Backwards-compatibility alias (pre-PEM Sports brand). Prefer
 # `PemSportsException` in new code; kept so any external/uncommitted
 # consumers importing the old name continue to work.
