@@ -74,7 +74,7 @@ export function ControlBar({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl glass-card border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl glass-card border-white/10">
         <div className="flex items-center gap-3 flex-wrap">
           <div
             className="flex bg-slate-950/60 p-1 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20"
