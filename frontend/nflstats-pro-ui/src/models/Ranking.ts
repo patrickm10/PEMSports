@@ -3,12 +3,12 @@
  *
  * The zod schemas in `v3/schemas/player.ts` are the source of truth at
  * runtime. These TypeScript interfaces mirror them so consumers can type
- * their render code. `[key: string]: any` survives because bake_db.py
- * adds position-specific metrics (cmp, att, int, sacks, etc.) that the
- * grid renders dynamically.
+ * their render code. `[key: string]: unknown` covers position-specific
+ * metrics (cmp, att, int, sacks, etc.) that bake_db.py adds and the grid
+ * renders dynamically.
  */
 export interface BaseRanking {
-  [key: string]: any;
+  [key: string]: unknown;
   year: number;
   player_id: string;
   player_name: string;
