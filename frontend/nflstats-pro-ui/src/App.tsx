@@ -242,12 +242,12 @@ export default function App() {
           id="pem-main-content"
           className={
             lockRankingsFill
-              ? 'w-full max-w-[1600px] mx-auto h-full min-h-0 flex flex-col gap-6'
-              : 'w-full max-w-[1600px] mx-auto space-y-6'
+              ? 'w-full max-w-[1600px] mx-auto h-full min-h-0 flex flex-col gap-4'
+              : 'w-full max-w-[1600px] mx-auto space-y-4'
           }
         >
           <header className={`space-y-1${lockRankingsFill ? ' shrink-0' : ''}`}>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               {workspaceView === 'dashboard' && 'Dashboard'}
               {workspaceView === 'rankings' && (
                 <>
@@ -257,11 +257,11 @@ export default function App() {
               )}
               {workspaceView === 'player' && 'Player analytics'}
             </h1>
-            <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
-              {workspaceView === 'player'
-                ? 'Weekly trends and situational splits'
-                : `${activeFilterSummary}`}
-            </p>
+            {workspaceView === 'player' && (
+              <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
+                Weekly trends and situational splits
+              </p>
+            )}
           </header>
 
           {workspaceView !== 'player' && (
@@ -293,8 +293,8 @@ export default function App() {
             </div>
           )}
 
-          {workspaceView !== 'player' && (
-            <div className={lockRankingsFill ? 'shrink-0' : undefined}>
+          {workspaceView === 'dashboard' && (
+            <div>
               <StatsSummary
                 data={filteredData}
                 metric={resolvedMetric}

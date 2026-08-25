@@ -44,7 +44,12 @@ export const ResponsiveDock = ({
   };
 
   const lockRankingsFill = workspaceView === 'rankings' && !isMobile;
-  const headerSubtitle = 'Rankings, dashboard, and player analytics';
+  const headerSubtitle =
+    workspaceView === 'dashboard'
+      ? 'Season charts'
+      : workspaceView === 'player'
+        ? 'Player splits'
+        : 'Fantasy leaderboard';
 
   const sidebar = (
     <Sidebar
@@ -113,8 +118,8 @@ export const ResponsiveDock = ({
         <section
           className={
             lockRankingsFill
-              ? 'flex-1 min-h-0 overflow-hidden px-3 py-5 lg:px-8 lg:py-8'
-              : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-5 lg:px-8 lg:py-8 custom-scrollbar'
+              ? 'flex-1 min-h-0 overflow-hidden px-3 py-4 lg:px-6 lg:py-5'
+              : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 lg:px-6 lg:py-5 custom-scrollbar'
           }
         >
           {children}

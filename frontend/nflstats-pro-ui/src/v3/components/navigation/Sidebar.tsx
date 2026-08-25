@@ -46,14 +46,14 @@ const SidebarItem = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group text-left',
+      'w-full flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 group text-left',
       active
         ? 'bg-white/10 text-white border border-white/15 shadow-[0_0_0_1px_rgba(56,189,248,0.15)]'
         : 'text-slate-400 hover:text-slate-100 border border-transparent hover:bg-white/[0.04]',
       collapsed && 'justify-center px-0',
       disabled && 'opacity-40 pointer-events-none',
     )}
-    title={collapsed ? label : hint}
+    title={collapsed ? hint || label : hint}
   >
     <Icon
       size={18}
@@ -77,13 +77,13 @@ const SidebarItem = ({
   </button>
 );
 
-const positions: { id: string; label: string; icon: LucideIcon }[] = [
-  { id: 'qb', label: 'Quarterbacks', icon: Crosshair },
-  { id: 'rb', label: 'Running Backs', icon: Zap },
-  { id: 'wr', label: 'Wide Receivers', icon: Target },
-  { id: 'te', label: 'Tight Ends', icon: Activity },
-  { id: 'k', label: 'Kickers', icon: Trophy },
-  { id: 'dst', label: 'Defense/ST', icon: Shield },
+const positions: { id: string; label: string; hint: string; icon: LucideIcon }[] = [
+  { id: 'qb', label: 'QB', hint: 'Quarterbacks', icon: Crosshair },
+  { id: 'rb', label: 'RB', hint: 'Running Backs', icon: Zap },
+  { id: 'wr', label: 'WR', hint: 'Wide Receivers', icon: Target },
+  { id: 'te', label: 'TE', hint: 'Tight Ends', icon: Activity },
+  { id: 'k', label: 'K', hint: 'Kickers', icon: Trophy },
+  { id: 'dst', label: 'DST', hint: 'Defense / Special Teams', icon: Shield },
 ];
 
 interface SidebarProps {
@@ -113,7 +113,7 @@ export const Sidebar = ({
       initial={false}
       animate={{ width: collapsed ? 80 : 220 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="h-full border-r border-white/[0.06] py-6 flex flex-col gap-6 z-20 relative overflow-hidden glass-card rounded-none border-y-0 border-l-0"
+      className="h-full border-r border-white/[0.06] py-5 flex flex-col gap-4 z-20 relative overflow-hidden glass-card rounded-none border-y-0 border-l-0"
     >
       <button
         type="button"
@@ -144,7 +144,7 @@ export const Sidebar = ({
 
       <div className="flex flex-col gap-1 flex-1 px-3 overflow-y-auto min-h-0 no-scrollbar">
         {!collapsed && (
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">Workspace</div>
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">Analyze</div>
         )}
         <SidebarItem
           icon={LayoutDashboard}
@@ -188,6 +188,7 @@ export const Sidebar = ({
               key={pos.id}
               icon={pos.icon}
               label={pos.label}
+              hint={pos.hint}
               active={workspaceView === 'rankings' && activePosition === pos.id}
               onClick={() => {
                 onWorkspaceViewChange('rankings');

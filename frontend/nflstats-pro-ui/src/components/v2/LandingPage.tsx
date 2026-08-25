@@ -13,44 +13,21 @@ interface LandingPageProps {
   onLaunch: () => void;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-  },
-};
-
 const EXPLORE = [
   {
     icon: BarChart3,
     title: 'Rankings',
-    description: 'Seasonal and weekly leaderboards for QB, RB, WR, TE, K, and DST.',
-    color: 'text-sky-400',
+    description: 'Season and weekly leaderboards by position.',
   },
   {
     icon: LayoutDashboard,
     title: 'Dashboard',
-    description: 'Charts for the same season, week, and position filters you use on rankings.',
-    color: 'text-emerald-400',
+    description: 'Top-10 and matchup splits from the same filters.',
   },
   {
     icon: UserSearch,
     title: 'Player',
-    description: 'Open a player to see weekly trends and situational splits.',
-    color: 'text-amber-400',
+    description: 'Weekly trends, opponents, stadium, and surface.',
   },
 ];
 
@@ -66,108 +43,116 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
   const signedIn = Boolean(user);
   const primaryLabel = user
     ? `Continue as ${displayName(user.email)}`
-    : 'Continue as Guest';
+    : 'Enter the rankings';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] relative overflow-hidden px-6 text-center">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen bg-[#020617] overflow-hidden text-left">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.11]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(90deg, transparent 0, transparent 47px, rgba(56,189,248,0.22) 47px, rgba(56,189,248,0.22) 48px), repeating-linear-gradient(0deg, transparent 0, transparent 79px, rgba(148,163,184,0.12) 79px, rgba(148,163,184,0.12) 80px)',
+        }}
+      />
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-[420px] w-[420px] rounded-full bg-sky-500/15 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[320px] w-[320px] rounded-full bg-emerald-500/10 blur-[100px]" />
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 flex flex-col items-center max-w-4xl"
-      >
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-12 px-6 py-16 lg:flex-row lg:items-center lg:gap-20">
         <motion.div
-          variants={itemVariants}
-          className="flex items-center gap-3 px-4 py-2 rounded-full border border-slate-800 bg-slate-900/50 mb-12"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-xl"
         >
-          <BarChart3 size={18} className="text-sky-400" />
-          <span className="text-xs font-bold tracking-[0.2em] uppercase text-slate-400">
-            PEM Sports
-          </span>
-        </motion.div>
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-300">
+              PEM Sports
+            </span>
+          </div>
 
-        <motion.h1
-          variants={itemVariants}
-          className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[0.95] text-white mb-6"
-        >
-          NFL fantasy rankings
-          <span className="block text-sky-500 mt-2">and player analytics</span>
-        </motion.h1>
+          <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.05]">
+            See who is actually
+            <span className="mt-1 block text-sky-400">winning their position.</span>
+          </h1>
 
-        <motion.p
-          variants={itemVariants}
-          className="text-base md:text-xl text-slate-400 mb-10 max-w-2xl leading-relaxed"
-        >
-          Explore seasonal and weekly leaderboards, then open any player for trends
-          and matchup splits. No account required.
-        </motion.p>
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg">
+            Fantasy rankings and player splits for QB, RB, WR, TE, K, and DST.
+            Open the board as a guest — an account is optional.
+          </p>
 
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4"
-        >
-          <button
-            type="button"
-            onClick={onLaunch}
-            className="group relative px-10 py-5 bg-sky-500 rounded-2xl text-white font-black tracking-widest uppercase text-sm shadow-[0_20px_40px_rgba(56,189,248,0.3)] hover:shadow-[0_25px_50px_rgba(56,189,248,0.4)] transition-all flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-sky-300"
-          >
-            {primaryLabel}
-            <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-          {!signedIn && (
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
-              onClick={() => setShowLogin(true)}
-              className="px-8 py-4 rounded-2xl border border-white/15 bg-slate-900/50 text-slate-200 font-bold tracking-wider uppercase text-sm hover:border-slate-500 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-sky-500/50"
+              onClick={onLaunch}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_16px_40px_rgba(56,189,248,0.28)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200"
             >
-              Sign In
+              {primaryLabel}
+              <ChevronRight size={16} aria-hidden />
             </button>
-          )}
-        </motion.div>
+            {!signedIn && (
+              <button
+                type="button"
+                onClick={() => setShowLogin(true)}
+                className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-200 transition-colors hover:border-sky-500/40 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-500/50"
+              >
+                Sign in
+              </button>
+            )}
+          </div>
 
-        <motion.p
-          variants={itemVariants}
-          className="mt-5 max-w-lg text-sm text-slate-500 leading-relaxed"
-        >
-          {token && !user
-            ? 'Checking your session. You can continue as a guest now — sign in is optional and does not change rankings data.'
-            : 'Sign in is optional. It does not change the rankings or analytics you can view.'}
-        </motion.p>
+          <p className="mt-4 text-sm text-slate-500">
+            {token && !user
+              ? 'Checking your session. You can enter now — sign in does not change the data.'
+              : 'Sign in does not unlock different rankings. Same board either way.'}
+          </p>
+        </motion.div>
 
         <motion.div
-          variants={itemVariants}
-          className="grid md:grid-cols-3 gap-8 mt-20 text-left"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md"
         >
-          {EXPLORE.map((item) => (
-            <div
-              key={item.title}
-              className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-xl transition-colors hover:border-slate-700"
-            >
-              <item.icon className={`${item.color} mb-4`} size={24} aria-hidden />
-              <h2 className="text-white font-bold mb-2 uppercase tracking-wide">
-                {item.title}
-              </h2>
-              <p className="text-slate-500 text-sm leading-relaxed">{item.description}</p>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 shadow-2xl shadow-black/40 backdrop-blur-xl">
+            <div className="border-b border-white/[0.06] px-5 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                What you can open
+              </p>
             </div>
-          ))}
+            <ul>
+              {EXPLORE.map((item, i) => (
+                <li
+                  key={item.title}
+                  className={
+                    i < EXPLORE.length - 1
+                      ? 'border-b border-white/[0.06]'
+                      : undefined
+                  }
+                >
+                  <div className="flex gap-4 px-5 py-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400">
+                      <item.icon size={18} aria-hidden />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-white">{item.title}</h2>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </motion.div>
-      </motion.div>
-
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-        className="absolute bottom-8 text-[10px] font-bold text-slate-600 tracking-[0.25em] uppercase"
-      >
-        PEM Sports &copy; 2026
-      </motion.footer>
+      </div>
 
       {showLogin && (
         <LoginModal
           onClose={() => setShowLogin(false)}
           onSuccess={onLaunch}
+          onContinueAsGuest={onLaunch}
         />
       )}
     </div>
