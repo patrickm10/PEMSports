@@ -66,7 +66,7 @@ export const useSearchStore = create<SearchState & SearchActions>()(
       version: 3,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ recentPlayers: s.recentPlayers }),
-      migrate: (persisted, _version) => {
+      migrate: (persisted) => {
         const state = persisted as SearchState;
         return {
           ...DEFAULT_STATE,
