@@ -14,6 +14,29 @@ import polars as pl
 from pipelines.enrichment import ENRICHED_MATCHUPS_PATH, get_team_slug
 
 BASE_DATA_DIR = Path("data/nfl_metadata")
+STADIUM_CSV_PATH = BASE_DATA_DIR / "stadium.csv"
+
+
+def build_home_stadium_map() -> pl.DataFrame:
+    """
+    Map canonical team slug → home stadium_name from stadium.csv.
+
+    Used when nfl_matchups_enriched.csv is absent (CI/Render builds that only
+    commit rankings parquet + stadium metadata).
+    """
+    if not STADIUM_CSV_PATH.exists():
+        return pl.DataFrame(schema={"team": pl.Utf8, "stadium_name": pl.Utf8})
+
+    df = pl.read_csv(STADIUM_CSV_PATH)
+    if "team_name" not in df.columns or "stadium_name" not in df.columns:
+        return pl.DataFrame(schema={"team": pl.Utf8, "stadium_name": pl.Utf8})
+
+    return df.select(
+        [
+            pl.col("team_name").map_elements(get_team_slug, return_dtype=pl.String).alias("team"),
+            pl.col("stadium_name"),
+        ]
+    ).unique(subset=["team"])
 
 
 def build_home_away_schedule() -> pl.DataFrame:
@@ -94,3 +117,60 @@ def build_home_away_schedule() -> pl.DataFrame:
 
     schedule = pl.concat([winners, losers]).unique(subset=["year", "week", "team"])
     return schedule.select(["year", "week", "team", "home_away"])
+
+
+def build_home_away_from_stadium(
+    weekly: pl.DataFrame,
+    *,
+    stadium_map: pl.DataFrame | None = None,
+) -> pl.DataFrame:
+    """
+    Derive (year, week, team) → home_away by comparing game stadium to home stadium.
+
+    Fallback when enriched matchups are unavailable. Requires `stadium_name` on weekly rows.
+    """
+    required = {"year", "week", "team", "stadium_name"}
+    if weekly.is_empty() or not required.issubset(set(weekly.columns)):
+        return pl.DataFrame(
+            schema={
+                "year": pl.Int64,
+                "week": pl.Int64,
+                "team": pl.Utf8,
+                "home_away": pl.Utf8,
+            }
+        )
+
+    mapping = stadium_map if stadium_map is not None else build_home_stadium_map()
+    if mapping.is_empty():
+        return pl.DataFrame(
+            schema={
+                "year": pl.Int64,
+                "week": pl.Int64,
+                "team": pl.Utf8,
+                "home_away": pl.Utf8,
+            }
+        )
+
+    home_stadiums = mapping.rename({"stadium_name": "home_stadium_name"})
+
+    keys = weekly.select(
+        [
+            pl.col("year").cast(pl.Int64, strict=False),
+            pl.col("week").cast(pl.Int64, strict=False),
+            pl.col("team"),
+            pl.col("stadium_name"),
+        ]
+    ).unique(subset=["year", "week", "team"])
+
+    joined = keys.join(home_stadiums, on="team", how="left")
+    return joined.with_columns(
+        pl.when(pl.col("stadium_name").is_null() | pl.col("home_stadium_name").is_null())
+        .then(None)
+        .when(
+            pl.col("stadium_name").str.strip_chars().str.to_lowercase()
+            == pl.col("home_stadium_name").str.strip_chars().str.to_lowercase()
+        )
+        .then(pl.lit("Home"))
+        .otherwise(pl.lit("Away"))
+        .alias("home_away")
+    ).select(["year", "week", "team", "home_away"])
