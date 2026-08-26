@@ -10,11 +10,15 @@ exclude only known artifacts (_right join suffixes, raw scrape duplicates).
 import duckdb
 from pathlib import Path
 import logging
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bake_db")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_SRC = PROJECT_ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 DATA_DIR = PROJECT_ROOT / "data" / "rankings"
 DB_PATH = PROJECT_ROOT / "data" / "nfl_stats.db"
 PLAYERS_CSV = PROJECT_ROOT / "data" / "players.csv"
@@ -30,7 +34,7 @@ GLOBAL_BLACKLIST = {"Rank", "Player"}
 KNOWN_STRING = {
     "player_name", "player_id", "team", "position", "season",
     "opponent", "stadium_name", "city", "state", "indoor_outdoor",
-    "surface_type", "game_result", "weather_impact",
+    "surface_type", "game_result", "weather_impact", "home_away",
 }
 
 # Position-Specific Mapping Matrix: Unified names for the Serving Layer.
@@ -122,6 +126,42 @@ def _discover_and_build(conn: duckdb.DuckDBPyConnection, parquet_path: Path, pos
     return final_cols, ", ".join(exprs)
 
 
+def _attach_home_away(conn: duckdb.DuckDBPyConnection, pos: str) -> None:
+    """Join home_away from schedule lookup when parquet lacks the column."""
+    table = f"{pos.lower()}_weekly"
+    cols = {d[0].lower() for d in conn.execute(f"SELECT * FROM {table} LIMIT 0").description}
+    if "home_away" in cols:
+        return
+
+    try:
+        from pipelines.schedule_lookup import build_home_away_schedule
+
+        schedule = build_home_away_schedule()
+        if schedule.is_empty():
+            logger.warning("  -> %s: home_away schedule empty; column not added", pos)
+            return
+
+        schedule_path = str(PROJECT_ROOT / "data" / "_tmp_home_away_schedule.parquet").replace("\\", "/")
+        schedule.write_parquet(schedule_path)
+
+        conn.execute(
+            f"""
+            CREATE TABLE {table}_with_ha AS
+            SELECT w.*, s.home_away
+            FROM {table} w
+            LEFT JOIN read_parquet('{schedule_path}') s
+              ON CAST(w.year AS INTEGER) = s.year
+             AND CAST(w.week AS INTEGER) = s.week
+             AND w.team = s.team
+            """
+        )
+        conn.execute(f"DROP TABLE {table}")
+        conn.execute(f"ALTER TABLE {table}_with_ha RENAME TO {table}")
+        logger.info("  -> %s: attached home_away via schedule lookup", pos)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("  -> %s: failed to attach home_away: %s", pos, exc)
+
+
 def bake():
     if DB_PATH.exists():
         logger.info(f"Removing existing database at {DB_PATH}")
@@ -187,6 +227,9 @@ def bake():
             conn.execute(f"CREATE TABLE {pos.lower()}_weekly AS SELECT {select_stmt} FROM {from_clause}")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_lookup ON {pos.lower()}_weekly (year, week)")
             conn.execute(f"CREATE INDEX idx_{pos.lower()}_weekly_player ON {pos.lower()}_weekly (player_id)")
+
+            if pos in ("QB", "RB", "WR", "TE"):
+                _attach_home_away(conn, pos)
 
             row_count = conn.execute(f"SELECT COUNT(*) FROM {pos.lower()}_weekly").fetchone()[0]
             logger.info(f"  -> {pos} Weekly: {row_count} rows, {len(columns)} columns")

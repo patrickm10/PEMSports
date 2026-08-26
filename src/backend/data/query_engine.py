@@ -617,6 +617,9 @@ def query_player_weekly(
     weather_impact_expr = (
         "CAST(weather_impact AS VARCHAR)" if "weather_impact" in cols else "NULL"
     )
+    home_away_expr = (
+        "home_away" if "home_away" in cols else "NULL"
+    )
 
     conditions: list[str] = ["player_id = ?"]
     params: list[Any] = [player_id]
@@ -638,7 +641,7 @@ def query_player_weekly(
         stadium_name,
         surface_type,
         indoor_outdoor,
-        NULL AS home_away,
+        {home_away_expr} AS home_away,
         NULL AS rest_days,
         temp,
         humidity,

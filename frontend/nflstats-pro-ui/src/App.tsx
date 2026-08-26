@@ -33,11 +33,12 @@ import {
 import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
 import { SearchModal } from './v3/components/search/SearchModal';
 import { PlayerAnalyticsView } from './v3/components/playerAnalytics/PlayerAnalyticsView';
+import { InsightsView } from './v3/components/insights/InsightsView';
 import { useSearchStore } from './stores/searchStore';
 import { usePlayerAnalyticsStore } from './stores/playerAnalyticsStore';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
-type WorkspaceView = 'dashboard' | 'rankings' | 'player';
+type WorkspaceView = 'dashboard' | 'rankings' | 'player' | 'insights';
 
 const POSITION_TABS: ReadonlySet<string> = new Set([
   'qb',
@@ -256,6 +257,11 @@ export default function App() {
                 </>
               )}
               {workspaceView === 'player' && 'Player analytics'}
+              {workspaceView === 'insights' && (
+                <>
+                  PEM <span className="text-sky-400">Insights</span>
+                </>
+              )}
             </h1>
             {workspaceView === 'player' && (
               <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
@@ -277,13 +283,15 @@ export default function App() {
                 availableWeeks={availableWeeks}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                totalPlayers={filteredData.length}
+                totalPlayers={workspaceView === 'insights' ? 0 : filteredData.length}
                 density={density}
                 setDensity={setDensity}
                 showDensity={workspaceView === 'rankings'}
                 onResetFilters={handleResetFilters}
-                isLoading={isLoading || seasonsLoading}
-                isError={isError || seasonsError}
+                isLoading={
+                  workspaceView === 'rankings' && (isLoading || seasonsLoading)
+                }
+                isError={workspaceView === 'rankings' && (isError || seasonsError)}
                 onRetry={() => {
                   void refetchSeasons();
                   void refetch();
@@ -360,6 +368,14 @@ export default function App() {
 
           {workspaceView === 'player' && (
             <PlayerAnalyticsView onBack={handleBackFromAnalytics} />
+          )}
+
+          {workspaceView === 'insights' && (
+            <InsightsView
+              selectedYear={selectedYear}
+              selectedWeek={selectedWeek}
+              viewMode={viewMode}
+            />
           )}
         </div>
       </ResponsiveDock>

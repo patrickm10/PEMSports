@@ -32,7 +32,7 @@ LOCAL_RAW_DIR = Path("data_local/raw_scrapes")
 
 CORE_ENRICHMENT_COLS = [
     "opponent", "stadium_name", "city", "state", "indoor_outdoor", "surface_type", "elevation",
-    "temp", "humidity", "wind", "game_result"
+    "temp", "humidity", "wind", "game_result", "home_away",
 ]
 
 def main() -> None:

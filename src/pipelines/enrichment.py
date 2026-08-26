@@ -112,6 +112,7 @@ def get_rich_schedule() -> pl.DataFrame:
         pl.col("wind").cast(pl.Float64, strict=False) if "wind" in df.columns else pl.lit(None).cast(pl.Float64).alias("wind"),
         pl.col("city") if "city" in df.columns else pl.lit(None).alias("city"),
         pl.col("state") if "state" in df.columns else pl.lit(None).alias("state"),
+        pl.col("home_team") if "home_team" in df.columns else pl.lit(None).alias("home_team"),
     ]
 
     winners = df.select(cols_to_select + [
@@ -131,8 +132,16 @@ def get_rich_schedule() -> pl.DataFrame:
     # Normalize team names for joining
     rich_schedule = rich_schedule.with_columns([
         pl.col("team").map_elements(get_team_slug, return_dtype=pl.String),
-        pl.col("opponent").map_elements(get_team_slug, return_dtype=pl.String)
-    ])
+        pl.col("opponent").map_elements(get_team_slug, return_dtype=pl.String),
+        pl.col("home_team").map_elements(get_team_slug, return_dtype=pl.String).alias("home_team_slug"),
+    ]).with_columns(
+        pl.when(pl.col("home_team_slug").is_null())
+        .then(None)
+        .when(pl.col("team") == pl.col("home_team_slug"))
+        .then(pl.lit("Home"))
+        .otherwise(pl.lit("Away"))
+        .alias("home_away")
+    ).drop("home_team_slug", "home_team")
     
     return rich_schedule.unique(subset=["year", "week", "team"])
 
