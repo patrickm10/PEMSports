@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PlayerRef } from './types';
-import { dropLegacyRecents } from './searchRecents';
+import { dropLegacyRecents, shouldPersistRecent } from './searchRecents';
 
 const RECENT_LIMIT = 5;
 
@@ -49,6 +49,9 @@ export const useSearchStore = create<SearchState & SearchActions>()(
       clearQuery: () => set({ query: '' }),
       pushRecent: (p) =>
         set((s) => {
+          if (!shouldPersistRecent(p)) {
+            return s;
+          }
           const filtered = s.recentPlayers.filter(
             (r) => r.player_id !== p.player_id,
           );
@@ -60,19 +63,16 @@ export const useSearchStore = create<SearchState & SearchActions>()(
     }),
     {
       name: 'nflstats:search',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ recentPlayers: s.recentPlayers }),
-      migrate: (persisted, version) => {
+      migrate: (persisted) => {
         const state = persisted as SearchState;
-        if (version < 2) {
-          return {
-            ...DEFAULT_STATE,
-            ...state,
-            recentPlayers: dropLegacyRecents(state.recentPlayers ?? []),
-          };
-        }
-        return state;
+        return {
+          ...DEFAULT_STATE,
+          ...state,
+          recentPlayers: dropLegacyRecents(state.recentPlayers ?? []),
+        };
       },
     },
   ),

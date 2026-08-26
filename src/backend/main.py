@@ -38,7 +38,7 @@ from slowapi.errors import RateLimitExceeded
 
 from backend.core.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
@@ -115,6 +115,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+# Outermost: rewrite request.client from X-Forwarded-For so SlowAPI buckets
+# per real client, not the Render proxy. trusted_hosts="*" is scoped to this
+# process, which is only reachable through Render's proxy in production.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

@@ -30,6 +30,11 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = config.database_url
 
+# Neon (and other external Postgres) can take >2s to accept connections after
+# suspend/cold start. The psycopg_pool default is 30s; a 2s cap caused
+# production startup aborts once auth moved off Render-managed Postgres.
+POOL_OPEN_TIMEOUT = 30.0
+
 _pool: Optional[AsyncConnectionPool] = None
 _db_connected: bool = False
 
@@ -43,9 +48,13 @@ async def get_pool() -> AsyncConnectionPool:
     global _pool
     if _pool is None:
         logger.info("Initializing PostgreSQL connection pool...")
-        _pool = AsyncConnectionPool(conninfo=DATABASE_URL, open=False, timeout=2.0)
+        _pool = AsyncConnectionPool(
+            conninfo=DATABASE_URL,
+            open=False,
+            timeout=POOL_OPEN_TIMEOUT,
+        )
         try:
-            await _pool.open(timeout=2.0)
+            await _pool.open(timeout=POOL_OPEN_TIMEOUT)
         except Exception as e:
             logger.warning("Failed to open connection pool: %s", e)
             _pool = None
