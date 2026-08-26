@@ -18,6 +18,10 @@ from backend.analytics.context_normalization import (
     display_context_value,
     normalize_context_value,
     normalized_context_sql,
+    normalized_home_away_sql,
+    normalized_opponent_sql,
+    normalized_surface_sql,
+    observation_schema_keys,
 )
 from backend.analytics.insights_config import (
     DEFAULT_LEADERBOARD_LIMIT,
@@ -67,6 +71,50 @@ def _table_has_column(table: str, column: str) -> bool:
     return column.lower() in _table_columns(table)
 
 
+def _col_or_null(table: str, column: str, *, alias: str | None = None, table_alias: str = "w") -> str:
+    """Select a baked column or NULL when it is not present — never guess values."""
+    name = alias or column
+    if _table_has_column(table, column):
+        return f"{table_alias}.{column} AS {name}"
+    return f"NULL AS {name}"
+
+
+def _display_context_value(context: str, context_value: str) -> str:
+    return display_context_value(context, normalize_context_value(context, context_value))
+
+
+def _stabilize_observation(row: dict[str, Any]) -> dict[str, Any]:
+    """Ensure every observation key is present (null when missing)."""
+    stable = dict(row)
+    for key in observation_schema_keys():
+        stable.setdefault(key, None)
+    if stable.get("in_context") is not None:
+        stable["in_context"] = bool(stable["in_context"])
+    return stable
+
+
+INSIGHT_ROW_KEYS = (
+    "player_id",
+    "player_name",
+    "team",
+    "position",
+    "sample_size",
+    "baseline_value",
+    "context_average",
+    "absolute_delta",
+    "relative_delta_pct",
+    "sample_strength",
+    "insight_score",
+)
+
+
+def _stabilize_insight_row(row: dict[str, Any]) -> dict[str, Any]:
+    stable = dict(row)
+    for key in INSIGHT_ROW_KEYS:
+        stable.setdefault(key, None)
+    return stable
+
+
 def _weekly_select_sql(
     *,
     position: str,
@@ -88,7 +136,7 @@ def _weekly_select_sql(
     if not _table_has_column(table, metric_col):
         raise ValueError(f"Metric column {metric_col} missing from {table}")
     if not _table_has_column(table, raw_ctx_col):
-        # Stable empty result — column not baked yet (e.g. home_away before rebake).
+        # Stable empty result — column not baked (e.g. home_away before rebake).
         return "", []
 
     norm_ctx_expr = normalized_context_sql(context, f"w.{raw_ctx_col}")
@@ -107,6 +155,23 @@ def _weekly_select_sql(
 
     params = list(season_params) + list(week_params) + [context_value]
 
+    opponent_sql = (
+        f"{normalized_opponent_sql('w.opponent')} AS opponent"
+        if _table_has_column(table, "opponent")
+        else "NULL AS opponent"
+    )
+    stadium_sql = _col_or_null(table, "stadium_name")
+    surface_sql = (
+        f"{normalized_surface_sql('w.surface_type')} AS surface_type"
+        if _table_has_column(table, "surface_type")
+        else "NULL AS surface_type"
+    )
+    home_away_sql = (
+        f"{normalized_home_away_sql('w.home_away')} AS home_away"
+        if _table_has_column(table, "home_away")
+        else "NULL AS home_away"
+    )
+
     sql = f"""
     WITH baseline_pool AS (
         SELECT
@@ -116,10 +181,10 @@ def _weekly_select_sql(
             CAST(w.year AS INTEGER) AS year,
             CAST(w.week AS INTEGER) AS week,
             CAST(w.{metric_col} AS DOUBLE) AS metric_value,
-            w.opponent,
-            w.stadium_name,
-            w.surface_type,
-            w.home_away,
+            {opponent_sql},
+            {stadium_sql},
+            {surface_sql},
+            {home_away_sql},
             {norm_ctx_expr} AS context_value
         FROM {table} w
         WHERE {baseline_where}
@@ -183,7 +248,7 @@ def _rank_insights(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any
             -(r.get("sample_size") or 0),
         )
     )
-    return enriched[:limit]
+    return [_stabilize_insight_row(r) for r in enriched[:limit]]
 
 
 def query_insights_leaderboard(
@@ -201,9 +266,10 @@ def query_insights_leaderboard(
     Return insights leaderboard for one position, or grouped by position when position=all.
     """
     pos = position.lower()
+    display_value = _display_context_value(context, context_value)
     base_meta = {
         "context": context,
-        "context_value": context_value,
+        "context_value": display_value,
         "metric": metric,
         "year": year,
         "week": week,
@@ -304,16 +370,17 @@ def query_insights_player_detail(
         raise ValueError(f"Unsupported position: {position}")
 
     context_value = normalize_context_value(context, context_value)
+    display_value = display_context_value(context, context_value)
 
     table = f"{pos}_weekly"
     metric_col = _metric_column(metric)
     raw_ctx_col = context_column(context)
 
     if not _table_has_column(table, metric_col):
-        return _empty_player_detail(pos, player_id, context, context_value, metric)
+        return _empty_player_detail(pos, player_id, context, display_value, metric)
 
     if not _table_has_column(table, raw_ctx_col):
-        return _empty_player_detail(pos, player_id, context, context_value, metric)
+        return _empty_player_detail(pos, player_id, context, display_value, metric)
 
     norm_ctx_expr = normalized_context_sql(context, f"w.{raw_ctx_col}")
     season_clause, season_params = _season_filter_sql(years, year, table_alias="w")
@@ -331,6 +398,23 @@ def query_insights_player_detail(
         obs_parts.append(week_clause)
     observation_where = " AND ".join(obs_parts) if obs_parts else "TRUE"
 
+    opponent_sql = (
+        f"{normalized_opponent_sql('w.opponent')} AS opponent"
+        if _table_has_column(table, "opponent")
+        else "NULL AS opponent"
+    )
+    stadium_sql = _col_or_null(table, "stadium_name")
+    surface_sql = (
+        f"{normalized_surface_sql('w.surface_type')} AS surface_type"
+        if _table_has_column(table, "surface_type")
+        else "NULL AS surface_type"
+    )
+    home_away_sql = (
+        f"{normalized_home_away_sql('w.home_away')} AS home_away"
+        if _table_has_column(table, "home_away")
+        else "NULL AS home_away"
+    )
+
     sql = f"""
     WITH baseline_pool AS (
         SELECT
@@ -340,10 +424,10 @@ def query_insights_player_detail(
             CAST(w.year AS INTEGER) AS season,
             CAST(w.week AS INTEGER) AS week,
             CAST(w.{metric_col} AS DOUBLE) AS metric_value,
-            w.opponent,
-            w.stadium_name,
-            w.surface_type,
-            w.home_away,
+            {opponent_sql},
+            {stadium_sql},
+            {surface_sql},
+            {home_away_sql},
             {norm_ctx_expr} AS context_value
         FROM {table} w
         WHERE {baseline_where}
@@ -390,16 +474,21 @@ def query_insights_player_detail(
     """
 
     detail_params = list(params) + [context_value] + list(week_params)
-    rows = _execute(sql, detail_params, context=f"{table} (insights/player)")
+    rows = [
+        _stabilize_observation(r)
+        for r in _execute(sql, detail_params, context=f"{table} (insights/player)")
+    ]
 
     context_rows = [r for r in rows if r.get("in_context")]
     sample_size = len(context_rows)
 
     summary: dict[str, Any] = {
         "player_id": player_id,
+        "player_name": None,
+        "team": None,
         "position": pos,
         "context": context,
-        "context_value": context_value,
+        "context_value": display_value,
         "metric": metric,
         "sample_size": sample_size,
         "baseline_value": None,
@@ -444,7 +533,7 @@ def query_insights_player_detail(
         "player_id": player_id,
         "position": pos,
         "context": context,
-        "context_value": context_value,
+        "context_value": display_value,
         "metric": metric,
         "summary": summary,
         "observations": rows,
@@ -466,6 +555,8 @@ def _empty_player_detail(
         "metric": metric,
         "summary": {
             "player_id": player_id,
+            "player_name": None,
+            "team": None,
             "position": position,
             "context": context,
             "context_value": context_value,

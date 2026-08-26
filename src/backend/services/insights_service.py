@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from backend.analytics.context_normalization import normalize_context_value
 from backend.analytics.insights_config import DEFAULT_LEADERBOARD_LIMIT, DEFAULT_METRIC
 from backend.core.cache import cache
 from backend.data.insights_queries import (
@@ -31,6 +32,7 @@ def get_insights_leaderboard(
     week: int | None = None,
     limit: int = DEFAULT_LEADERBOARD_LIMIT,
 ) -> dict[str, Any]:
+    context_value = normalize_context_value(context, context_value)
     cache_key = _cache_key(
         "insights",
         position=position,
@@ -71,6 +73,7 @@ def get_insights_player_detail(
     year: int | None = None,
     week: int | None = None,
 ) -> dict[str, Any]:
+    context_value = normalize_context_value(context, context_value)
     cache_key = _cache_key(
         "insights_player",
         position=position,

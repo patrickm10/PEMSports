@@ -101,11 +101,13 @@ export default function App() {
   const validYearInput = yearOk ? selectedYear : '';
   const validWeekInput = weekOk ? selectedWeek : '';
 
-  const seasonQuery = useRankings(activeTab, validYearInput);
+  const rankingsEnabled = workspaceView !== 'insights';
+  const seasonQuery = useRankings(activeTab, validYearInput, rankingsEnabled);
   const weeklyQuery = useWeeklyRankings(
     activeTab,
     viewMode === 'weekly' ? validYearInput : '',
     viewMode === 'weekly' ? validWeekInput : '',
+    rankingsEnabled,
   );
 
   const activeQuery = viewMode === 'season' ? seasonQuery : weeklyQuery;
@@ -283,10 +285,11 @@ export default function App() {
                 availableWeeks={availableWeeks}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                totalPlayers={workspaceView === 'insights' ? 0 : filteredData.length}
+                totalPlayers={workspaceView === 'insights' ? undefined : filteredData.length}
                 density={density}
                 setDensity={setDensity}
                 showDensity={workspaceView === 'rankings'}
+                showSearch={workspaceView !== 'insights'}
                 onResetFilters={handleResetFilters}
                 isLoading={
                   workspaceView === 'rankings' && (isLoading || seasonsLoading)

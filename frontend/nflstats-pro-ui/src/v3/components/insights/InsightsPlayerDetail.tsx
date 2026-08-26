@@ -6,6 +6,8 @@ import { MetricLineChart } from '../../../components/charts/MetricLineChart';
 interface InsightsPlayerDetailProps {
   detail: InsightsPlayerDetailResponse | undefined;
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   contextLabel: string;
 }
 
@@ -18,6 +20,8 @@ function formatPct(value: number | null | undefined): string {
 export function InsightsPlayerDetail({
   detail,
   isLoading,
+  isError,
+  onRetry,
   contextLabel,
 }: InsightsPlayerDetailProps) {
   const chartModel = useMemo(
@@ -33,6 +37,23 @@ export function InsightsPlayerDetail({
     );
   }
 
+  if (isError) {
+    return (
+      <div className="glass-card rounded-xl p-6 text-rose-300 text-sm" role="alert">
+        Failed to load player insights.
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-2 underline font-semibold hover:text-white"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (!detail) {
     return (
       <div className="glass-card rounded-xl p-6 text-slate-500 text-sm">
@@ -42,7 +63,7 @@ export function InsightsPlayerDetail({
   }
 
   const summary = detail.summary;
-  const contextObs = detail.observations.filter((o) => o.in_context);
+  const observations = detail.observations ?? [];
 
   return (
     <div className="space-y-4">
@@ -78,29 +99,39 @@ export function InsightsPlayerDetail({
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-white/[0.06]">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Context games
+            Weekly observations
           </h4>
+          <p className="text-[10px] text-slate-500 mt-1">
+            Same payload as the chart. Highlighted rows match the selected context.
+          </p>
         </div>
         <div className="overflow-x-auto max-h-64 overflow-y-auto custom-scrollbar">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-slate-900/95">
               <tr className="text-left text-[10px] uppercase tracking-wider text-slate-500">
                 <th className="px-3 py-2">Season</th>
-                <th className="px-2 py-2">Wk</th>
-                <th className="px-2 py-2">Opp</th>
+                <th className="px-2 py-2">Week</th>
+                <th className="px-2 py-2">Opponent</th>
+                <th className="px-2 py-2">Stadium</th>
                 <th className="px-2 py-2">Surface</th>
-                <th className="px-2 py-2">H/A</th>
-                <th className="px-2 py-2 text-right">FPts</th>
-                <th className="px-2 py-2 text-right">Baseline</th>
-                <th className="px-3 py-2 text-right">Rel.</th>
+                <th className="px-2 py-2">Home/Away</th>
+                <th className="px-2 py-2 text-right">Fantasy Points</th>
+                <th className="px-2 py-2 text-right">Season Baseline</th>
+                <th className="px-3 py-2 text-right">Relative Change</th>
               </tr>
             </thead>
             <tbody>
-              {contextObs.map((o) => (
-                <tr key={`${o.season}-${o.week}`} className="border-t border-white/[0.04]">
+              {observations.map((o) => (
+                <tr
+                  key={`${o.season}-${o.week}`}
+                  className={`border-t border-white/[0.04] ${
+                    o.in_context ? 'bg-sky-500/[0.07]' : ''
+                  }`}
+                >
                   <td className="px-3 py-1.5 text-slate-300">{o.season}</td>
                   <td className="px-2 py-1.5 text-slate-300">{o.week}</td>
                   <td className="px-2 py-1.5 text-slate-400">{o.opponent ?? '—'}</td>
+                  <td className="px-2 py-1.5 text-slate-400">{o.stadium_name ?? '—'}</td>
                   <td className="px-2 py-1.5 text-slate-400">{o.surface_type ?? '—'}</td>
                   <td className="px-2 py-1.5 text-slate-400">{o.home_away ?? '—'}</td>
                   <td className="px-2 py-1.5 text-right text-slate-200">

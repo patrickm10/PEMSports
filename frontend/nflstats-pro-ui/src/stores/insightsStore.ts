@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import type { InsightContext, InsightPosition } from '../api/insightsTypes';
 
+/**
+ * Insights workspace selection.
+ *
+ * Player selection is cleared when position, context, or context value changes
+ * because the selected player may not appear on the next leaderboard. Season and
+ * week live in App (ControlBar) and do not clear selection — player detail
+ * refetches for the new filters instead.
+ *
+ * Context value is reset on context change (Grass for surface; empty until
+ * /insights/contexts returns values for opponent, stadium, and home_away).
+ */
 interface InsightsStore {
   position: InsightPosition;
   context: InsightContext;
@@ -14,6 +25,10 @@ interface InsightsStore {
   clearPlayer: () => void;
 }
 
+function defaultValueForContext(context: InsightContext): string {
+  return context === 'surface' ? 'Grass' : '';
+}
+
 export const useInsightsStore = create<InsightsStore>((set) => ({
   position: 'rb',
   context: 'surface',
@@ -23,7 +38,12 @@ export const useInsightsStore = create<InsightsStore>((set) => ({
   setPosition: (position) =>
     set({ position, selectedPlayerId: null, selectedPlayerPosition: null }),
   setContext: (context) =>
-    set({ context, selectedPlayerId: null, selectedPlayerPosition: null }),
+    set({
+      context,
+      contextValue: defaultValueForContext(context),
+      selectedPlayerId: null,
+      selectedPlayerPosition: null,
+    }),
   setContextValue: (contextValue) =>
     set({ contextValue, selectedPlayerId: null, selectedPlayerPosition: null }),
   selectPlayer: (playerId, position) =>

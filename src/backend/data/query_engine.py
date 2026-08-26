@@ -609,7 +609,11 @@ def query_player_splits_by_year(
 def query_player_weekly(
     *, position: str, player_id: str, years: list[int] | None = None
 ) -> dict[str, Any]:
-    """Weekly logs across seasons. Returns schema-stable per-week rows."""
+    """Weekly logs across seasons. Returns schema-stable per-week rows.
+
+    `home_away` is selected when the baked column exists; otherwise the key is
+    present as null. rest_days is not baked and stays null.
+    """
     table = f"{position.lower()}_weekly"
     cols = _table_columns(table)
 
@@ -669,7 +673,7 @@ def query_player_weekly(
                 "stadium_name": r.get("stadium_name"),
                 "surface_type": r.get("surface_type"),
                 "indoor_outdoor": r.get("indoor_outdoor"),
-                "home_away": None,
+                "home_away": r.get("home_away"),
                 "rest_days": None,
                 "temp": r.get("temp"),
                 "humidity": r.get("humidity"),
@@ -693,8 +697,10 @@ def query_player_metadata(*, position: str, player_id: str) -> dict[str, Any]:
     """
     Aggregated context overlays.
 
-    Note: home_away and rest_days are currently not baked; contract requires the
-    buckets exist anyway with games=0 and metric values null.
+    Weekly `home_away` is baked when present and is returned by query_player_weekly.
+    This metadata endpoint does not aggregate home/away splits; the contract still
+    requires home/away buckets (games=0, metrics null) so clients can render
+    empty overlays without guessing. rest_days is not baked.
     """
     empty_agg = {"games": 0, "avg_ppr": None, "avg_yards": None, "avg_tds": None}
     rest_buckets = [

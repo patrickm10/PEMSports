@@ -11,12 +11,19 @@ function formatNum(value: number | null): string {
   return value.toFixed(1);
 }
 
+function formatScore(value: number | null): string {
+  if (value === null || value === undefined) return '—';
+  return value.toFixed(1);
+}
+
 interface InsightsLeaderboardProps {
   title: string;
   rows: InsightRow[];
   selectedPlayerId: string | null;
   onSelect: (row: InsightRow) => void;
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
 export function InsightsLeaderboard({
@@ -25,11 +32,30 @@ export function InsightsLeaderboard({
   selectedPlayerId,
   onSelect,
   isLoading,
+  isError,
+  onRetry,
 }: InsightsLeaderboardProps) {
   if (isLoading) {
     return (
       <div className="glass-card rounded-xl p-6 text-slate-400 text-sm animate-pulse">
         Loading insights…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="glass-card rounded-xl p-6 text-rose-300 text-sm" role="alert">
+        Failed to load insights.
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-2 underline font-semibold hover:text-white"
+          >
+            Retry
+          </button>
+        )}
       </div>
     );
   }
@@ -47,23 +73,25 @@ export function InsightsLeaderboard({
       <div className="px-4 py-3 border-b border-white/[0.06]">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
         <p className="text-[10px] text-slate-500 mt-1">
-          Ranked by sample-weighted insight score (relative change × sample strength)
+          Ranked by insight score (relative change × sample strength)
         </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/[0.06]">
-              <th className="px-4 py-2 font-semibold">Player</th>
+              <th className="px-3 py-2 font-semibold">#</th>
+              <th className="px-3 py-2 font-semibold">Player</th>
               <th className="px-3 py-2 font-semibold text-right">Games</th>
               <th className="px-3 py-2 font-semibold text-right">Baseline</th>
               <th className="px-3 py-2 font-semibold text-right">Context Avg</th>
               <th className="px-3 py-2 font-semibold text-right">Rel. Change</th>
+              <th className="px-3 py-2 font-semibold text-right">Score</th>
               <th className="px-3 py-2 font-semibold text-right">Strength</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               const active = row.player_id === selectedPlayerId;
               return (
                 <tr
@@ -73,7 +101,8 @@ export function InsightsLeaderboard({
                     active ? 'bg-sky-500/10' : 'hover:bg-white/[0.03]'
                   }`}
                 >
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-2.5 text-slate-500 tabular-nums">{index + 1}</td>
+                  <td className="px-3 py-2.5">
                     <div className="font-medium text-slate-100">{row.player_name ?? '—'}</div>
                     <div className="text-xs text-slate-500">{row.team ?? ''}</div>
                   </td>
@@ -90,6 +119,9 @@ export function InsightsLeaderboard({
                     }`}
                   >
                     {formatPct(row.relative_delta_pct)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right text-sky-300 tabular-nums font-semibold">
+                    {formatScore(row.insight_score)}
                   </td>
                   <td className="px-3 py-2.5 text-right text-slate-400 text-xs">
                     {row.sample_strength}
