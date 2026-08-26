@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { InsightsApi } from '../api/insightsApi';
-import type { InsightPosition } from '../api/insightsTypes';
+import type { InsightContext, InsightPosition } from '../api/insightsTypes';
 import { useInsightsStore } from '../stores/insightsStore';
 
 interface UseInsightsFilters {
@@ -34,11 +34,22 @@ export function useInsightsLeaderboard(filters: UseInsightsFilters) {
   });
 }
 
-export function useInsightsContextValues(position: InsightPosition, context: string, year: string) {
+export function useInsightsContextValues(
+  position: InsightPosition,
+  context: string,
+  year: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ['insights-contexts', position, context, year],
     queryFn: ({ signal }) =>
-      InsightsApi.fetchContextValues(position, context as never, year || undefined, signal),
+      InsightsApi.fetchContextValues(
+        position,
+        context as InsightContext,
+        year || undefined,
+        signal,
+      ),
+    enabled,
     staleTime: 10 * 60 * 1000,
   });
 }

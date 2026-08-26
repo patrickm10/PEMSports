@@ -10,8 +10,8 @@ const CONTEXTS: { id: InsightContext; label: string }[] = [
   { id: 'home_away', label: 'Home vs Away' },
 ];
 
-const SURFACE_DEFAULTS = ['Grass', 'Turf'];
-const HOME_AWAY_DEFAULTS = ['Home', 'Away'];
+/** Canonical observed surfaces — only Grass/Turf are normalized server-side. */
+const SURFACE_VALUES = ['Grass', 'Turf'];
 
 interface ContextSelectorProps {
   year: string;
@@ -24,11 +24,16 @@ export function ContextSelector({ year }: ContextSelectorProps) {
   const setContext = useInsightsStore((s) => s.setContext);
   const setContextValue = useInsightsStore((s) => s.setContextValue);
 
-  const { data: contextData } = useInsightsContextValues(position, context, year);
+  const needsRemoteValues = context !== 'surface';
+  const { data: contextData, isLoading, isError, refetch } = useInsightsContextValues(
+    position,
+    context,
+    year,
+    needsRemoteValues,
+  );
 
   const values = useMemo(() => {
-    if (context === 'surface') return SURFACE_DEFAULTS;
-    if (context === 'home_away') return HOME_AWAY_DEFAULTS;
+    if (context === 'surface') return SURFACE_VALUES;
     return contextData?.values ?? [];
   }, [context, contextData?.values]);
 
@@ -38,6 +43,15 @@ export function ContextSelector({ year }: ContextSelectorProps) {
       setContextValue(values[0]);
     }
   }, [context, values, contextValue, setContextValue]);
+
+  const emptyHint =
+    context === 'home_away'
+      ? 'Home/Away is not available in the baked data for this selection.'
+      : context === 'opponent'
+        ? 'No opponents found for this season.'
+        : context === 'stadium'
+          ? 'No stadiums found for this season.'
+          : null;
 
   return (
     <div className="glass-card rounded-xl p-4 space-y-3">
@@ -61,8 +75,25 @@ export function ContextSelector({ year }: ContextSelectorProps) {
         ))}
       </div>
 
+      {needsRemoteValues && isLoading && (
+        <p className="text-xs text-slate-500 animate-pulse">Loading context values…</p>
+      )}
+
+      {needsRemoteValues && isError && (
+        <div className="text-xs text-rose-300" role="alert">
+          Could not load context values.{' '}
+          <button type="button" onClick={() => void refetch()} className="underline font-semibold">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {needsRemoteValues && !isLoading && !isError && values.length === 0 && emptyHint && (
+        <p className="text-xs text-slate-500">{emptyHint}</p>
+      )}
+
       {values.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto custom-scrollbar">
           {values.map((val) => (
             <button
               key={val}

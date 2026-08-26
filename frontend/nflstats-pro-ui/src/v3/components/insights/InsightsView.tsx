@@ -33,14 +33,20 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
 
   const filters = { year: selectedYear, week: selectedWeek, viewMode };
 
-  const { data: leaderboard, isLoading: leaderboardLoading } = useInsightsLeaderboard(filters);
-  const { data: playerDetail, isLoading: detailLoading } = useInsightsPlayerDetail(
-    selectedPlayerId,
-    selectedPlayerPosition,
-    filters,
-  );
+  const {
+    data: leaderboard,
+    isLoading: leaderboardLoading,
+    isError: leaderboardError,
+    refetch: refetchLeaderboard,
+  } = useInsightsLeaderboard(filters);
+  const {
+    data: playerDetail,
+    isLoading: detailLoading,
+    isError: detailError,
+    refetch: refetchDetail,
+  } = useInsightsPlayerDetail(selectedPlayerId, selectedPlayerPosition, filters);
 
-  const contextLabel = `${context.replace('_', ' ')}: ${contextValue}`;
+  const contextLabel = `${context.replace('_', ' ')}: ${contextValue || '—'}`;
 
   const handleSelect = (row: {
     player_id: string;
@@ -53,14 +59,9 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <header>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-          PEM <span className="text-sky-400">Insights</span>
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Relative performance vs each player&apos;s season baseline in specific contexts
-        </p>
-      </header>
+      <p className="text-slate-400 text-sm">
+        Relative performance vs each player&apos;s season baseline in specific contexts
+      </p>
 
       <PositionTabs active={position} onChange={setPosition} />
 
@@ -68,7 +69,17 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <div className="space-y-4">
-          {position === 'all' && leaderboard?.groups ? (
+          {leaderboardError || leaderboardLoading || position !== 'all' || !leaderboard?.groups ? (
+            <InsightsLeaderboard
+              title={`Top ${POSITION_LABELS[position] ?? position.toUpperCase()} — ${contextValue || '…'}`}
+              rows={leaderboard?.insights ?? []}
+              selectedPlayerId={selectedPlayerId}
+              onSelect={handleSelect}
+              isLoading={leaderboardLoading}
+              isError={leaderboardError}
+              onRetry={() => void refetchLeaderboard()}
+            />
+          ) : (
             leaderboard.groups.map((group) => (
               <InsightsLeaderboard
                 key={group.position}
@@ -76,23 +87,16 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
                 rows={group.insights}
                 selectedPlayerId={selectedPlayerId}
                 onSelect={handleSelect}
-                isLoading={leaderboardLoading}
               />
             ))
-          ) : (
-            <InsightsLeaderboard
-              title={`Top ${POSITION_LABELS[position] ?? position.toUpperCase()} — ${contextValue}`}
-              rows={leaderboard?.insights ?? []}
-              selectedPlayerId={selectedPlayerId}
-              onSelect={handleSelect}
-              isLoading={leaderboardLoading}
-            />
           )}
         </div>
 
         <InsightsPlayerDetail
           detail={playerDetail}
           isLoading={detailLoading}
+          isError={detailError}
+          onRetry={() => void refetchDetail()}
           contextLabel={contextLabel}
         />
       </div>

@@ -12,6 +12,7 @@ export function useWeeklyRankings(
   position: string,
   year: string,
   week: string,
+  enabled = true,
 ) {
   return useQuery<WeeklyRanking[], Error>({
     queryKey: ['weekly-rankings', position, year, week],
@@ -22,7 +23,7 @@ export function useWeeklyRankings(
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
-    enabled: !!position && !!year && !!week,
+    enabled: enabled && !!position && !!year && !!week,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
   });

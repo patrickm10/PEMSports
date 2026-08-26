@@ -39,6 +39,8 @@ interface ControlBarProps {
   activeFilterSummary?: string;
   /** Table density is Rankings-only. Hidden on Dashboard. */
   showDensity?: boolean;
+  /** Rankings row search. Hidden on Insights (filters are year/week/context). */
+  showSearch?: boolean;
 }
 
 const DENSITY_LABELS: Record<GridDensity, string> = {
@@ -67,6 +69,7 @@ export function ControlBar({
   onRetry,
   activeFilterSummary,
   showDensity = true,
+  showSearch = true,
 }: ControlBarProps) {
   const { user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
@@ -253,6 +256,7 @@ export function ControlBar({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0 lg:flex-1 max-w-lg justify-end ml-auto">
+          {showSearch && (
           <div className="relative flex-1 group min-w-[140px] md:min-w-[200px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
             <label htmlFor="pem-filter-search" className="sr-only">
@@ -267,6 +271,7 @@ export function ControlBar({
               className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 pl-10 pr-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
             />
           </div>
+          )}
 
           {user ? (
             <div className="relative">
