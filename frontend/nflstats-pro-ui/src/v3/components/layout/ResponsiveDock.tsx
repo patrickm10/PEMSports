@@ -3,7 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { Sidebar } from '../navigation/Sidebar';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
-export type WorkspaceView = 'dashboard' | 'rankings' | 'player';
+export type WorkspaceView = 'dashboard' | 'rankings' | 'player' | 'insights';
 
 interface ResponsiveDockProps {
   children: React.ReactNode;
@@ -49,7 +49,9 @@ export const ResponsiveDock = ({
       ? 'Season charts'
       : workspaceView === 'player'
         ? 'Player splits'
-        : 'Fantasy leaderboard';
+        : workspaceView === 'insights'
+          ? 'Contextual insights'
+          : 'Fantasy leaderboard';
 
   const sidebar = (
     <Sidebar

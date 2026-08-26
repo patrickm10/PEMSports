@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserSearch,
+  Lightbulb,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,6 +160,13 @@ export const Sidebar = ({
           active={workspaceView === 'rankings'}
           collapsed={collapsed}
           onClick={() => onWorkspaceViewChange('rankings')}
+        />
+        <SidebarItem
+          icon={Lightbulb}
+          label="Insights"
+          active={workspaceView === 'insights'}
+          collapsed={collapsed}
+          onClick={() => onWorkspaceViewChange('insights')}
         />
         <SidebarItem
           icon={Search}

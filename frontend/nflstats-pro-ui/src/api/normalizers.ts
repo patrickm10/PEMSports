@@ -11,6 +11,7 @@ import type {
   PlayerWeeklyResponse,
   WeeklyMetricKey,
 } from './playerTypes';
+import type { InsightsPlayerDetailResponse } from './insightsTypes';
 
 /**
  * The single boundary that translates schema-stable API responses into the
@@ -324,5 +325,45 @@ export function toMetadataOverlayModel(
         tds: w.aggregate.avg_tds,
       },
     })),
+  };
+}
+
+/**
+ * Map insights player observations to a time-series chart (actual vs season baseline).
+ * Display-only alignment — no analytical computation.
+ */
+export function toInsightsTimeSeriesChartModel(
+  detail: InsightsPlayerDetailResponse,
+): TimeSeriesChartModel {
+  const observations = detail.observations ?? [];
+  const xAxis = observations.map((o) => `W${o.week} '${String(o.season).slice(-2)}`);
+
+  const actualPoints = observations.map((o) => ({
+    x: `W${o.week} '${String(o.season).slice(-2)}`,
+    y: o.fantasy_points,
+  }));
+
+  const baselinePoints = observations.map((o) => ({
+    x: `W${o.week} '${String(o.season).slice(-2)}`,
+    y: o.season_baseline,
+  }));
+
+  return {
+    xAxis,
+    series: [
+      {
+        name: 'Fantasy Points',
+        points: actualPoints,
+        color: '#38bdf8',
+      },
+      {
+        name: 'Season Baseline (LOO)',
+        points: baselinePoints,
+        color: '#94a3b8',
+      },
+    ],
+    xAxisLabel: 'Week',
+    yAxisLabel: 'PPR Points',
+    valueFormatter: (v) => (v === null ? '—' : v.toFixed(1)),
   };
 }
