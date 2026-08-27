@@ -20,7 +20,7 @@ from pipelines.draft_lab.player_resolution import (
     resolve_picks,
     unresolved_rows,
 )
-from pipelines.draft_lab.simulate import SimPlayer, recommend
+from pipelines.draft_lab.simulate import SimPlayer, recommend, roster_counts_from_picks
 from pipelines.draft_lab.backtest import run_backtests_for_draft
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "draft_lab"
@@ -119,6 +119,13 @@ def test_simulate_is_deterministic():
     assert rec.explanation["components"]["market_component"] is not None
     assert rec.explanation["components"]["roster_need_component"] == 0.0
     assert rec.explanation["components"]["manager_position_component"] == 0.0
+
+
+def test_roster_counts_skips_null_overall_pick():
+    from types import SimpleNamespace
+
+    pick = SimpleNamespace(manager_id="m1", overall_pick=None, position="RB")
+    assert roster_counts_from_picks([pick], manager_id="m1", before_overall=5) == {}
 
 
 def test_simulate_manager_model_exposes_components():
@@ -248,6 +255,39 @@ def test_bake_fail_open_without_parquet(tmp_path):
     assert mod.bake_draft_lab_tables(conn) == 0
     tables = {r[0] for r in conn.execute("SHOW TABLES").fetchall()}
     assert not any(name.startswith("draft_lab_") for name in tables)
+    conn.close()
+
+
+def test_bake_draft_lab_preserves_table_on_corrupt_rebake(tmp_path):
+    import importlib.util
+    import polars as pl
+
+    spec = importlib.util.spec_from_file_location(
+        "bake_draft_lab",
+        Path(__file__).resolve().parent.parent / "scripts" / "bake_draft_lab.py",
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.DRAFT_LAB_DIR = tmp_path
+    mod.TABLES = (("draft_lab_picks", "picks.parquet", ("draft_id",)),)
+
+    pl.DataFrame(
+        {
+            "draft_id": ["d1"],
+            "player_id": ["p1"],
+            "manager_id": ["m1"],
+            "overall_pick": [1],
+            "position": ["RB"],
+        }
+    ).write_parquet(tmp_path / "picks.parquet")
+
+    conn = duckdb.connect(str(tmp_path / "rebake.db"))
+    mod.bake_draft_lab_tables(conn)
+    assert conn.execute("SELECT COUNT(*) FROM draft_lab_picks").fetchone()[0] == 1
+
+    (tmp_path / "picks.parquet").write_text("bad")
+    mod.bake_draft_lab_tables(conn)
+    assert conn.execute("SELECT COUNT(*) FROM draft_lab_picks").fetchone()[0] == 1
     conn.close()
 
 

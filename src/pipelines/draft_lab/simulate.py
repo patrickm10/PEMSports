@@ -258,7 +258,10 @@ def roster_counts_from_picks(picks: list, *, manager_id: str, before_overall: in
     for pick in picks:
         if getattr(pick, "manager_id", None) != manager_id:
             continue
-        if int(getattr(pick, "overall_pick", 0)) >= before_overall:
+        overall = getattr(pick, "overall_pick", None)
+        if overall is None:
+            continue
+        if int(overall) >= before_overall:
             continue
         pos = str(getattr(pick, "position", "") or "").upper()
         if not pos:

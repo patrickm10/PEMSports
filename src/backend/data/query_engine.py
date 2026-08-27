@@ -29,10 +29,21 @@ import duckdb
 
 from backend.core.exceptions import (
     DatabaseUnavailableError,
+    InvalidRequestError,
     PemSportsException,
     QueryEngineError,
     TableMissingError,
 )
+
+SERVE_POSITIONS = frozenset({"qb", "rb", "wr", "te", "k", "dst"})
+
+
+def _require_position(position: str) -> str:
+    """Allowlist position before interpolating into SQL table names."""
+    pos = (position or "").strip().lower()
+    if pos not in SERVE_POSITIONS:
+        raise InvalidRequestError(f"Unsupported position: {position!r}")
+    return pos
 from backend.utils.team_normalization import normalize_team_abbr
 from backend.data.headshot_urls import attach_headshot_urls
 
@@ -158,7 +169,8 @@ def query_rankings(
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     """Query pre-baked seasonal rankings."""
-    table = f"{position.lower()}_seasonal"
+    pos = _require_position(position)
+    table = f"{pos}_seasonal"
 
     conditions: list[str] = []
     params: list[Any] = []
@@ -194,7 +206,7 @@ def query_seasons(position: str) -> list[int]:
     metadata contract stays usable if one table regresses (e.g. seasonal
     truncated to a single year while weekly history remains intact).
     """
-    pos = position.lower()
+    pos = _require_position(position)
     years: set[int] = set()
     found_any_table = False
 
@@ -230,7 +242,8 @@ def query_weekly_rankings(
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     """Query pre-baked and indexed weekly rankings."""
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
 
     conditions: list[str] = []
     params: list[Any] = []
@@ -263,7 +276,8 @@ def query_weekly_rankings(
 
 def query_available_weeks(position: str, year: Optional[int] = None) -> list[int]:
     """Return distinct weeks available for a position."""
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
     if year is not None:
         rows = _execute(
             f"SELECT DISTINCT CAST(week AS INTEGER) AS wk FROM {table} WHERE year = ? ORDER BY wk ASC",
@@ -286,7 +300,8 @@ def query_player_impact_metrics(
     metric_type: str = "surface",
 ) -> list[dict[str, Any]]:
     """Analytical splits for performance metrics."""
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
 
     metric_cfg = {
         "surface": {"col": "surface_type", "filter": "surface_type IS NOT NULL"},
@@ -321,7 +336,8 @@ def query_player_impact_metrics(
 
 def query_team_defense_stats(position: str) -> list[dict[str, Any]]:
     """Average points allowed by defense to a position."""
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
     sql = f"""
         SELECT
             opponent AS defense_team,
@@ -337,7 +353,8 @@ def query_team_defense_stats(position: str) -> list[dict[str, Any]]:
 
 def query_player_profile(player_id: str, position: str) -> Optional[dict[str, Any]]:
     """Fetch all seasons for a player."""
-    table = f"{position.lower()}_seasonal"
+    pos = _require_position(position)
+    table = f"{pos}_seasonal"
     seasons = _execute(
         f"SELECT * FROM {table} WHERE player_id = ? ORDER BY year DESC",
         [player_id],
@@ -476,7 +493,8 @@ def query_player_splits(
     *, position: str, player_id: str, dimension: str
 ) -> dict[str, Any]:
     """Explicit split resource: opponent|stadium|surface|venue."""
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
     cols = _table_columns(table)
 
     dim_col_map = {
@@ -490,12 +508,12 @@ def query_player_splits(
         # Contract: still return stable schema, with empty splits.
         return {
             "player_id": player_id,
-            "position": position.lower(),
+            "position": pos,
             "dimension": dimension,
             "splits": [],
         }
 
-    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(pos, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -526,7 +544,7 @@ def query_player_splits(
     ]
     return {
         "player_id": player_id,
-        "position": position.lower(),
+        "position": pos,
         "dimension": dimension,
         "splits": splits,
     }
@@ -540,7 +558,8 @@ def query_player_splits_by_year(
 
     Contract: schema-stable. Keys always present; missing metrics are null.
     """
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
     cols = _table_columns(table)
 
     dim_col_map = {
@@ -553,13 +572,13 @@ def query_player_splits_by_year(
     if dim_col not in cols:
         return {
             "player_id": player_id,
-            "position": position.lower(),
+            "position": pos,
             "dimension": dimension,
             "years": [],
             "rows": [],
         }
 
-    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(position, cols, aggregate=True)
+    avg_yards_expr, avg_tds_expr = _yards_td_sql_exprs(pos, cols, aggregate=True)
 
     sql = f"""
         SELECT
@@ -599,7 +618,7 @@ def query_player_splits_by_year(
 
     return {
         "player_id": player_id,
-        "position": position.lower(),
+        "position": pos,
         "dimension": dimension,
         "years": years,
         "rows": out_rows,
@@ -614,10 +633,11 @@ def query_player_weekly(
     `home_away` is selected when the baked column exists; otherwise the key is
     present as null. rest_days is not baked and stays null.
     """
-    table = f"{position.lower()}_weekly"
+    pos = _require_position(position)
+    table = f"{pos}_weekly"
     cols = _table_columns(table)
 
-    yards_expr, tds_expr = _yards_td_sql_exprs(position, cols)
+    yards_expr, tds_expr = _yards_td_sql_exprs(pos, cols)
     weather_impact_expr = (
         "CAST(weather_impact AS VARCHAR)" if "weather_impact" in cols else "NULL"
     )
@@ -687,7 +707,7 @@ def query_player_weekly(
     ]
     return {
         "player_id": player_id,
-        "position": position.lower(),
+        "position": pos,
         "metric_keys": ["ppr_fpts", "fantasy_points", "yards", "tds"],
         "seasons": seasons_payload,
     }
@@ -702,6 +722,7 @@ def query_player_metadata(*, position: str, player_id: str) -> dict[str, Any]:
     requires home/away buckets (games=0, metrics null) so clients can render
     empty overlays without guessing. rest_days is not baked.
     """
+    pos = _require_position(position)
     empty_agg = {"games": 0, "avg_ppr": None, "avg_yards": None, "avg_tds": None}
     rest_buckets = [
         {"bucket": "<6", "aggregate": dict(empty_agg)},
@@ -711,7 +732,7 @@ def query_player_metadata(*, position: str, player_id: str) -> dict[str, Any]:
     ]
     return {
         "player_id": player_id,
-        "position": position.lower(),
+        "position": pos,
         "splits": {
             "home_away": {"home": dict(empty_agg), "away": dict(empty_agg)},
             "rest_buckets": rest_buckets,

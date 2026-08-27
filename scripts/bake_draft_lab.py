@@ -39,9 +39,8 @@ def bake_draft_lab_tables(conn) -> int:
             continue
         path_str = str(path).replace("\\", "/")
         try:
-            conn.execute(f"DROP TABLE IF EXISTS {table}")
             conn.execute(
-                f"CREATE TABLE {table} AS SELECT * FROM read_parquet('{path_str}')"
+                f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM read_parquet('{path_str}')"
             )
         except Exception as exc:  # noqa: BLE001 - fail-open per table
             logger.warning("Draft Lab table %s skipped (fail-open): %s", table, exc)

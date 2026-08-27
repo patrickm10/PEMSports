@@ -18,6 +18,7 @@ if str(_SRC) not in sys.path:
 
 from backend.data import query_engine as query_engine_mod
 from backend.data.query_engine import (
+    _require_position,
     _yards_td_column_names,
     query_rankings,
     query_seasons,
@@ -25,8 +26,20 @@ from backend.data.query_engine import (
     query_available_weeks,
     query_player_weekly,
 )
+from backend.core.exceptions import InvalidRequestError
 
 POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"]
+
+
+class TestPositionValidation:
+    def test_invalid_position_rejects_sql_injection(self):
+        with pytest.raises(InvalidRequestError):
+            query_rankings("qb_seasonal t CROSS JOIN draft_lab_leagues d --")
+
+    def test_require_position_allowlists_known_positions(self):
+        assert _require_position("QB") == "qb"
+        with pytest.raises(InvalidRequestError):
+            _require_position("not-a-position")
 
 
 class TestSeasonalQueries:
