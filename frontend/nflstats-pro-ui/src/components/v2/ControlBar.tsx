@@ -264,7 +264,7 @@ export function ControlBar({
               placeholder="Filter visible rows…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 pl-10 pr-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
+              className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 !pl-12 pr-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
             />
           </div>
 
