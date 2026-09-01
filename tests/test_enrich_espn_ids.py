@@ -2,9 +2,18 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 from pathlib import Path
 
-from tests.test_enrich_espn_fail_open import _load_enrich_module
+
+def _load_enrich_module():
+    # Load by file path. CI sets PYTHONPATH=src only, so `import tests.*` fails collection.
+    path = Path(__file__).resolve().parent.parent / "scripts" / "enrich_espn_player_ids.py"
+    spec = importlib.util.spec_from_file_location("enrich_espn_player_ids", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _write_players(path: Path, rows: list[dict[str, str]]) -> None:
