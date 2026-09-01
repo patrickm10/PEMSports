@@ -20,7 +20,7 @@ import io
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Path, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 from backend.core.exceptions import NoDataForFilterError
@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_POSITION_PATTERN = "(?i)^(qb|rb|wr|te|k|dst)$"
+
 
 @router.get("/debug-test")
 def debug_test():
@@ -48,7 +50,7 @@ def debug_test():
 @limiter.limit("60/minute")
 def api_get_rankings(
     request: Request,
-    pos: str,
+    pos: str = Path(..., pattern=_POSITION_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030, description="Filter to a specific season year"),
     limit: int = Query(default=200, ge=1, le=1000, description="Max records to return"),
     offset: int = Query(default=0, ge=0, description="Records to skip for pagination"),
@@ -60,7 +62,7 @@ def api_get_rankings(
 
 @router.get("/rankings/{pos}/seasons")
 @limiter.limit("30/minute")
-def api_get_seasons(request: Request, pos: str):
+def api_get_seasons(request: Request, pos: str = Path(..., pattern=_POSITION_PATTERN)):
     """Returns available season years for the given position, most recent first."""
     return get_available_seasons(pos)
 
@@ -69,7 +71,7 @@ def api_get_seasons(request: Request, pos: str):
 @limiter.limit("60/minute")
 def api_get_weekly_rankings(
     request: Request,
-    pos: str,
+    pos: str = Path(..., pattern=_POSITION_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
     week: Optional[int] = Query(default=None, ge=1, le=18),
     limit: int = Query(default=200, ge=1, le=1000),
@@ -84,7 +86,7 @@ def api_get_weekly_rankings(
 @limiter.limit("30/minute")
 def get_position_weeks(
     request: Request,
-    pos: str,
+    pos: str = Path(..., pattern=_POSITION_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
 ):
     """Returns available weeks for the given position, optionally filtered by year."""
@@ -95,7 +97,7 @@ def get_position_weeks(
 @limiter.limit("60/minute")
 def get_all_weekly_rankings(
     request: Request,
-    pos: str,
+    pos: str = Query(..., pattern=_POSITION_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
     week: Optional[int] = Query(default=None, ge=1, le=18),
     limit: int = Query(default=200, ge=1, le=1000),
@@ -110,8 +112,8 @@ def get_all_weekly_rankings(
 @limiter.limit("30/minute")
 def get_player_impact_metrics(
     request: Request,
-    pos: str,
-    player_id: str,
+    pos: str = Path(..., pattern=_POSITION_PATTERN),
+    player_id: str = Path(...),
     metric: str = Query(default="surface", description="Analysis type: surface, venue, elevation, opponent"),
 ):
     """Returns historical performance splits for a player based on external factors."""
@@ -120,7 +122,7 @@ def get_player_impact_metrics(
 
 @router.get("/rankings/{pos}/defense")
 @limiter.limit("20/minute")
-def api_get_defense_stats_analytics(request: Request, pos: str):
+def api_get_defense_stats_analytics(request: Request, pos: str = Path(..., pattern=_POSITION_PATTERN)):
     """Returns ranking of NFL defenses based on fantasy points allowed to the given position."""
     return get_defense_stats(pos)
 
@@ -133,7 +135,7 @@ def api_get_defense_stats_analytics(request: Request, pos: str):
 @limiter.limit("10/minute")
 def get_player_rankings_csv(
     request: Request,
-    pos: str,
+    pos: str = Path(..., pattern=_POSITION_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
 ):
     """Returns rankings as a downloadable CSV file."""
