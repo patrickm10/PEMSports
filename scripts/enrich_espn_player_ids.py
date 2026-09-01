@@ -1,11 +1,18 @@
 ﻿"""
-Enrich data/players.csv with espn_player_id via the Sleeper NFL players dump.
+Enrich data/players.csv with espn_player_id from the nflverse players dataset.
 
-Sleeper exposes a public JSON map of NFL players that includes `espn_id`.
-We match on normalized full name + position (and name-only when unique).
+Headshot serving still uses a single source of truth: players.espn_player_id →
+ESPN CDN (see backend.data.headshot_urls). This script only fills that field.
 
-Fail-open: network / payload errors log a warning and exit 0 so Render/Docker
-bake + rankings still succeed without ESPN ids.
+Match on normalized full name + position (and name-only when unique). The
+normalizer is the established name layer — no per-player maps.
+
+Provider order:
+  1. nflreadpy.load_players() when installed
+  2. HTTP fetch of the nflverse-data players.csv release (requests + polars)
+
+Fail-open: network / payload / import errors log a warning and exit 0 so
+Render/Docker bake + rankings still succeed without new ESPN ids.
 
 Usage (repo root):
   $env:PYTHONPATH="src"
@@ -20,15 +27,18 @@ import csv
 import logging
 import re
 import unicodedata
+from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Optional
 
 import requests
 
 logger = logging.getLogger("enrich_espn_player_ids")
 
-SLEEPER_PLAYERS_URL = "https://api.sleeper.app/v1/players/nfl"
 USER_AGENT = "PEMSports-enrich_espn_player_ids/1.0"
+NFLVERSE_PLAYERS_CSV = (
+    "https://github.com/nflverse/nflverse-data/releases/download/players/players.csv"
+)
 
 
 def _repo_root() -> Path:
@@ -45,56 +55,137 @@ def normalize_name(value: str) -> str:
     return " ".join(parts).strip()
 
 
-def _load_sleeper_players(*, timeout: int) -> dict[str, Any]:
-    resp = requests.get(
-        SLEEPER_PLAYERS_URL,
-        headers={"User-Agent": USER_AGENT},
-        timeout=timeout,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    if not isinstance(data, dict):
-        raise RuntimeError("Unexpected Sleeper players payload (expected object map).")
-    return data
+def _espn_id_str(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        if value != value:  # NaN
+            return ""
+        if value == int(value):
+            return str(int(value))
+    s = str(value).strip()
+    if not s or s.lower() in {"none", "nan", "null"}:
+        return ""
+    if s.endswith(".0"):
+        s = s[:-2]
+    return s
 
 
-def _build_sleeper_indexes(
-    sleeper: dict[str, Any],
+def _player_display_name(raw: dict[str, Any]) -> str:
+    for key in ("display_name", "full_name", "football_name", "player_name"):
+        val = raw.get(key)
+        if val is not None and str(val).strip() and str(val).strip().lower() not in {"none", "nan"}:
+            return str(val).strip()
+    first = str(raw.get("first_name") or "").strip()
+    last = str(raw.get("last_name") or "").strip()
+    return f"{first} {last}".strip()
+
+
+def _normalize_position(value: Any) -> str:
+    pos = str(value or "").strip().upper()
+    if pos in {"DEF", "D/ST"}:
+        return "DST"
+    return pos
+
+
+def _uniq(ids: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for i in ids:
+        if i not in seen:
+            seen.add(i)
+            out.append(i)
+    return out
+
+
+def _build_indexes(
+    records: Iterable[dict[str, Any]],
 ) -> tuple[dict[tuple[str, str], list[str]], dict[str, list[str]]]:
+    """Index ESPN ids by (normalized name, position) and by name only.
+
+    Records with a null/empty espn_id are skipped (they cannot produce a CDN URL).
+    """
     by_name_pos: dict[tuple[str, str], list[str]] = {}
     by_name: dict[str, list[str]] = {}
 
-    for raw in sleeper.values():
+    for raw in records:
         if not isinstance(raw, dict):
             continue
-        espn_id = raw.get("espn_id")
-        if espn_id is None or str(espn_id).strip() == "":
+        eid = _espn_id_str(raw.get("espn_id") if "espn_id" in raw else raw.get("espn_player_id"))
+        if not eid:
             continue
-        eid = str(espn_id).strip()
-        full_name = raw.get("full_name") or ""
-        if not full_name and (raw.get("first_name") or raw.get("last_name")):
-            full_name = f"{raw.get('first_name') or ''} {raw.get('last_name') or ''}".strip()
-        name = normalize_name(full_name)
+        name = normalize_name(_player_display_name(raw))
         if not name:
             continue
-        pos = str(raw.get("position") or "").strip().upper()
+        pos = _normalize_position(raw.get("position"))
         by_name.setdefault(name, []).append(eid)
         if pos:
             by_name_pos.setdefault((name, pos), []).append(eid)
 
-    # Deduplicate while preserving order
-    def uniq(ids: list[str]) -> list[str]:
-        seen: set[str] = set()
-        out: list[str] = []
-        for i in ids:
-            if i not in seen:
-                seen.add(i)
-                out.append(i)
-        return out
+    return {k: _uniq(v) for k, v in by_name_pos.items()}, {k: _uniq(v) for k, v in by_name.items()}
 
-    by_name_pos = {k: uniq(v) for k, v in by_name_pos.items()}
-    by_name = {k: uniq(v) for k, v in by_name.items()}
-    return by_name_pos, by_name
+
+# Back-compat alias used by tests that inject Sleeper-shaped records.
+_build_sleeper_indexes = _build_indexes
+
+
+def _records_from_frame(df: Any) -> list[dict[str, Any]]:
+    if hasattr(df, "to_dicts"):
+        rows = df.to_dicts()
+        if isinstance(rows, list):
+            return rows
+    if hasattr(df, "to_pandas"):
+        return df.to_pandas().to_dict("records")
+    raise RuntimeError("Unexpected nflverse players payload (expected a DataFrame).")
+
+
+def _load_nflverse_players_http(*, timeout: int) -> list[dict[str, Any]]:
+    import polars as pl
+
+    resp = requests.get(
+        NFLVERSE_PLAYERS_CSV,
+        headers={"User-Agent": USER_AGENT},
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    df = pl.read_csv(BytesIO(resp.content), infer_schema_length=10000)
+    records = df.to_dicts()
+    if not records:
+        raise RuntimeError("nflverse players.csv was empty.")
+    logger.info("Loaded %d nflverse players via HTTP release", len(records))
+    return records
+
+
+def _load_nflverse_players(*, timeout: int) -> list[dict[str, Any]]:
+    try:
+        import nflreadpy as nfl
+
+        df = nfl.load_players()
+        records = _records_from_frame(df)
+        if records:
+            logger.info("Loaded %d nflverse players via nflreadpy", len(records))
+            return records
+        logger.info("nflreadpy.load_players() returned no rows; trying HTTP release")
+    except Exception as exc:  # noqa: BLE001 - fail over to the same nflverse CSV
+        logger.info("nflreadpy load failed (%s); trying nflverse HTTP release", exc)
+    return _load_nflverse_players_http(timeout=timeout)
+
+
+def _resolve_espn_id(
+    *,
+    name: str,
+    pos: str,
+    by_name_pos: dict[tuple[str, str], list[str]],
+    by_name: dict[str, list[str]],
+) -> list[str]:
+    hits: list[str] = []
+    if name and pos:
+        hits = by_name_pos.get((name, pos), [])
+    if len(hits) != 1 and name:
+        name_hits = by_name.get(name, [])
+        if len(name_hits) == 1:
+            hits = name_hits
+    return hits
 
 
 def enrich_players_csv(
@@ -102,7 +193,9 @@ def enrich_players_csv(
     players_csv: Path,
     timeout: int = 60,
     overwrite: bool = False,
+    nflverse_players: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, int]:
+    players_csv = Path(players_csv)
     if not players_csv.exists():
         raise FileNotFoundError(f"Missing players CSV: {players_csv}")
 
@@ -115,8 +208,12 @@ def enrich_players_csv(
     if "espn_player_id" not in fieldnames:
         fieldnames.append("espn_player_id")
 
-    sleeper = _load_sleeper_players(timeout=timeout)
-    by_name_pos, by_name = _build_sleeper_indexes(sleeper)
+    records = (
+        nflverse_players
+        if nflverse_players is not None
+        else _load_nflverse_players(timeout=timeout)
+    )
+    by_name_pos, by_name = _build_indexes(records)
 
     matched = 0
     preserved = 0
@@ -130,14 +227,8 @@ def enrich_players_csv(
             continue
 
         name = normalize_name(row.get("player_name") or "")
-        pos = str(row.get("position") or "").strip().upper()
-        hits: list[str] = []
-        if name and pos:
-            hits = by_name_pos.get((name, pos), [])
-        if len(hits) != 1 and name:
-            name_hits = by_name.get(name, [])
-            if len(name_hits) == 1:
-                hits = name_hits
+        pos = _normalize_position(row.get("position"))
+        hits = _resolve_espn_id(name=name, pos=pos, by_name_pos=by_name_pos, by_name=by_name)
 
         if len(hits) == 1:
             row["espn_player_id"] = hits[0]
@@ -179,14 +270,21 @@ def enrich_players_csv(
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    p = argparse.ArgumentParser(description="Fill players.csv espn_player_id from Sleeper.")
+    p = argparse.ArgumentParser(
+        description="Fill players.csv espn_player_id from nflverse players (espn_id)."
+    )
     p.add_argument(
         "--players-csv",
         type=Path,
         default=_repo_root() / "data" / "players.csv",
         help="Path to players.csv",
     )
-    p.add_argument("--timeout", type=int, default=60, help="HTTP timeout for Sleeper fetch")
+    p.add_argument(
+        "--timeout",
+        type=int,
+        default=60,
+        help="HTTP timeout for nflverse players fetch",
+    )
     p.add_argument(
         "--overwrite",
         action="store_true",
@@ -200,8 +298,8 @@ def main() -> int:
             timeout=max(5, args.timeout),
             overwrite=args.overwrite,
         )
-    except (OSError, RuntimeError, requests.RequestException) as exc:
-        # Fail-open: never block bake/rankings/deploy when Sleeper is unreachable.
+    except (OSError, RuntimeError, ValueError, requests.RequestException) as exc:
+        # Fail-open: never block bake/rankings/deploy when nflverse is unreachable.
         logger.warning("ESPN id enrichment skipped (fail-open): %s", exc)
         return 0
     return 0

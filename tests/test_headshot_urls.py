@@ -41,3 +41,21 @@ def test_attach_headshot_urls_empty_map_is_path_only():
     rows = [{"player_id": "zzz"}]
     out = attach_headshot_urls(rows, get_conn=lambda: None, espn_map={})
     assert out[0]["headshot_url"] == "/headshots/zzz.jpg"
+
+
+def test_attach_headshot_urls_qb_wr_sample_uses_cdn_when_mapped():
+    """Contract: known ESPN ids emit CDN URLs; unmapped rows stay path-only."""
+    rows = [
+        {"player_id": "maye-uuid", "player_name": "Drake Maye", "position": "QB"},
+        {"player_id": "chase-uuid", "player_name": "Ja'Marr Chase", "position": "WR"},
+        {"player_id": "dst-uuid", "player_name": "Seattle Seahawks", "position": "DST"},
+    ]
+    out = attach_headshot_urls(
+        rows,
+        get_conn=lambda: None,
+        espn_map={"maye-uuid": "4431452", "chase-uuid": "4362628"},
+    )
+    assert out[0]["headshot_url"] == build_espn_headshot_url("4431452")
+    assert out[1]["headshot_url"] == build_espn_headshot_url("4362628")
+    assert out[2]["headshot_url"] == build_headshot_path("dst-uuid")
+    assert all(r["headshot_url"].startswith("https://a.espncdn.com") for r in out[:2])
