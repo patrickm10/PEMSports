@@ -126,38 +126,62 @@ def _discover_and_build(conn: duckdb.DuckDBPyConnection, parquet_path: Path, pos
     return final_cols, ", ".join(exprs)
 
 
+def _merge_home_away_schedule(
+    conn: duckdb.DuckDBPyConnection,
+    table: str,
+    schedule,
+    *,
+    source: str,
+) -> None:
+    """Replace `table` with a copy that includes home_away from schedule rows."""
+    schedule_path = str(PROJECT_ROOT / "data" / "_tmp_home_away_schedule.parquet").replace("\\", "/")
+    schedule.write_parquet(schedule_path)
+
+    conn.execute(
+        f"""
+        CREATE TABLE {table}_with_ha AS
+        SELECT w.*, s.home_away
+        FROM {table} w
+        LEFT JOIN read_parquet('{schedule_path}') s
+          ON CAST(w.year AS INTEGER) = s.year
+         AND CAST(w.week AS INTEGER) = s.week
+         AND w.team = s.team
+        """
+    )
+    conn.execute(f"DROP TABLE {table}")
+    conn.execute(f"ALTER TABLE {table}_with_ha RENAME TO {table}")
+    logger.info("  -> %s: attached home_away via %s", table.replace("_weekly", "").upper(), source)
+
+
 def _attach_home_away(conn: duckdb.DuckDBPyConnection, pos: str) -> None:
-    """Join home_away from schedule lookup when parquet lacks the column."""
+    """Join home_away when parquet lacks the column."""
+    import polars as pl
+
+    from pipelines.schedule_lookup import build_home_away_from_stadium, build_home_away_schedule
+
     table = f"{pos.lower()}_weekly"
     cols = {d[0].lower() for d in conn.execute(f"SELECT * FROM {table} LIMIT 0").description}
     if "home_away" in cols:
         return
 
     try:
-        from pipelines.schedule_lookup import build_home_away_schedule
-
         schedule = build_home_away_schedule()
-        if schedule.is_empty():
-            logger.warning("  -> %s: home_away schedule empty; column not added", pos)
+        if not schedule.is_empty():
+            _merge_home_away_schedule(conn, table, schedule, source="schedule lookup")
             return
 
-        schedule_path = str(PROJECT_ROOT / "data" / "_tmp_home_away_schedule.parquet").replace("\\", "/")
-        schedule.write_parquet(schedule_path)
-
-        conn.execute(
-            f"""
-            CREATE TABLE {table}_with_ha AS
-            SELECT w.*, s.home_away
-            FROM {table} w
-            LEFT JOIN read_parquet('{schedule_path}') s
-              ON CAST(w.year AS INTEGER) = s.year
-             AND CAST(w.week AS INTEGER) = s.week
-             AND w.team = s.team
-            """
+        logger.warning(
+            "  -> %s: enriched matchups missing; deriving home_away from stadium.csv",
+            pos,
         )
-        conn.execute(f"DROP TABLE {table}")
-        conn.execute(f"ALTER TABLE {table}_with_ha RENAME TO {table}")
-        logger.info("  -> %s: attached home_away via schedule lookup", pos)
+        weekly_path = str(PROJECT_ROOT / "data" / "rankings" / f"{pos}_weekly.parquet").replace("\\", "/")
+        weekly = pl.read_parquet(weekly_path)
+        schedule = build_home_away_from_stadium(weekly)
+        if schedule.is_empty():
+            logger.warning("  -> %s: stadium fallback produced no home_away rows", pos)
+            return
+
+        _merge_home_away_schedule(conn, table, schedule, source="stadium fallback")
     except Exception as exc:  # noqa: BLE001
         logger.warning("  -> %s: failed to attach home_away: %s", pos, exc)
 
