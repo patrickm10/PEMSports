@@ -1,4 +1,4 @@
-# NFLStatsAnalyzer / NFLStatsPro
+# PEM Sports Website
 
 Fantasy rankings analytics: **Polars pipelines** → **Parquet** (`data/rankings/`) → **baked DuckDB** (`data/nfl_stats.db`) → **FastAPI** → **Vite + React** dashboard.
 
