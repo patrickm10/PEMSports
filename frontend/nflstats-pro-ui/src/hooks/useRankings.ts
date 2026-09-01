@@ -8,7 +8,7 @@ import { SeasonalStatsListSchema } from '../v3/schemas/player';
  *
  * Sorting is owned by TanStack Table inside `VirtualizedGrid`.
  */
-export function useRankings(position: string, year: string) {
+export function useRankings(position: string, year: string, enabled = true) {
   return useQuery<SeasonalRanking[], Error>({
     queryKey: ['rankings', position, year],
     queryFn: async ({ signal }) => {
@@ -18,7 +18,7 @@ export function useRankings(position: string, year: string) {
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
-    enabled: !!position && !!year,
+    enabled: enabled && !!position && !!year,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
   });

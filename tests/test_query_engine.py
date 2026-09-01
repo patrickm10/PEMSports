@@ -105,6 +105,7 @@ class TestPlayerWeeklyQueries:
         if result["seasons"]:
             week_row = result["seasons"][0]["weeks"][0]
             assert "weather_impact" in week_row
+            assert "home_away" in week_row
 
     def test_query_player_weekly_without_weather_impact_column(self, monkeypatch):
         """Missing baked column must not 500; key stays present as null."""

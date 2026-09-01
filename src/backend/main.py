@@ -44,6 +44,7 @@ from backend.api.ranking_routes import router as rankings_router
 from backend.api.auth_routes import router as auth_router
 from backend.api.players_routes import router as players_router
 from backend.api.draft_lab_routes import router as draft_lab_router
+from backend.api.insights_routes import router as insights_router
 from backend.core.config import config
 from backend.core.exceptions import PemSportsException
 from backend.core.health import check_health
@@ -163,11 +164,13 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 app.include_router(players_router, prefix="/api/v1", tags=["players"])
 app.include_router(draft_lab_router, prefix="/api/v1", tags=["draft-lab"])
+app.include_router(insights_router, prefix="/api/v1", tags=["insights"])
 
 # Backwards-compatible alias — keeps existing frontend/consumers working
 # while they migrate to /api/v1/
 app.include_router(rankings_router, prefix="/api", tags=["rankings (legacy)"], include_in_schema=False)
 app.include_router(players_router, prefix="/api", tags=["players (legacy)"], include_in_schema=False)
+app.include_router(insights_router, prefix="/api", tags=["insights (legacy)"], include_in_schema=False)
 
 # ── Static files ──────────────────────────────────────────────────────────────
 # Headshots are keyed by canonical UUID `player_id`:
