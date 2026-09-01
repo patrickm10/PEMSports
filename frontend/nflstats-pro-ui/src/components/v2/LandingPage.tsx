@@ -37,13 +37,13 @@ function displayName(email: string): string {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
   const signedIn = Boolean(user);
   const primaryLabel = user
     ? `Continue as ${displayName(user.email)}`
-    : 'Enter the rankings';
+    : 'Enter Rankings';
 
   return (
     <div className="relative min-h-screen bg-[#020617] overflow-hidden text-left">
@@ -56,6 +56,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
       />
       <div className="pointer-events-none absolute -top-24 left-1/4 h-[420px] w-[420px] rounded-full bg-sky-500/15 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[320px] w-[320px] rounded-full bg-emerald-500/10 blur-[100px]" />
+
+      <header className="absolute inset-x-0 top-0 z-20 flex justify-end px-6 py-5">
+        {!signedIn && (
+          <button
+            type="button"
+            onClick={() => setShowLogin(true)}
+            className="rounded-lg px-2 py-1 text-sm font-medium text-slate-400 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-sky-500/50"
+          >
+            Sign In
+          </button>
+        )}
+      </header>
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-12 px-6 py-16 lg:flex-row lg:items-center lg:gap-20">
         <motion.div
@@ -81,7 +93,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
             Open the board as a guest — an account is optional.
           </p>
 
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="mt-10">
             <button
               type="button"
               onClick={onLaunch}
@@ -90,22 +102,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
               {primaryLabel}
               <ChevronRight size={16} aria-hidden />
             </button>
-            {!signedIn && (
-              <button
-                type="button"
-                onClick={() => setShowLogin(true)}
-                className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-200 transition-colors hover:border-sky-500/40 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-500/50"
-              >
-                Sign in
-              </button>
-            )}
           </div>
-
-          <p className="mt-4 text-sm text-slate-500">
-            {token && !user
-              ? 'Checking your session. You can enter now — sign in does not change the data.'
-              : 'Sign in does not unlock different rankings. Same board either way.'}
-          </p>
         </motion.div>
 
         <motion.div

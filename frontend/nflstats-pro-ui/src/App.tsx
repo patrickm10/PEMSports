@@ -249,13 +249,13 @@ export default function App() {
               : 'w-full max-w-[1600px] mx-auto space-y-4'
           }
         >
-          <header className={`space-y-1${lockRankingsFill ? ' shrink-0' : ''}`}>
+          <header className={`space-y-1 text-center${lockRankingsFill ? ' shrink-0' : ''}`}>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               {workspaceView === 'dashboard' && 'Dashboard'}
               {workspaceView === 'rankings' && (
                 <>
                   {activeTab.toUpperCase()}{' '}
-                  <span className="text-sky-400">rankings</span>
+                  <span className="text-sky-400">Rankings</span>
                 </>
               )}
               {workspaceView === 'player' && 'Player analytics'}

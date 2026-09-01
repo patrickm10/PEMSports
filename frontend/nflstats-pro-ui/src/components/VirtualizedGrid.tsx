@@ -55,6 +55,8 @@ const HIDDEN_KEYS = new Set<string>([
   'player_id',
   'player',
   'position',
+  'headshot_url',
+  'fpts_ppr',
   'fpts_ppr_per_game',
 ]);
 
@@ -134,6 +136,33 @@ const HEADER_ABBR: Record<string, string> = {
   pct: 'PCT',
 };
 
+const COUNTING_STAT_KEYS = new Set<string>([
+  'td',
+  'cmp',
+  'att',
+  'int',
+  'tgt',
+  'rec',
+  'yds',
+  'targets',
+  'sacks',
+  'fumbles',
+  'rush_yds',
+  'rush_td',
+  'fgm',
+  'fga',
+  'xpm',
+  'xpa',
+  'lg',
+  'yds_allowed',
+  'td_allowed',
+  'fum_rec',
+  'fum_for',
+  'def_td',
+  'safety',
+  'st_td',
+]);
+
 function classify(key: string): ColumnKind {
   if (key === 'rank') return 'rank';
   if (key === 'player_name' || key === 'name') return 'name';
@@ -143,7 +172,10 @@ function classify(key: string): ColumnKind {
     key === 'year' ||
     key === 'week' ||
     key === 'games_played' ||
-    key === 'year_opened'
+    key === 'year_opened' ||
+    COUNTING_STAT_KEYS.has(key) ||
+    key.endsWith('_yds') ||
+    key.endsWith('_td')
   ) {
     return 'int';
   }
@@ -377,16 +409,17 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
       filteredKeys = filteredKeys.filter((k) => !EXPERT_ONLY.has(k));
     }
 
-    // Column order: rank, player_name, team, year/week, opp, headline KPIs,
-    // position-specific stats in bake_db order, context, then fpts_ppr on
-    // the right edge (sticky).
+    // Column order: rank, player_name, opp, headline KPIs, position-specific
+    // stats in bake_db order, context, then Team / YR / G (and week when weekly).
     const leadKeys: string[] = [];
-    for (const k of ['rank', 'player_name', 'team', 'year', 'week', 'opponent']) {
+    for (const k of ['rank', 'player_name', 'opponent']) {
       if (filteredKeys.includes(k)) leadKeys.push(k);
     }
 
     const trailKeys: string[] = [];
-    if (filteredKeys.includes('fpts_ppr')) trailKeys.push('fpts_ppr');
+    for (const k of ['team', 'year', 'games_played', 'week']) {
+      if (filteredKeys.includes(k)) trailKeys.push(k);
+    }
 
     const middle = filteredKeys.filter(
       (k) => !leadKeys.includes(k) && !trailKeys.includes(k),
@@ -619,7 +652,6 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const colId = header.column.id;
-                const isRightSticky = colId === 'fpts_ppr';
                 const meta = (header.column.columnDef.meta ?? {}) as Partial<GridColumnMeta>;
                 const align = meta.align ?? 'center';
 
@@ -650,21 +682,17 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       'select-none transition-colors hover:bg-slate-800/80',
                       (colId === 'rank' ||
                         colId === 'player_name' ||
-                        colId === 'name' ||
-                        isRightSticky) &&
+                        colId === 'name') &&
                         'sticky-col',
                       colId === 'rank' &&
                         'border-[#ffffff10] shadow-[4px_0_15px_rgba(0,0,0,0.4)]',
                       (colId === 'player_name' || colId === 'name') && 'sticky-name-col',
-                      isRightSticky &&
-                        'sticky-col-right border-[#ffffff10] shadow-[4px_0_15px_rgba(0,0,0,0.4)]',
                     )}
                     style={{
                       width: header.getSize(),
                       minWidth: header.getSize(),
                       textAlign: align,
                       left: leftOffset,
-                      right: isRightSticky ? 0 : undefined,
                     }}
                   >
                     <button
@@ -723,7 +751,6 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
               >
                 {row.getVisibleCells().map((cell) => {
                   const colId = cell.column.id;
-                  const isRightSticky = colId === 'fpts_ppr';
                   const isName = colId === 'player_name' || colId === 'name';
                   const meta = (cell.column.columnDef.meta ?? {}) as Partial<GridColumnMeta>;
                   const align = meta.align ?? 'center';
@@ -741,10 +768,9 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       data-optional={meta.optional || undefined}
                       className={cn(
                         'transition-all duration-200 group-hover/row:text-white tabular-nums',
-                        (colId === 'rank' || isName || isRightSticky) && 'sticky-col',
+                        (colId === 'rank' || isName) && 'sticky-col',
                         colId === 'rank' && 'border-[#ffffff10]',
                         isName && 'sticky-name-col',
-                        isRightSticky && 'sticky-col-right border-[#ffffff10]',
                       )}
                       style={{
                         width: cell.column.getSize(),
@@ -752,7 +778,6 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                         maxWidth: cell.column.getSize(),
                         textAlign: align,
                         left: leftOffset,
-                        right: isRightSticky ? 0 : undefined,
                       }}
                     >
                       {isName ? (

@@ -73,12 +73,6 @@ export function LoginModal({
       initialFocusRef={emailRef as React.RefObject<HTMLElement | null>}
       contentClassName="px-6 pb-7 pt-1"
     >
-      <p className="mb-6 text-sm leading-relaxed text-slate-400">
-        {isRegistering
-          ? 'Same rankings and analytics as a guest. An account just remembers you next time.'
-          : 'Welcome back. Rankings are the same whether you sign in or not.'}
-      </p>
-
       {error && (
         <div
           className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-300"
@@ -89,7 +83,7 @@ export function LoginModal({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-left">
         <div className="space-y-1.5">
           <label htmlFor="pem-auth-email" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             Email
