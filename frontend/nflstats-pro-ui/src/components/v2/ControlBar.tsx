@@ -68,25 +68,28 @@ export function ControlBar({
 }: ControlBarProps) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3 min-h-14 sm:min-h-16 px-3 sm:px-4 rounded-2xl glass-card border-white/10">
+      <div className="flex flex-wrap sm:flex-nowrap items-center w-full min-h-14 sm:min-h-16 px-3 sm:px-4 rounded-2xl glass-card border-white/10">
         {showSearch && (
-          <div className="relative w-40 sm:w-48 shrink-0 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
-            <label htmlFor="pem-filter-search" className="sr-only">
-              Filter visible rows by player or team
-            </label>
-            <input
-              id="pem-filter-search"
-              type="search"
-              placeholder="Filter visible rows…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl h-9 py-1.5 !pl-10 pr-3 text-[11px] font-medium leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
-            />
+          <div className="flex flex-1 basis-full sm:basis-0 justify-start items-center min-w-0 py-2 sm:py-0 sm:pr-3">
+            <div className="relative w-full max-w-[12rem] group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
+              <label htmlFor="pem-filter-search" className="sr-only">
+                Filter visible rows by player or team
+              </label>
+              <input
+                id="pem-filter-search"
+                type="search"
+                placeholder="Filter visible rows…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl h-9 py-1.5 !pl-10 pr-3 text-[11px] font-medium leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+        <div className="flex flex-1 basis-full sm:basis-0 justify-center items-center min-w-0 py-2 sm:py-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
           <div
             className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20"
             role="group"
@@ -212,10 +215,12 @@ export function ControlBar({
               Reset
             </button>
           )}
+          </div>
         </div>
 
         {showDensity && (
-          <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2 pr-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors shrink-0">
+          <div className="flex flex-1 basis-full sm:basis-0 justify-end items-center min-w-0 py-2 sm:py-0 sm:pl-3">
+            <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2 pr-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
             <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" aria-hidden />
             <div className="flex items-center gap-0.5 bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="View mode">
               {(['compact', 'standard', 'expert'] as const).map((d) => (
@@ -235,6 +240,7 @@ export function ControlBar({
                   {DENSITY_SHORT[d]}
                 </button>
               ))}
+            </div>
             </div>
           </div>
         )}
