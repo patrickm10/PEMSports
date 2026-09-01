@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Sidebar } from '../navigation/Sidebar';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
+import { AuthControls } from '../../../components/v2/Auth/AuthControls';
 
 export type WorkspaceView = 'dashboard' | 'rankings' | 'player' | 'insights';
 
@@ -13,6 +14,25 @@ interface ResponsiveDockProps {
   onWorkspaceViewChange: (v: WorkspaceView) => void;
   hasSelectedPlayer: boolean;
   onOpenSearch: () => void;
+}
+
+function pageTitle(workspaceView: WorkspaceView, activePosition: string): React.ReactNode {
+  if (workspaceView === 'dashboard') return 'Dashboard';
+  if (workspaceView === 'player') return 'Player Analytics';
+  if (workspaceView === 'insights') return 'Insights';
+  return (
+    <>
+      {activePosition.toUpperCase()}{' '}
+      <span className="text-sky-400">Rankings</span>
+    </>
+  );
+}
+
+function supportingLabel(workspaceView: WorkspaceView): string {
+  if (workspaceView === 'dashboard') return 'Season Charts';
+  if (workspaceView === 'player') return 'Player Splits';
+  if (workspaceView === 'insights') return 'Contextual Insights';
+  return 'Fantasy Leaderboard';
 }
 
 export const ResponsiveDock = ({
@@ -44,14 +64,6 @@ export const ResponsiveDock = ({
   };
 
   const lockRankingsFill = workspaceView === 'rankings' && !isMobile;
-  const headerSubtitle =
-    workspaceView === 'dashboard'
-      ? 'Season charts'
-      : workspaceView === 'player'
-        ? 'Player splits'
-        : workspaceView === 'insights'
-          ? 'Contextual insights'
-          : 'Fantasy leaderboard';
 
   const sidebar = (
     <Sidebar
@@ -94,34 +106,42 @@ export const ResponsiveDock = ({
       )}
 
       <main className="relative z-[1] flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        <header className="h-14 shrink-0 border-b border-white/[0.06] flex items-center justify-between px-4 lg:px-8 glass-card rounded-none border-x-0 border-t-0">
+        <header className="min-h-14 shrink-0 border-b border-white/[0.06] flex items-center justify-between gap-4 px-4 lg:px-6 py-2 glass-card rounded-none border-x-0 border-t-0">
           <div className="flex items-center gap-3 min-w-0">
             {isMobile && (
               <button
                 type="button"
                 onClick={() => setMobileNavOpen((open) => !open)}
-                className="p-2 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-sky-500/50"
+                className="p-2 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-sky-500/50 shrink-0"
                 aria-label={showMobileNav ? 'Close navigation' : 'Open navigation'}
                 aria-expanded={showMobileNav}
               >
                 {showMobileNav ? <X size={18} /> : <Menu size={18} />}
               </button>
             )}
-            <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-slate-500 truncate">
+            <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-slate-500 shrink-0">
               PEM Sports
             </span>
-            <span className="text-slate-600 hidden sm:inline">·</span>
-            <span className="text-xs font-semibold text-slate-300 hidden sm:inline truncate">
-              {headerSubtitle}
-            </span>
+            <span className="text-slate-600 hidden sm:inline shrink-0">·</span>
+            <div className="min-w-0 flex items-baseline gap-2">
+              <h1 className="text-sm sm:text-base font-bold tracking-tight text-white truncate">
+                {pageTitle(workspaceView, activePosition)}
+              </h1>
+              <span className="text-xs font-medium text-slate-400 hidden sm:inline truncate">
+                {supportingLabel(workspaceView)}
+              </span>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <AuthControls />
           </div>
         </header>
 
         <section
           className={
             lockRankingsFill
-              ? 'flex-1 min-h-0 overflow-hidden px-3 py-4 lg:px-6 lg:py-5'
-              : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 lg:px-6 lg:py-5 custom-scrollbar'
+              ? 'flex-1 min-h-0 overflow-hidden px-4 py-4 lg:px-6 lg:py-4'
+              : 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 lg:px-6 lg:py-4 custom-scrollbar'
           }
         >
           {children}
