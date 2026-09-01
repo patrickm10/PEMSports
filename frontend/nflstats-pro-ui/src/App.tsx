@@ -21,7 +21,6 @@ import { resolvePrimaryMetric } from './utils/metrics';
 import { rankingToPlayerRef } from './utils/rankingToPlayerRef';
 import {
   buildResetFilters,
-  formatActiveFilterSummary,
   isValidWeek,
   isValidYear,
   persistLandingSkip,
@@ -150,15 +149,6 @@ export default function App() {
     [filteredData, resolvedMetric],
   );
 
-  const activeFilterSummary = formatActiveFilterSummary(
-    activeTab,
-    viewMode,
-    selectedYear,
-    selectedWeek,
-    filteredData.length,
-    availableYears.length,
-  );
-
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
     setWorkspaceView('rankings');
@@ -249,29 +239,6 @@ export default function App() {
               : 'w-full max-w-[1600px] mx-auto space-y-4'
           }
         >
-          <header className={`space-y-1 text-center${lockRankingsFill ? ' shrink-0' : ''}`}>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              {workspaceView === 'dashboard' && 'Dashboard'}
-              {workspaceView === 'rankings' && (
-                <>
-                  {activeTab.toUpperCase()}{' '}
-                  <span className="text-sky-400">Rankings</span>
-                </>
-              )}
-              {workspaceView === 'player' && 'Player analytics'}
-              {workspaceView === 'insights' && (
-                <>
-                  PEM <span className="text-sky-400">Insights</span>
-                </>
-              )}
-            </h1>
-            {workspaceView === 'player' && (
-              <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
-                Weekly trends and situational splits
-              </p>
-            )}
-          </header>
-
           {workspaceView !== 'player' && (
             <div className={lockRankingsFill ? 'shrink-0' : undefined}>
               <ControlBar
@@ -285,7 +252,6 @@ export default function App() {
                 availableWeeks={availableWeeks}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                totalPlayers={workspaceView === 'insights' ? undefined : filteredData.length}
                 density={density}
                 setDensity={setDensity}
                 showDensity={workspaceView === 'rankings'}
@@ -299,7 +265,6 @@ export default function App() {
                   void refetchSeasons();
                   void refetch();
                 }}
-                activeFilterSummary={activeFilterSummary}
               />
             </div>
           )}

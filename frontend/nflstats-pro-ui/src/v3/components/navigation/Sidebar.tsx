@@ -143,54 +143,59 @@ export const Sidebar = ({
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-col gap-1 flex-1 px-3 overflow-y-auto min-h-0 no-scrollbar">
-        {!collapsed && (
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">Analyze</div>
-        )}
-        <SidebarItem
-          icon={LayoutDashboard}
-          label="Dashboard"
-          active={workspaceView === 'dashboard'}
-          collapsed={collapsed}
-          onClick={() => onWorkspaceViewChange('dashboard')}
-        />
-        <SidebarItem
-          icon={BarChart3}
-          label="Rankings"
-          active={workspaceView === 'rankings'}
-          collapsed={collapsed}
-          onClick={() => onWorkspaceViewChange('rankings')}
-        />
-        <SidebarItem
-          icon={Lightbulb}
-          label="Insights"
-          active={workspaceView === 'insights'}
-          collapsed={collapsed}
-          onClick={() => onWorkspaceViewChange('insights')}
-        />
-        <SidebarItem
-          icon={Search}
-          label="Search"
-          collapsed={collapsed}
-          onClick={onOpenSearch}
-          hint="Find a player"
-        />
-        <SidebarItem
-          icon={UserSearch}
-          label="Player"
-          active={workspaceView === 'player'}
-          collapsed={collapsed}
-          onClick={() => onWorkspaceViewChange('player')}
-          disabled={!hasSelectedPlayer}
-          hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from Rankings or Search'}
-        />
+      <div className="flex flex-col gap-4 flex-1 px-3 overflow-y-auto min-h-0 no-scrollbar">
+        <div className="flex flex-col gap-1">
+          {!collapsed && (
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">
+              Analyze
+            </div>
+          )}
+          <SidebarItem
+            icon={LayoutDashboard}
+            label="Dashboard"
+            active={workspaceView === 'dashboard'}
+            collapsed={collapsed}
+            onClick={() => onWorkspaceViewChange('dashboard')}
+          />
+          <SidebarItem
+            icon={BarChart3}
+            label="Rankings"
+            active={workspaceView === 'rankings'}
+            collapsed={collapsed}
+            onClick={() => onWorkspaceViewChange('rankings')}
+          />
+          <SidebarItem
+            icon={Lightbulb}
+            label="Insights"
+            active={workspaceView === 'insights'}
+            collapsed={collapsed}
+            onClick={() => onWorkspaceViewChange('insights')}
+          />
+          <SidebarItem
+            icon={Search}
+            label="Search"
+            collapsed={collapsed}
+            onClick={onOpenSearch}
+            hint="Find a player"
+          />
+          <SidebarItem
+            icon={UserSearch}
+            label="Player"
+            active={workspaceView === 'player'}
+            collapsed={collapsed}
+            onClick={() => onWorkspaceViewChange('player')}
+            disabled={!hasSelectedPlayer}
+            hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from Rankings or Search'}
+          />
+        </div>
 
-        <div className="h-px bg-white/[0.06] my-2 mx-1" />
-
-        {!collapsed && (
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">Positions</div>
-        )}
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
+          <div className="h-px bg-white/[0.06] mx-1" />
+          {!collapsed && (
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] px-3 mb-1">
+              Positions
+            </div>
+          )}
           {positions.map((pos) => (
             <SidebarItem
               key={pos.id}

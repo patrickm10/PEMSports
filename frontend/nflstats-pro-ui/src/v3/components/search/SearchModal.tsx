@@ -181,7 +181,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
       isOpen={isOpen}
       onClose={close}
       size="md"
-      title="Search players"
+      title="Search Players"
       description="Type a name to find any player across all positions"
       contentClassName="px-4 pb-4 pt-3"
       initialFocusRef={inputRef as React.RefObject<HTMLElement | null>}

@@ -1,21 +1,14 @@
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Calendar,
   Hash,
-  Users,
-  User,
-  LogOut,
   ChevronDown,
   Rows3,
   RotateCcw,
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { persistLandingSkip } from '../../utils/filterState';
-import { useAuth } from '../../contexts/AuthContext';
-import { LoginModal } from './Auth/LoginModal';
 import type { GridDensity } from '../VirtualizedGrid';
 
 interface ControlBarProps {
@@ -29,14 +22,12 @@ interface ControlBarProps {
   availableWeeks: number[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  totalPlayers?: number;
   density: GridDensity;
   setDensity: (d: GridDensity) => void;
   onResetFilters?: () => void;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
-  activeFilterSummary?: string;
   /** Table density is Rankings-only. Hidden on Dashboard. */
   showDensity?: boolean;
   /** Rankings row search. Hidden on Insights (filters are year/week/context). */
@@ -47,6 +38,12 @@ const DENSITY_LABELS: Record<GridDensity, string> = {
   compact: 'Compact',
   standard: 'Standard',
   expert: 'Expert',
+};
+
+const DENSITY_SHORT: Record<GridDensity, string> = {
+  compact: 'Comp',
+  standard: 'Sta',
+  expert: 'Exp',
 };
 
 export function ControlBar({
@@ -60,29 +57,40 @@ export function ControlBar({
   availableWeeks,
   searchQuery,
   setSearchQuery,
-  totalPlayers,
   density,
   setDensity,
   onResetFilters,
   isLoading = false,
   isError = false,
   onRetry,
-  activeFilterSummary,
   showDensity = true,
   showSearch = true,
 }: ControlBarProps) {
-  const { user, logout } = useAuth();
-  const [showLogin, setShowLogin] = useState(false);
-  const [authMenuOpen, setAuthMenuOpen] = useState(false);
-
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl glass-card border-white/10">
-        <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 min-h-14 sm:min-h-16 px-3 sm:px-4 rounded-2xl glass-card border-white/10">
+        {showSearch && (
+          <div className="relative flex-1 min-w-0 basis-full sm:basis-64 group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
+            <label htmlFor="pem-filter-search" className="sr-only">
+              Filter visible rows by player or team
+            </label>
+            <input
+              id="pem-filter-search"
+              type="search"
+              placeholder="Filter visible rows…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl h-10 py-2 !pl-12 pr-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
           <div
             className="flex bg-slate-950/60 p-1 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20"
             role="group"
-            aria-label="Rankings view mode"
+            aria-label="Time grain"
           >
             {(['season', 'weekly'] as const).map((mode) => (
               <button
@@ -105,13 +113,13 @@ export function ControlBar({
                   />
                 )}
                 <span className="relative z-10">
-                  {mode === 'season' ? 'Seasonal' : 'Weekly'}
+                  {mode === 'season' ? 'Season' : 'Weekly'}
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="w-px h-6 bg-white/[0.04] mx-1 hidden sm:block" />
+          <div className="w-px h-6 bg-white/[0.04] hidden sm:block" />
 
           <div className="flex items-center gap-2 bg-slate-950/40 pl-3 pr-2 py-1.5 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors relative">
             <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" aria-hidden />
@@ -193,166 +201,60 @@ export function ControlBar({
             )}
           </AnimatePresence>
 
-          {totalPlayers !== undefined && (
-            <>
-              <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/30 border border-white/[0.04] text-xs text-slate-500"
-                aria-live="polite"
-              >
-                <Users className="w-3.5 h-3.5" aria-hidden />
-                <span className="font-semibold text-slate-400">{totalPlayers}</span>
-                <span>rows</span>
-              </div>
-            </>
-          )}
-
-          {availableYears.length > 0 && (
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300/90">
-              <span className="font-semibold">{availableYears.length}</span>
-              <span>seasons</span>
-            </div>
-          )}
-
           {onResetFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/[0.06] bg-slate-950/40 text-xs font-semibold text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border border-white/[0.06] bg-slate-950/40 text-xs font-semibold text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
               aria-label="Reset filters"
             >
               <RotateCcw className="w-3.5 h-3.5" aria-hidden />
               Reset
             </button>
           )}
-
-          {showDensity && (
-            <>
-              <div className="w-px h-6 bg-white/[0.04] mx-1 hidden lg:block" />
-              <div className="flex items-center gap-2 bg-slate-950/40 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
-                <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" aria-hidden />
-                <div className="flex bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="Table density">
-                  {(['compact', 'standard', 'expert'] as const).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      aria-pressed={density === d}
-                      onClick={() => setDensity(d)}
-                      className={cn(
-                        'px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors',
-                        density === d
-                          ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
-                          : 'text-slate-500 hover:text-slate-300',
-                      )}
-                      title={`${DENSITY_LABELS[d]} density`}
-                    >
-                      {DENSITY_LABELS[d].slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0 lg:flex-1 max-w-lg justify-end ml-auto">
-          {showSearch && (
-          <div className="relative flex-1 group min-w-[140px] md:min-w-[200px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
-            <label htmlFor="pem-filter-search" className="sr-only">
-              Filter visible rows by player or team
-            </label>
-            <input
-              id="pem-filter-search"
-              type="search"
-              placeholder="Filter visible rows…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl py-2 !pl-12 pr-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
-            />
-          </div>
-          )}
-
-          {user ? (
-            <div className="relative">
-              <button
-                type="button"
-                aria-expanded={authMenuOpen}
-                aria-haspopup="menu"
-                onClick={() => setAuthMenuOpen((o) => !o)}
-                onBlur={() => {
-                  // Allow menu click before close
-                  window.setTimeout(() => setAuthMenuOpen(false), 150);
-                }}
-                className="flex items-center gap-2 p-1 pl-3 pr-2 rounded-xl bg-slate-950/40 border border-white/[0.04] text-xs font-semibold text-slate-300 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/50"
-              >
-                <span className="truncate max-w-[100px]">{user.email.split('@')[0]}</span>
-                <div className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg">
-                  <User className="w-3.5 h-3.5" aria-hidden />
-                </div>
-              </button>
-              {authMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full mt-2 w-48 py-1 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-20"
+        {showDensity && (
+          <div className="flex items-center gap-2 bg-slate-950/40 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors shrink-0">
+            <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors" aria-hidden />
+            <div className="flex bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="View mode">
+              {(['compact', 'standard', 'expert'] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  aria-pressed={density === d}
+                  onClick={() => setDensity(d)}
+                  className={cn(
+                    'px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors',
+                    density === d
+                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
+                      : 'text-slate-500 hover:text-slate-300',
+                  )}
+                  title={`${DENSITY_LABELS[d]} density`}
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setAuthMenuOpen(false);
-                      logout();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-slate-700/50 transition-colors text-left"
-                  >
-                    <LogOut className="w-4 h-4" aria-hidden />
-                    Sign Out
-                  </button>
-                </div>
-              )}
+                  {DENSITY_SHORT[d]}
+                </button>
+              ))}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowLogin(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-300"
-            >
-              <User className="w-3.5 h-3.5" aria-hidden />
-              Sign In
-            </button>
-          )}
-        </div>
-
-        {showLogin && (
-          <LoginModal
-            onClose={() => setShowLogin(false)}
-            onSuccess={persistLandingSkip}
-          />
+          </div>
         )}
       </div>
 
-      {(activeFilterSummary || isError) && (
+      {isError && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-          {activeFilterSummary && (
-            <p className="text-[11px] sm:text-xs font-medium text-slate-400 tracking-wide">
-              {activeFilterSummary}
-            </p>
-          )}
-          {isError && (
-            <div className="flex items-center gap-2 text-xs text-rose-300" role="alert">
-              <AlertCircle className="w-3.5 h-3.5" aria-hidden />
-              <span>Failed to load rankings from the API.</span>
-              {onRetry && (
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className="underline font-semibold hover:text-white"
-                >
-                  Retry
-                </button>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-xs text-rose-300" role="alert">
+            <AlertCircle className="w-3.5 h-3.5" aria-hidden />
+            <span>Failed to load rankings from the API.</span>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="underline font-semibold hover:text-white"
+              >
+                Retry
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
