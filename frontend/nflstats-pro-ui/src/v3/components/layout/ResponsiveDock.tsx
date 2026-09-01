@@ -106,7 +106,7 @@ export const ResponsiveDock = ({
       )}
 
       <main className="relative z-[1] flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        <header className="min-h-14 shrink-0 border-b border-white/[0.06] flex items-center justify-between gap-4 px-4 lg:px-6 py-2 glass-card rounded-none border-x-0 border-t-0">
+        <header className="min-h-14 shrink-0 border-b border-white/[0.06] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4 lg:px-6 py-2 glass-card rounded-none border-x-0 border-t-0">
           <div className="flex items-center gap-3 min-w-0">
             {isMobile && (
               <button
@@ -122,17 +122,16 @@ export const ResponsiveDock = ({
             <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-slate-500 shrink-0">
               PEM Sports
             </span>
-            <span className="text-slate-600 hidden sm:inline shrink-0">·</span>
-            <div className="min-w-0 flex items-baseline gap-2">
-              <h1 className="text-sm sm:text-base font-bold tracking-tight text-white truncate">
-                {pageTitle(workspaceView, activePosition)}
-              </h1>
-              <span className="text-xs font-medium text-slate-400 hidden sm:inline truncate">
-                {supportingLabel(workspaceView)}
-              </span>
-            </div>
           </div>
-          <div className="shrink-0">
+          <div className="flex flex-col items-center justify-center text-center min-w-0 px-2">
+            <h1 className="text-sm sm:text-base font-bold tracking-tight text-white leading-tight truncate max-w-[40vw] sm:max-w-none">
+              {pageTitle(workspaceView, activePosition)}
+            </h1>
+            <span className="text-[11px] font-medium text-slate-400 hidden sm:block leading-tight">
+              {supportingLabel(workspaceView)}
+            </span>
+          </div>
+          <div className="flex justify-end min-w-0">
             <AuthControls />
           </div>
         </header>
