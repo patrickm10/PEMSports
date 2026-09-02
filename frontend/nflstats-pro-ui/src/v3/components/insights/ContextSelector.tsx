@@ -46,7 +46,7 @@ export function ContextSelector({ year }: ContextSelectorProps) {
 
   const emptyHint =
     context === 'home_away'
-      ? 'Home/Away is not available in the baked data for this selection.'
+      ? 'Home vs away isn’t available for this selection.'
       : context === 'opponent'
         ? 'No opponents found for this season.'
         : context === 'stadium'
@@ -63,8 +63,9 @@ export function ContextSelector({ year }: ContextSelectorProps) {
           <button
             key={ctx.id}
             type="button"
+            aria-pressed={context === ctx.id}
             onClick={() => setContext(ctx.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 ${
               context === ctx.id
                 ? 'bg-white/10 text-white border-white/20'
                 : 'text-slate-400 border-transparent hover:bg-white/[0.04]'
@@ -95,11 +96,12 @@ export function ContextSelector({ year }: ContextSelectorProps) {
       {values.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto custom-scrollbar">
           {values.map((val) => (
-            <button
-              key={val}
-              type="button"
-              onClick={() => setContextValue(val)}
-              className={`px-3 py-1 rounded-md text-xs font-medium border transition-colors ${
+              <button
+                key={val}
+                type="button"
+                aria-pressed={contextValue === val}
+                onClick={() => setContextValue(val)}
+                className={`px-3 py-1 rounded-md text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 ${
                 contextValue === val
                   ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
                   : 'text-slate-400 border-white/10 hover:text-slate-200'

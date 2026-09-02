@@ -62,7 +62,7 @@ export function LoginModal({
     }
   };
 
-  const title = isRegistering ? 'Create account' : 'Sign in';
+  const title = isRegistering ? 'Create Account' : 'Sign In';
 
   return (
     <Modal
@@ -120,10 +120,10 @@ export function LoginModal({
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 flex w-full items-center justify-center rounded-xl bg-sky-500 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_12px_28px_rgba(56,189,248,0.25)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center rounded-xl bg-sky-500 py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(56,189,248,0.25)] transition-colors hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-          {isRegistering ? 'Create account' : 'Sign in'}
+          {isRegistering ? 'Create Account' : 'Sign In'}
         </button>
       </form>
 
@@ -137,7 +137,7 @@ export function LoginModal({
           }}
           className="font-semibold text-sky-400 hover:text-sky-300 focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
         >
-          {isRegistering ? 'Sign in' : 'Create an account'}
+          {isRegistering ? 'Sign In' : 'Create an account'}
         </button>
       </p>
 

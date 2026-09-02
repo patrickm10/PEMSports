@@ -172,7 +172,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
     isReady && !isLoading && !error && items.length === 0;
   const trailingForRecent = (
     <span className="inline-flex items-center gap-1">
-      <History size={12} /> recent
+      <History size={12} /> Recent
     </span>
   );
 
@@ -181,8 +181,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
       isOpen={isOpen}
       onClose={close}
       size="md"
-      title="Search Players"
-      description="Type a name to find any player across all positions"
+      title={pickMode === 'compare' ? 'Compare player' : 'Search'}
+      description="Find a player at any position."
       contentClassName="px-4 pb-4 pt-3"
       initialFocusRef={inputRef as React.RefObject<HTMLElement | null>}
     >
@@ -195,6 +195,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
           ref={inputRef}
           type="text"
           role="combobox"
+          aria-label="Find a player"
           aria-expanded={isOpen}
           aria-controls="search-suggestions"
           aria-activedescendant={
@@ -261,7 +262,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onPlayerSelected }) =>
         </div>
       )}
       {error && (
-        <div className="text-center py-4 text-sm text-rose-400">
+        <div className="text-center py-4 text-sm text-rose-400" role="alert">
           Search is unavailable right now. Try again in a moment.
         </div>
       )}

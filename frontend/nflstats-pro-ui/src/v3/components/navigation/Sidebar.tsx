@@ -29,7 +29,6 @@ interface SidebarItemProps {
   active?: boolean;
   onClick?: () => void;
   collapsed?: boolean;
-  disabled?: boolean;
   hint?: string;
 }
 
@@ -39,20 +38,19 @@ const SidebarItem = ({
   active,
   onClick,
   collapsed,
-  disabled,
   hint,
 }: SidebarItemProps) => (
   <button
     type="button"
     onClick={onClick}
-    disabled={disabled}
+    aria-current={active ? 'page' : undefined}
+    aria-label={collapsed ? hint || label : undefined}
     className={cn(
-      'w-full flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 group text-left',
+      'w-full flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50',
       active
         ? 'bg-white/10 text-white border border-white/15 shadow-[0_0_0_1px_rgba(56,189,248,0.15)]'
         : 'text-slate-400 hover:text-slate-100 border border-transparent hover:bg-white/[0.04]',
       collapsed && 'justify-center px-0',
-      disabled && 'opacity-40 pointer-events-none',
     )}
     title={collapsed ? hint || label : hint}
   >
@@ -92,6 +90,7 @@ interface SidebarProps {
   onPositionChange: (pos: string) => void;
   collapsed: boolean;
   onToggle: () => void;
+  showCollapseToggle?: boolean;
   workspaceView: WorkspaceView;
   onWorkspaceViewChange: (v: WorkspaceView) => void;
   hasSelectedPlayer: boolean;
@@ -103,6 +102,7 @@ export const Sidebar = ({
   onPositionChange,
   collapsed,
   onToggle,
+  showCollapseToggle = true,
   workspaceView,
   onWorkspaceViewChange,
   hasSelectedPlayer,
@@ -114,16 +114,18 @@ export const Sidebar = ({
       initial={false}
       animate={{ width: collapsed ? 80 : 220 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="h-full border-r border-white/[0.06] py-5 flex flex-col gap-4 z-20 relative overflow-hidden glass-card rounded-none border-y-0 border-l-0"
+      className="h-full border-r border-white/[0.06] py-5 flex flex-col gap-4 z-20 relative overflow-visible bg-slate-950/40"
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="absolute -right-3 top-12 w-6 h-6 bg-slate-900/90 border border-white/10 rounded-full flex items-center justify-center text-sky-400 hover:bg-sky-500/10 transition-colors z-30 shadow-lg"
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+      {showCollapseToggle && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute -right-3 top-12 w-8 h-8 bg-slate-900/90 border border-white/10 rounded-full flex items-center justify-center text-sky-400 hover:bg-sky-500/10 transition-colors z-30 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+      )}
 
       <div className={cn('flex items-center gap-3 px-5 overflow-hidden shrink-0', collapsed && 'px-0 justify-center')}>
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.35)] shrink-0">
@@ -131,14 +133,14 @@ export const Sidebar = ({
         </div>
         <AnimatePresence>
           {!collapsed && (
-            <motion.h1
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="font-bold text-lg tracking-tight text-white whitespace-nowrap"
             >
               PEM <span className="text-sky-400">Sports</span>
-            </motion.h1>
+            </motion.p>
           )}
         </AnimatePresence>
       </div>
@@ -184,8 +186,11 @@ export const Sidebar = ({
             active={workspaceView === 'player'}
             collapsed={collapsed}
             onClick={() => onWorkspaceViewChange('player')}
-            disabled={!hasSelectedPlayer}
-            hint={hasSelectedPlayer ? 'View selected player analytics' : 'Select a player from Rankings or Search'}
+            hint={
+              hasSelectedPlayer
+                ? 'View selected player analytics'
+                : 'Find a player to open analytics'
+            }
           />
         </div>
 
@@ -202,9 +207,11 @@ export const Sidebar = ({
               icon={pos.icon}
               label={pos.label}
               hint={pos.hint}
-              active={workspaceView === 'rankings' && activePosition === pos.id}
+              active={
+                (workspaceView === 'rankings' || workspaceView === 'dashboard') &&
+                activePosition === pos.id
+              }
               onClick={() => {
-                onWorkspaceViewChange('rankings');
                 onPositionChange(pos.id);
               }}
               collapsed={collapsed}

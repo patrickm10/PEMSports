@@ -22,6 +22,13 @@ const POSITION_LABELS: Record<string, string> = {
   te: 'TE',
 };
 
+const CONTEXT_LABELS: Record<string, string> = {
+  surface: 'Surface',
+  opponent: 'Opponent',
+  stadium: 'Stadium',
+  home_away: 'Home vs Away',
+};
+
 export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsViewProps) {
   const position = useInsightsStore((s) => s.position);
   const context = useInsightsStore((s) => s.context);
@@ -46,7 +53,7 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
     refetch: refetchDetail,
   } = useInsightsPlayerDetail(selectedPlayerId, selectedPlayerPosition, filters);
 
-  const contextLabel = `${context.replace('_', ' ')}: ${contextValue || '—'}`;
+  const contextLabel = `${CONTEXT_LABELS[context] ?? context}: ${contextValue || '—'}`;
 
   const handleSelect = (row: {
     player_id: string;
@@ -60,7 +67,8 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       <p className="text-slate-400 text-sm">
-        Relative performance vs each player&apos;s season baseline in specific contexts
+        See who over- or under-performed their own season average in a situation
+        (surface, opponent, stadium, or home/away).
       </p>
 
       <PositionTabs active={position} onChange={setPosition} />

@@ -20,8 +20,9 @@ export function PositionTabs({ active, onChange }: PositionTabsProps) {
         <button
           key={pos.id}
           type="button"
+          aria-pressed={active === pos.id}
           onClick={() => onChange(pos.id)}
-          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
+          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 ${
             active === pos.id
               ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
               : 'bg-white/[0.03] text-slate-400 border-white/10 hover:text-white hover:bg-white/[0.06]'

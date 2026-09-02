@@ -8,7 +8,7 @@ import { RankingsApi } from '../api/rankingsApi';
 export function useSeasons(position: string) {
   return useQuery<number[], Error>({
     queryKey: ['seasons', position],
-    queryFn: () => RankingsApi.fetchSeasons(position),
+    queryFn: ({ signal }) => RankingsApi.fetchSeasons(position, signal),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,

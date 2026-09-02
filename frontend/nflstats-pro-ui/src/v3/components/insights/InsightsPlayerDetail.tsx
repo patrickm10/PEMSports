@@ -90,7 +90,7 @@ export function InsightsPlayerDetail({
       <MetricLineChart
         data={chartModel}
         title="Weekly performance vs season baseline"
-        subtitle="Leave-one-out season baseline per week"
+        subtitle="Each week versus that player’s season baseline (the selected week left out)."
         height={280}
         isLoading={isLoading}
         emptyMessage="No weekly observations for this filter."

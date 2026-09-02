@@ -64,7 +64,7 @@ describe('toInsightsTimeSeriesChartModel', () => {
 
     expect(model.series).toHaveLength(2);
     expect(model.series[0].name).toBe('Fantasy Points');
-    expect(model.series[1].name).toBe('Season Baseline (LOO)');
+    expect(model.series[1].name).toBe('Season baseline');
     expect(model.series[0].points.map((p) => p.y)).toEqual([18.5, 10]);
     expect(model.series[1].points.map((p) => p.y)).toEqual([14.0, 16]);
     expect(model.xAxis).toEqual(["W1 '24", "W2 '24"]);
