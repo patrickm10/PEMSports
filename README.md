@@ -51,18 +51,6 @@ frontend/nflstats-pro-ui  (Vite, React 19)  →  https://pemsports.com
 .\scripts\verify_production.ps1
 ```
 
----
-
-## Go-live checklist
-
-1. **Render:** Dashboard → **New Blueprint** → connect GitHub repo → sync [`render.yaml`](render.yaml) → confirm build runs `bake_db.py` and service is **Live**.
-2. **Vercel:** Ensure `.vercelignore` excludes `api/` (prevents legacy serverless 500). Redeploy production after push to `main`.
-3. **Vercel settings:** Root Directory = repo root (uses root [`vercel.json`](vercel.json)) **or** `frontend/nflstats-pro-ui`; set `VITE_API_BASE` in Production env; attach domain `pemsports.com`.
-4. **GitHub (optional):** Secret `RENDER_DEPLOY_HOOK_URL` for CI-triggered Render redeploys on `main`.
-5. **Smoke test:** `.\scripts\verify_production.ps1` — all checks green.
-
----
-
 ## Setup (local)
 
 ### 1. Backend
@@ -96,8 +84,6 @@ cd frontend/nflstats-pro-ui
 npm ci
 npm run dev
 ```
-
-Copy `.env.example` to `.env.local` if you need a non-default API base. Dev server proxies `/api` to `http://localhost:8000`.
 
 ### 3. Convenience (Windows)
 
@@ -137,10 +123,6 @@ Public UI: Vite SPA under **`frontend/nflstats-pro-ui`**.
 
 **CD:** Vercel Git integration redeploys on push to `main`. Frontend CI gates PRs.
 
-### Docker (optional)
-
-[`Dockerfile`](Dockerfile) — local/container parity; not the primary production path.
-
 ---
 
 ## Known issues
@@ -160,18 +142,12 @@ Full operator state: [`state_handoff.md`](state_handoff.md).
 
 | Topic | Detail |
 |--------|--------|
-| **`nfl_stats.db`** | Gitignored; clones and deploy builds must run `bake_db.py`. |
-| **Postgres** | Required in production/staging; Render blueprint links `nflstats-db`. |
 | **Render cold start** | First request after idle may take 30–60s on starter tier. |
 
 ---
 
 ## Roadmap (short)
 
-- [x] CI: bake + validate **`both`** before merge.
-- [x] Bake DuckDB in Render/Docker deploy build.
-- [x] Production deploy wiring (render.yaml, vercel.json, verify script, README URLs).
-- [ ] **Go live:** Render Blueprint + Vercel redeploy + smoke tests green.
 - [ ] Ranking column contract (Task 3).
 - [ ] Optional: projections / ML layer.
 
