@@ -7,7 +7,7 @@ import { RankingsApi } from '../api/rankingsApi';
 export function useWeeks(position: string, year: string) {
   return useQuery({
     queryKey: ['weeks', position, year],
-    queryFn: () => RankingsApi.fetchWeeks(position, year),
+    queryFn: ({ signal }) => RankingsApi.fetchWeeks(position, year, signal),
     staleTime: 60 * 60 * 1000, // 1 hour
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
     placeholderData: (prev) => prev,

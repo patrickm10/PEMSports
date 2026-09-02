@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LogOut, User } from 'lucide-react';
 import { persistLandingSkip } from '../../../utils/filterState';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -9,6 +9,15 @@ export function AuthControls() {
   const [showLogin, setShowLogin] = useState(false);
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (!authMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAuthMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [authMenuOpen]);
+
   return (
     <>
       {user ? (
@@ -17,6 +26,7 @@ export function AuthControls() {
             type="button"
             aria-expanded={authMenuOpen}
             aria-haspopup="menu"
+            aria-controls="pem-auth-menu"
             onClick={() => setAuthMenuOpen((o) => !o)}
             onBlur={() => {
               window.setTimeout(() => setAuthMenuOpen(false), 150);
@@ -30,6 +40,7 @@ export function AuthControls() {
           </button>
           {authMenuOpen && (
             <div
+              id="pem-auth-menu"
               role="menu"
               className="absolute right-0 top-full mt-2 w-48 py-1 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-20"
             >

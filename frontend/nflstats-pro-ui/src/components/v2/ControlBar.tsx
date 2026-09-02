@@ -40,11 +40,8 @@ const DENSITY_LABELS: Record<GridDensity, string> = {
   expert: 'Expert',
 };
 
-const DENSITY_SHORT: Record<GridDensity, string> = {
-  compact: 'Comp',
-  standard: 'Sta',
-  expert: 'Exp',
-};
+const FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50';
 
 export function ControlBar({
   viewMode,
@@ -68,32 +65,33 @@ export function ControlBar({
 }: ControlBarProps) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap sm:flex-nowrap items-center w-full min-h-14 sm:min-h-16 px-3 sm:px-4 rounded-2xl glass-card border-white/10">
-        {showSearch && (
-          <div className="flex flex-1 basis-full sm:basis-0 justify-start items-center min-w-0 py-2 sm:py-0 sm:pr-3">
-            <div className="relative w-full max-w-[12rem] group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors" aria-hidden />
-              <label htmlFor="pem-filter-search" className="sr-only">
-                Filter visible rows by player or team
-              </label>
-              <input
-                id="pem-filter-search"
-                type="search"
-                placeholder="Filter visible rows…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950/40 border border-white/[0.04] rounded-xl h-9 py-1.5 !pl-10 pr-3 text-[11px] font-medium leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500/30 transition-all placeholder:text-slate-500"
-              />
-            </div>
-          </div>
-        )}
+      <div
+        role="toolbar"
+        aria-label="Rankings filters"
+        className="flex flex-wrap items-center justify-between gap-3 w-full min-h-11 px-1"
+      >
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className={cn(
+                'inline-flex items-center gap-1.5 h-9 px-3 rounded-[var(--radius-md)] bg-slate-950/40 text-[11px] font-semibold leading-none text-slate-400 hover:text-white transition-colors',
+                FOCUS,
+              )}
+              aria-label="Reset filters"
+            >
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden />
+              Reset
+            </button>
+          )}
 
-        <div className="flex flex-1 basis-full sm:basis-0 justify-center items-center min-w-0 py-2 sm:py-0">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          <div className="w-px h-6 bg-white/[0.06] hidden sm:block" />
+
           <div
-            className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-xl border border-white/[0.04] shadow-inner shadow-black/20"
+            className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-[var(--radius-md)]"
             role="group"
-            aria-label="Time grain"
+            aria-label="Season or weekly"
           >
             {(['season', 'weekly'] as const).map((mode) => (
               <button
@@ -102,16 +100,17 @@ export function ControlBar({
                 aria-pressed={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 className={cn(
-                  'relative inline-flex items-center justify-center h-8 min-w-[3.75rem] px-3 rounded-lg text-[11px] font-semibold leading-none whitespace-nowrap transition-all duration-200',
+                  'relative inline-flex items-center justify-center h-9 min-w-[3.75rem] px-3 rounded-[var(--radius-sm)] text-[11px] font-semibold leading-none whitespace-nowrap transition-all duration-200',
+                  FOCUS,
                   viewMode === mode
                     ? 'text-white'
-                    : 'text-slate-500 hover:text-slate-300',
+                    : 'text-slate-400 hover:text-slate-200',
                 )}
               >
                 {viewMode === mode && (
                   <motion.div
                     layoutId="viewToggle"
-                    className="absolute inset-0 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20"
+                    className="absolute inset-0 bg-[var(--accent)] rounded-[var(--radius-sm)] shadow-lg shadow-blue-500/20"
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   />
                 )}
@@ -122,10 +121,8 @@ export function ControlBar({
             ))}
           </div>
 
-          <div className="w-px h-6 bg-white/[0.04] hidden sm:block" />
-
-          <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors relative">
-            <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" aria-hidden />
+          <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-[var(--radius-md)]">
+            <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
             <div className="relative flex items-center">
               <label htmlFor="pem-filter-year" className="sr-only">
                 Season year
@@ -136,11 +133,14 @@ export function ControlBar({
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 disabled={availableYears.length === 0}
-                className="bg-transparent min-w-[6.5rem] text-[11px] font-semibold leading-none text-slate-300 outline-none cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50"
+                className={cn(
+                  'bg-transparent min-w-[6.5rem] text-[11px] font-semibold leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
+                  FOCUS,
+                )}
               >
                 {availableYears.length === 0 ? (
                   <option value="" className="bg-slate-900 text-slate-200">
-                    {isLoading ? 'Loading…' : 'No seasons'}
+                    {isLoading ? 'Loading seasons…' : 'No seasons yet'}
                   </option>
                 ) : (
                   availableYears.map((year) => (
@@ -154,7 +154,7 @@ export function ControlBar({
                   ))
                 )}
               </select>
-              <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none group-hover:text-slate-400 transition-colors" aria-hidden />
+              <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none" aria-hidden />
             </div>
           </div>
 
@@ -167,8 +167,8 @@ export function ControlBar({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors relative">
-                  <Hash className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" aria-hidden />
+                <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-[var(--radius-md)]">
+                  <Hash className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
                   <div className="relative flex items-center">
                     <label htmlFor="pem-filter-week" className="sr-only">
                       Week number
@@ -179,11 +179,14 @@ export function ControlBar({
                       value={selectedWeek}
                       onChange={(e) => setSelectedWeek(e.target.value)}
                       disabled={availableWeeks.length === 0}
-                      className="bg-transparent min-w-[4.75rem] text-[11px] font-semibold leading-none text-slate-300 outline-none cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50"
+                      className={cn(
+                        'bg-transparent min-w-[5.5rem] text-[11px] font-semibold leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
+                        FOCUS,
+                      )}
                     >
                       {availableWeeks.length === 0 ? (
                         <option value="" className="bg-slate-900 text-slate-200">
-                          No weeks
+                          No weeks yet
                         </option>
                       ) : (
                         availableWeeks.map((week) => (
@@ -192,56 +195,74 @@ export function ControlBar({
                             value={week.toString()}
                             className="bg-slate-900 text-slate-200"
                           >
-                            Wk {week}
+                            Week {week}
                           </option>
                         ))
                       )}
                     </select>
-                    <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none group-hover:text-slate-400 transition-colors" aria-hidden />
+                    <ChevronDown className="absolute right-0 w-3 h-3 text-slate-500 pointer-events-none" aria-hidden />
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {onResetFilters && (
-            <button
-              type="button"
-              onClick={onResetFilters}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-white/[0.06] bg-slate-950/40 text-[11px] font-semibold leading-none text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
-              aria-label="Reset filters"
-            >
-              <RotateCcw className="w-3.5 h-3.5" aria-hidden />
-              Reset
-            </button>
-          )}
-          </div>
         </div>
 
-        {showDensity && (
-          <div className="flex flex-1 basis-full sm:basis-0 justify-end items-center min-w-0 py-2 sm:py-0 sm:pl-3">
-            <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2 pr-1 rounded-xl border border-white/[0.04] group hover:border-slate-700/50 transition-colors">
-            <Rows3 className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" aria-hidden />
-            <div className="flex items-center gap-0.5 bg-slate-950/80 p-0.5 rounded-lg" role="group" aria-label="View mode">
-              {(['compact', 'standard', 'expert'] as const).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  aria-pressed={density === d}
-                  onClick={() => setDensity(d)}
-                  className={cn(
-                    'inline-flex items-center justify-center h-7 min-w-[2.25rem] px-2.5 text-[10px] font-semibold leading-none whitespace-nowrap rounded-md transition-colors',
-                    density === d
-                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20'
-                      : 'text-slate-500 hover:text-slate-300',
-                  )}
-                  title={`${DENSITY_LABELS[d]} density`}
+        {(showDensity || showSearch) && (
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto flex-wrap">
+            {showDensity && (
+              <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2 pr-1 rounded-[var(--radius-md)]">
+                <Rows3 className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
+                <div
+                  className="flex items-center gap-0.5 bg-slate-950/80 p-0.5 rounded-[var(--radius-sm)]"
+                  role="group"
+                  aria-label="Table density"
                 >
-                  {DENSITY_SHORT[d]}
-                </button>
-              ))}
-            </div>
-            </div>
+                  {(['compact', 'standard', 'expert'] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      aria-pressed={density === d}
+                      aria-label={DENSITY_LABELS[d]}
+                      onClick={() => setDensity(d)}
+                      className={cn(
+                        'inline-flex items-center justify-center h-8 min-w-[4.25rem] px-2.5 text-[11px] font-semibold leading-none whitespace-nowrap rounded-[var(--radius-sm)] transition-colors',
+                        FOCUS,
+                        density === d
+                          ? 'bg-[var(--accent)] text-white shadow shadow-blue-500/20'
+                          : 'text-slate-400 hover:text-slate-200',
+                      )}
+                      title={`${DENSITY_LABELS[d]} density`}
+                    >
+                      {DENSITY_LABELS[d]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {showSearch && (
+              <div className="relative w-full max-w-[12rem] group">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors"
+                  aria-hidden
+                />
+                <label htmlFor="pem-filter-search" className="sr-only">
+                  Filter by player or team
+                </label>
+                <input
+                  id="pem-filter-search"
+                  type="search"
+                  placeholder="Filter by player or team"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn(
+                    'w-full bg-slate-950/40 rounded-[var(--radius-md)] h-9 py-1.5 !pl-10 pr-3 text-[11px] font-medium leading-none placeholder:text-slate-500',
+                    FOCUS,
+                  )}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -250,12 +271,12 @@ export function ControlBar({
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2 text-xs text-rose-300" role="alert">
             <AlertCircle className="w-3.5 h-3.5" aria-hidden />
-            <span>Failed to load rankings from the API.</span>
+            <span>Couldn’t load rankings.</span>
             {onRetry && (
               <button
                 type="button"
                 onClick={onRetry}
-                className="underline font-semibold hover:text-white"
+                className={cn('underline font-semibold hover:text-white', FOCUS)}
               >
                 Retry
               </button>

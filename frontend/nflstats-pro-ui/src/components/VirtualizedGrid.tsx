@@ -101,40 +101,86 @@ const HEADER_ABBR: Record<string, string> = {
   rank: '#',
   player_name: 'Player',
   team: 'Team',
-  year: 'YR',
-  week: 'WK',
+  year: 'Season',
+  week: 'Week',
   opponent: 'Opp',
-  games_played: 'G',
+  games_played: 'Games',
   fpts: 'FP',
   fpts_ppr: 'PPR',
   fpts_per_game: 'FP/G',
   fpts_ppr_per_game: 'PPR/G',
-  yds: 'YDS',
+  yds: 'Yards',
   td: 'TD',
-  att: 'ATT',
-  cmp: 'CMP',
-  int: 'INT',
-  sacks: 'SK',
-  fumbles: 'FUM',
-  tgt: 'TGT',
-  rec: 'REC',
-  rush_yds: 'RYD',
-  rush_td: 'RTD',
+  att: 'Att',
+  cmp: 'Comp',
+  int: 'Int',
+  sacks: 'Sacks',
+  fumbles: 'Fum',
+  tgt: 'Tgt',
+  rec: 'Rec',
+  rush_yds: 'Rush yds',
+  rush_td: 'Rush TD',
+  rush_att: 'Rush att',
+  r_yds: 'Rush yds',
+  r_td: 'Rush TD',
+  r_att: 'Rush att',
   stadium_name: 'Stadium',
   city: 'City',
-  state: 'ST',
-  surface_type: 'Surf',
+  state: 'State',
+  surface_type: 'Surface',
   indoor_outdoor: 'Venue',
   elevation: 'Elev',
-  weather_impact: 'Wx Impact',
+  weather_impact: 'Weather',
   year_opened: 'Opened',
   temp: 'Temp',
   humidity: 'Hum',
   wind: 'Wind',
-  game_result: 'Res',
-  rost: 'Rost%',
-  pct: 'PCT',
+  game_result: 'W/L',
+  rost: 'Rost %',
+  pct: 'Comp %',
+  fl: 'Fum',
 };
+
+const HEADER_TITLE: Record<string, string> = {
+  rank: 'Rank',
+  player_name: 'Player name',
+  team: 'Team',
+  year: 'Season year',
+  week: 'Week',
+  opponent: 'Opponent',
+  games_played: 'Games played',
+  fpts: 'Fantasy points',
+  fpts_ppr: 'PPR fantasy points',
+  fpts_per_game: 'Fantasy points per game',
+  fpts_ppr_per_game: 'PPR fantasy points per game',
+  yds: 'Yards',
+  td: 'Touchdowns',
+  att: 'Attempts',
+  cmp: 'Completions',
+  int: 'Interceptions',
+  sacks: 'Sacks',
+  fumbles: 'Fumbles',
+  tgt: 'Targets',
+  rec: 'Receptions',
+  rush_yds: 'Rushing yards',
+  rush_td: 'Rushing touchdowns',
+  rush_att: 'Rushing attempts',
+  r_yds: 'Rushing yards',
+  r_td: 'Rushing touchdowns',
+  r_att: 'Rushing attempts',
+  stadium_name: 'Stadium',
+  surface_type: 'Playing surface',
+  indoor_outdoor: 'Indoor or outdoor',
+  weather_impact: 'Weather impact',
+  game_result: 'Game result',
+  rost: 'Roster percentage',
+  pct: 'Completion percentage',
+  fl: 'Fumbles',
+};
+
+function titleCaseKey(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 const COUNTING_STAT_KEYS = new Set<string>([
   'td',
@@ -370,7 +416,7 @@ function MobilePlayerCard({
           </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">YDS</p>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Yards</p>
           <p className="text-sm font-bold text-white tabular-nums">{fmt(row.yds, 0)}</p>
         </div>
         <div>
@@ -449,8 +495,8 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
         id: key,
         accessorKey: key,
         header: () => {
-          const label = HEADER_ABBR[key] ?? key.replace(/_/g, ' ').toUpperCase();
-          const title = key.replace(/_/g, ' ');
+          const label = HEADER_ABBR[key] ?? titleCaseKey(key);
+          const title = HEADER_TITLE[key] ?? titleCaseKey(key);
           return (
             <span title={title} className="whitespace-nowrap">
               {label}
@@ -586,7 +632,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   if (!data.length) {
     return (
       <div
-        className="analysis-grid-shell glass-card flex items-center justify-center min-h-[240px] rounded-2xl border border-white/10 px-6"
+        className="analysis-grid-shell glass-card flex items-center justify-center min-h-[240px] rounded-2xl px-6"
         data-density={density}
         role="status"
       >
@@ -603,7 +649,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
     return (
       <div
         ref={parentRef}
-        className="analysis-grid-shell glass-card rounded-2xl border border-white/10"
+        className="analysis-grid-shell glass-card rounded-2xl"
         data-density={density}
         style={shellStyle}
       >
@@ -645,7 +691,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
       data-density={density}
       style={shellStyle}
     >
-      <div className="min-w-0 overflow-x-auto h-full">
+      <div className="min-w-0 h-full">
         <table className="analysis-grid w-max min-w-full">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -699,7 +745,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
                       className={cn(
-                        'flex items-center gap-1.5 w-full bg-transparent border-0 p-0 text-inherit cursor-pointer',
+                        'flex items-center gap-1.5 w-full bg-transparent border-0 p-0 text-inherit cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 rounded-sm',
                         align === 'right' && 'justify-end',
                         align === 'center' && 'justify-center',
                         align === 'left' && 'justify-start',

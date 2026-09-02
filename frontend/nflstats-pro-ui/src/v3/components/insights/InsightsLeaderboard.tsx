@@ -73,7 +73,7 @@ export function InsightsLeaderboard({
       <div className="px-4 py-3 border-b border-white/[0.06]">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
         <p className="text-[10px] text-slate-500 mt-1">
-          Ranked by insight score (relative change × sample strength)
+          Ranked by how large the difference is and how many games it is based on.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -96,9 +96,17 @@ export function InsightsLeaderboard({
               return (
                 <tr
                   key={row.player_id}
+                  tabIndex={0}
+                  aria-pressed={active}
                   onClick={() => onSelect(row)}
-                  className={`cursor-pointer border-b border-white/[0.04] transition-colors ${
-                    active ? 'bg-sky-500/10' : 'hover:bg-white/[0.03]'
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelect(row);
+                    }
+                  }}
+                  className={`cursor-pointer border-b border-white/[0.04] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/50 ${
+                    active ? 'bg-sky-500/15' : 'hover:bg-white/[0.03]'
                   }`}
                 >
                   <td className="px-3 py-2.5 text-slate-500 tabular-nums">{index + 1}</td>

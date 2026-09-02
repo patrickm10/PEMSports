@@ -19,6 +19,7 @@ import {
 } from './components/charts/chartOptions';
 import { resolvePrimaryMetric } from './utils/metrics';
 import { rankingToPlayerRef } from './utils/rankingToPlayerRef';
+import { positionFullName } from './utils/positionLabels';
 import {
   buildResetFilters,
   isValidWeek,
@@ -101,7 +102,11 @@ export default function App() {
   const validWeekInput = weekOk ? selectedWeek : '';
 
   const rankingsEnabled = workspaceView !== 'insights';
-  const seasonQuery = useRankings(activeTab, validYearInput, rankingsEnabled);
+  const seasonQuery = useRankings(
+    activeTab,
+    validYearInput,
+    rankingsEnabled && viewMode === 'season',
+  );
   const weeklyQuery = useWeeklyRankings(
     activeTab,
     viewMode === 'weekly' ? validYearInput : '',
@@ -111,12 +116,18 @@ export default function App() {
 
   const activeQuery = viewMode === 'season' ? seasonQuery : weeklyQuery;
   const {
-    data: sortedData = [],
+    data: queryData = [],
     isLoading,
     isError,
-    isFetching,
+    isPlaceholderData,
     refetch,
   } = activeQuery;
+
+  const sortedData = useMemo(
+    () => (isPlaceholderData ? [] : (queryData as Ranking[])),
+    [isPlaceholderData, queryData],
+  );
+  const rankingsBusy = isLoading || seasonsLoading || isPlaceholderData;
 
   const filteredData = useMemo<Ranking[]>(() => {
     if (!searchQuery) return sortedData as Ranking[];
@@ -151,7 +162,6 @@ export default function App() {
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
-    setWorkspaceView('rankings');
   };
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
@@ -192,23 +202,25 @@ export default function App() {
 
   const emptyMessage = (() => {
     if (isError || seasonsError) {
-      return 'API request failed. Check connectivity to the rankings service and retry.';
+      return 'Couldn’t load rankings. Check your connection and try again.';
     }
-    if (isLoading || seasonsLoading || isFetching) {
+    if (rankingsBusy) {
       return 'Loading rankings…';
     }
     if (!validYearInput) {
-      return 'No seasons available from the API for this position yet.';
+      return `No seasons yet for ${positionFullName(activeTab)}.`;
     }
     if (viewMode === 'weekly' && !validWeekInput) {
-      return `No weeks available for ${selectedYear || 'the selected year'}.`;
+      return `No weeks yet for ${selectedYear || 'the selected year'}.`;
     }
     if (searchQuery && sortedData.length > 0 && filteredData.length === 0) {
-      return `No players match “${searchQuery}” in the current filters.`;
+      return `No players match “${searchQuery}”.`;
     }
-    return `No records for ${activeTab.toUpperCase()} · ${
-      viewMode === 'weekly' ? `${selectedYear} Week ${selectedWeek}` : `${selectedYear} season`
-    }. This combination is empty in the serving database.`;
+    const slice =
+      viewMode === 'weekly'
+        ? `${selectedYear} week ${selectedWeek}`
+        : `${selectedYear} season`;
+    return `No ${positionFullName(activeTab)} ${slice} rankings yet.`;
   })();
 
   if (showLanding) {
@@ -230,12 +242,15 @@ export default function App() {
         onWorkspaceViewChange={handleWorkspaceViewChange}
         hasSelectedPlayer={Boolean(analyticsPlayer)}
         onOpenSearch={openSearch}
+        viewMode={viewMode}
+        selectedYear={selectedYear}
+        selectedWeek={selectedWeek}
       >
         <div
           id="pem-main-content"
           className={
             lockRankingsFill
-              ? 'w-full max-w-[1600px] mx-auto h-full min-h-0 flex flex-col gap-4'
+              ? 'w-full max-w-[1600px] mx-auto h-full min-h-0 flex flex-col gap-6'
               : 'w-full max-w-[1600px] mx-auto space-y-4'
           }
         >
@@ -257,9 +272,7 @@ export default function App() {
                 showDensity={workspaceView === 'rankings'}
                 showSearch={workspaceView !== 'insights'}
                 onResetFilters={handleResetFilters}
-                isLoading={
-                  workspaceView === 'rankings' && (isLoading || seasonsLoading)
-                }
+                isLoading={workspaceView === 'rankings' && rankingsBusy}
                 isError={workspaceView === 'rankings' && (isError || seasonsError)}
                 onRetry={() => {
                   void refetchSeasons();
@@ -292,21 +305,21 @@ export default function App() {
           {workspaceView === 'dashboard' && viewMode === 'weekly' && (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <EChart
-                title="Opponent Efficiency"
+                title="By opponent"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by opponent`}
                 option={opponentOption}
                 isLoading={isLoading}
                 emptyMessage={emptyMessage}
               />
               <EChart
-                title="Surface Split"
+                title="By surface"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by surface`}
                 option={surfaceOption}
                 isLoading={isLoading}
                 emptyMessage={emptyMessage}
               />
               <EChart
-                title="Venue Split"
+                title="By venue"
                 subtitle={`Average ${resolvedMetric?.label ?? 'metric'} by venue type`}
                 option={venueOption}
                 isLoading={isLoading}

@@ -329,10 +329,16 @@ export function usePlayerAnalytics(
     // Track loading + data per query so memo refreshes when fetches resolve.
     ...splitQueries.map((q) => q.data),
     ...splitQueries.map((q) => q.isLoading),
+    ...splitQueries.map((q) => q.isFetching),
+    ...splitQueries.map((q) => q.error),
     ...weeklyQueries.map((q) => q.data),
     ...weeklyQueries.map((q) => q.isLoading),
+    ...weeklyQueries.map((q) => q.isFetching),
+    ...weeklyQueries.map((q) => q.error),
     metaQuery.data,
     metaQuery.isLoading,
+    metaQuery.isFetching,
+    metaQuery.error,
   ]);
 }
 

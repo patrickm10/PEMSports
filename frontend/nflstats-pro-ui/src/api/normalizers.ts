@@ -357,7 +357,7 @@ export function toInsightsTimeSeriesChartModel(
         color: '#38bdf8',
       },
       {
-        name: 'Season Baseline (LOO)',
+        name: 'Season baseline',
         points: baselinePoints,
         color: '#94a3b8',
       },

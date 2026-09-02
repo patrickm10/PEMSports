@@ -1,5 +1,5 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { RankingsApi } from '../api/rankingsApi';
+import { useQuery } from '@tanstack/react-query';
+import { RankingsApi, shouldRetryRankingsQuery } from '../api/rankingsApi';
 import type { SeasonalRanking } from '../models/Ranking';
 import { SeasonalStatsListSchema } from '../v3/schemas/player';
 
@@ -17,9 +17,8 @@ export function useRankings(position: string, year: string, enabled = true) {
     },
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
-    retry: 2,
+    retry: shouldRetryRankingsQuery,
     enabled: enabled && !!position && !!year,
     refetchOnWindowFocus: false,
-    placeholderData: keepPreviousData,
   });
 }
