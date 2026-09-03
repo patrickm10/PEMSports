@@ -137,9 +137,11 @@ def _merge_home_away_schedule(
     schedule_path = str(PROJECT_ROOT / "data" / "_tmp_home_away_schedule.parquet").replace("\\", "/")
     schedule.write_parquet(schedule_path)
 
+    # Single-statement replace: the old DROP + RENAME path could leave the
+    # weekly table missing if RENAME failed after DROP (bake continued anyway).
     conn.execute(
         f"""
-        CREATE TABLE {table}_with_ha AS
+        CREATE OR REPLACE TABLE {table} AS
         SELECT w.*, s.home_away
         FROM {table} w
         LEFT JOIN read_parquet('{schedule_path}') s
@@ -148,8 +150,6 @@ def _merge_home_away_schedule(
          AND w.team = s.team
         """
     )
-    conn.execute(f"DROP TABLE {table}")
-    conn.execute(f"ALTER TABLE {table}_with_ha RENAME TO {table}")
     logger.info("  -> %s: attached home_away via %s", table.replace("_weekly", "").upper(), source)
 
 
@@ -187,13 +187,29 @@ def _attach_home_away(conn: duckdb.DuckDBPyConnection, pos: str) -> None:
 
 
 def bake():
-    if DB_PATH.exists():
-        logger.info(f"Removing existing database at {DB_PATH}")
-        DB_PATH.unlink()
+    baking_path = DB_PATH.with_suffix(".db.baking")
+    if baking_path.exists():
+        baking_path.unlink()
 
-    conn = duckdb.connect(str(DB_PATH))
+    conn = duckdb.connect(str(baking_path))
+    try:
+        _bake_into(conn)
+    except Exception:
+        conn.close()
+        if baking_path.exists():
+            baking_path.unlink()
+        raise
+    else:
+        conn.close()
+        baking_path.replace(DB_PATH)
+        logger.info(
+            f"Successfully baked persistent database: {DB_PATH} "
+            f"({DB_PATH.stat().st_size / 1024 / 1024:.2f} MB)"
+        )
 
-    # Optional canonical Players dimension:
+
+def _bake_into(conn: duckdb.DuckDBPyConnection) -> None:
+    """Populate `conn` with baked rankings tables (caller handles atomic swap)."""
     # If present, this table upgrades legacy parquet `player_id` values to internal UUIDs.
     # Downstream (API + headshots) should treat the UUID as the canonical key.
     players_table_loaded = False
@@ -301,12 +317,6 @@ def bake():
             f"Table {t[0]:<20}: {count:>6} rows | {len(cols):>2} cols -> "
             f"{', '.join(cols[:10])}{'...' if len(cols) > 10 else ''}"
         )
-
-    conn.close()
-    logger.info(
-        f"Successfully baked persistent database: {DB_PATH} "
-        f"({DB_PATH.stat().st_size / 1024 / 1024:.2f} MB)"
-    )
 
 
 if __name__ == "__main__":

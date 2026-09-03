@@ -30,7 +30,7 @@ function defaultValueForContext(context: InsightContext): string {
 }
 
 export const useInsightsStore = create<InsightsStore>((set) => ({
-  position: 'rb',
+  position: 'qb',
   context: 'surface',
   contextValue: 'Grass',
   selectedPlayerId: null,
