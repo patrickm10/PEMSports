@@ -35,6 +35,20 @@ class TestInsightsRoutesValidation:
         )
         assert resp.status_code == 422
 
+    def test_invalid_seasons_token_does_not_500(self):
+        resp = client.get(
+            "/api/v1/insights/contexts",
+            params={"position": "rb", "context": "surface", "seasons": "notayear"},
+        )
+        assert resp.status_code != 500
+
+    def test_mixed_valid_and_invalid_seasons_skips_bad_tokens(self):
+        resp = client.get(
+            "/api/v1/insights/contexts",
+            params={"position": "rb", "context": "surface", "seasons": "2024,abc,2023"},
+        )
+        assert resp.status_code != 500
+
 
 @pytest.mark.skipif(not DB_PATH.exists(), reason="Baked nfl_stats.db required")
 class TestInsightsRoutesSuccess:

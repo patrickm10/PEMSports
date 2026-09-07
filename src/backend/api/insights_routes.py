@@ -40,7 +40,10 @@ def _parse_seasons(seasons: Optional[str]) -> list[int] | None:
         part = part.strip()
         if not part:
             continue
-        parsed.append(int(part))
+        try:
+            parsed.append(int(part))
+        except ValueError:
+            continue
     return parsed or None
 
 

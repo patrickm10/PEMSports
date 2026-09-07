@@ -124,7 +124,7 @@ def get_available_weeks(position: Any, year: Optional[int] = None) -> list[int]:
 
 def get_player_impact(position: Any, player_id: str, metric_type: str) -> list[dict[str, Any]]:
     """Returns performance impact metrics for a player."""
-    cache_key = f"impact:{player_id}:{metric_type}"
+    cache_key = f"impact:{position}:{player_id}:{metric_type}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
