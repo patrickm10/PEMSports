@@ -1,5 +1,6 @@
 import type { LoginCredentials, RegisterCredentials, AuthResponse, UserProfile } from '../models/Auth';
 import { getApiBaseUrl } from '../utils/backendOrigin';
+import { refreshSession } from './apiClient';
 
 const API_BASE = `${getApiBaseUrl()}/auth`;
 
@@ -40,14 +41,26 @@ export const authApi = {
   getProfile: async (token?: string | null): Promise<UserProfile> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
-    const response = await fetch(`${API_BASE}/me`, {
+    let response = await fetch(`${API_BASE}/me`, {
       method: 'GET',
       headers,
       credentials: 'include',
     });
+    if (response.status === 401 && !token) {
+      const refreshed = await refreshSession();
+      if (refreshed) {
+        response = await fetch(`${API_BASE}/me`, {
+          method: 'GET',
+          headers,
+          credentials: 'include',
+        });
+      }
+    }
     if (!response.ok) throw new Error('Failed to fetch profile');
     return response.json();
   },
+
+  refresh: refreshSession,
 
   logout: async (): Promise<void> => {
     await fetch(`${API_BASE}/logout`, {

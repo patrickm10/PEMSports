@@ -33,6 +33,7 @@ _DB_PATH = Path(
 _thread_local = threading.local()
 _logged_db_path = False
 _local_generation = 0
+_last_pg_generation: Optional[int] = None
 
 _PRAGMA_RE = re.compile(
     r"^\s*PRAGMA\s+table_info\(\s*'([^']+)'\s*\)\s*$",
@@ -227,6 +228,7 @@ def _raise_store_error(exc: BaseException, context: str) -> None:
 
 def stats_generation() -> int:
     """Monotonic generation used in ranking cache keys."""
+    global _last_pg_generation
     if not is_postgres():
         return local_generation()
     try:
@@ -234,8 +236,16 @@ def stats_generation() -> int:
         row = conn.execute(
             "SELECT generation FROM stats_generation WHERE id = 1"
         ).fetchone()
-        return int(row[0]) if row else local_generation()
+        gen = int(row[0]) if row else local_generation()
+        _last_pg_generation = gen
+        return gen
     except Exception:
+        logger.warning(
+            "Failed to read stats_generation from Postgres; using last known generation",
+            exc_info=True,
+        )
+        if _last_pg_generation is not None:
+            return _last_pg_generation
         return local_generation()
 
 

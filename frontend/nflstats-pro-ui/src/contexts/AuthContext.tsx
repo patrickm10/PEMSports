@@ -38,7 +38,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(profile);
         }
       } catch {
-        if (mounted) {
+        const refreshed = await authApi.refresh();
+        if (refreshed) {
+          try {
+            const profile = await authApi.getProfile();
+            if (mounted) {
+              setUser(profile);
+            }
+          } catch {
+            if (mounted) {
+              setToken(null);
+              setUser(null);
+            }
+          }
+        } else if (mounted) {
           setToken(null);
           setUser(null);
         }

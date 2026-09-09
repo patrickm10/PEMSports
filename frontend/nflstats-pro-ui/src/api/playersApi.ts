@@ -7,18 +7,10 @@ import type {
   PlayerWeeklyResponse,
   SplitDimension,
 } from './playerTypes';
+import { ApiError, apiFetch } from './apiClient';
 
 const API_BASE = getApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 10_000;
-
-class ApiError extends Error {
-  status?: number;
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
-}
 
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const controller = new AbortController();
@@ -30,7 +22,7 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   if (signal) signal.addEventListener('abort', onParentAbort);
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await apiFetch(url, { signal: controller.signal });
     if (!response.ok) {
       throw new ApiError(`HTTP ${response.status}`, response.status);
     }
