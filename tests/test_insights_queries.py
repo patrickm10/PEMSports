@@ -158,6 +158,98 @@ class TestOpponentNormalization:
             assert driven["insights"] is not None
 
 
+class TestLocationCoverage:
+    def test_location_columns_exist_with_non_nulls_temp_empty(self):
+        import duckdb
+
+        con = duckdb.connect(str(DB_PATH), read_only=True)
+        for pos in ("qb", "rb", "wr", "te"):
+            table = f"{pos}_weekly"
+            cols = {r[0].lower() for r in con.execute(f"DESCRIBE {table}").fetchall()}
+            for col in ("indoor_outdoor", "elevation", "temp"):
+                assert col in cols, f"{table} missing {col}"
+            io = con.execute(
+                f"SELECT COUNT(*) FILTER (WHERE indoor_outdoor IS NOT NULL) FROM {table}"
+            ).fetchone()[0]
+            el = con.execute(
+                f"SELECT COUNT(*) FILTER (WHERE elevation IS NOT NULL) FROM {table}"
+            ).fetchone()[0]
+            tmp = con.execute(
+                f"SELECT COUNT(*) FILTER (WHERE temp IS NOT NULL) FROM {table}"
+            ).fetchone()[0]
+            assert io > 0, f"{table} indoor_outdoor has no non-nulls"
+            assert el > 0, f"{table} elevation has no non-nulls"
+            assert tmp == 0, (
+                f"{table} temp is populated ({tmp}); un-block weather only after unit proof"
+            )
+            distinct_io = {
+                r[0]
+                for r in con.execute(
+                    f"SELECT DISTINCT indoor_outdoor FROM {table} "
+                    "WHERE indoor_outdoor IS NOT NULL"
+                ).fetchall()
+            }
+            assert "Indoor" in distinct_io and "Outdoor" in distinct_io
+            bands = con.execute(
+                f"SELECT COUNT(*) FILTER (WHERE elevation < 100), "
+                f"COUNT(*) FILTER (WHERE elevation BETWEEN 100 AND 499), "
+                f"COUNT(*) FILTER (WHERE elevation >= 500) FROM {table}"
+            ).fetchone()
+            assert all(n > 0 for n in bands), f"{table} elevation does not span 100/500 cuts"
+
+
+class TestLocationContexts:
+    def test_indoor_outdoor_and_elevation_leaderboards(self):
+        for context in ("indoor_outdoor", "elevation"):
+            ctx = query_insights_context_values(
+                position="rb", context=context, year=2024
+            )
+            values = ctx.get("values") or []
+            assert values, f"Expected {context} values for 2024"
+            result = query_insights_leaderboard(
+                position="rb",
+                context=context,
+                context_value=values[0],
+                year=2024,
+                limit=5,
+            )
+            insights = result.get("insights") or []
+            if not insights:
+                result = query_insights_leaderboard(
+                    position="rb",
+                    context=context,
+                    context_value=values[0],
+                    years=[2022, 2023, 2024],
+                    year=None,
+                    limit=5,
+                )
+                insights = result.get("insights") or []
+            assert isinstance(insights, list)
+            for row in insights:
+                assert row["sample_size"] >= 3
+            scores = [r["insight_score"] for r in insights if r.get("insight_score") is not None]
+            assert scores == sorted(scores, reverse=True)
+
+    def test_weather_context_not_queryable(self):
+        with pytest.raises(ValueError, match="Unsupported context"):
+            query_insights_leaderboard(
+                position="rb",
+                context="weather",
+                context_value="Indoor",
+                year=2024,
+            )
+
+    def test_location_context_values_are_closed_sets(self):
+        io = query_insights_context_values(
+            position="rb", context="indoor_outdoor", year=2024
+        )
+        el = query_insights_context_values(
+            position="rb", context="elevation", year=2024
+        )
+        assert set(io.get("values") or []).issubset({"Indoor", "Outdoor"})
+        assert set(el.get("values") or []).issubset({"High", "Med", "Low"})
+
+
 class TestAllContexts:
     def test_all_four_contexts_return_nonempty_leaderboards(self):
         for context in ("surface", "opponent", "stadium", "home_away"):
@@ -198,6 +290,8 @@ class TestAllContexts:
             ("opponent", "KC"),
             ("stadium", None),
             ("home_away", "Home"),
+            ("indoor_outdoor", "Indoor"),
+            ("elevation", "High"),
         ):
             ctx = query_insights_context_values(
                 position="all", context=context, year=2024
@@ -260,6 +354,9 @@ class TestInsightsPlayerDetail:
                 "stadium_name",
                 "surface_type",
                 "home_away",
+                "weather_bucket",
+                "indoor_outdoor",
+                "elevation_band",
                 "fantasy_points",
                 "season_baseline",
                 "relative_change_pct",

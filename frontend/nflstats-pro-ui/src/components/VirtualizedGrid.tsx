@@ -104,10 +104,10 @@ const HEADER_ABBR: Record<string, string> = {
   year: 'Season',
   week: 'Week',
   opponent: 'Opp',
-  games_played: 'Games',
-  fpts: 'FP',
+  games_played: 'G',
+  fpts: 'Fantasy points',
   fpts_ppr: 'PPR',
-  fpts_per_game: 'FP/G',
+  fpts_per_game: 'Per game',
   fpts_ppr_per_game: 'PPR/G',
   yds: 'Yards',
   td: 'TD',
@@ -136,7 +136,7 @@ const HEADER_ABBR: Record<string, string> = {
   humidity: 'Hum',
   wind: 'Wind',
   game_result: 'W/L',
-  rost: 'Rost %',
+  rost: 'Rostered',
   pct: 'Comp %',
   fl: 'Fum',
 };
@@ -251,6 +251,7 @@ const WIDTH_BY_KIND: Record<ColumnKind, number> = {
 };
 
 const WIDTH_BY_KEY: Record<string, number> = {
+  fpts: 150,
   stadium_name: 220,
   city: 140,
   state: 64,
@@ -309,6 +310,76 @@ function rankTier(rank: unknown, total: number): 'elite' | 'solid' | undefined {
   if (r <= top25) return 'elite';
   if (r <= top60) return 'solid';
   return undefined;
+}
+
+type DisplayItem =
+  | { kind: 'band'; key: string; tier: 'elite' | 'solid'; label: string; note: string }
+  | { kind: 'player'; key: string; tableIndex: number };
+
+const BAND_H = 32;
+const MOBILE_BAND_H = 28;
+
+function buildDisplayItems(
+  rows: Array<{ id: string; original: GridRow }>,
+  sortId: string | undefined,
+  sortDesc: boolean,
+): DisplayItem[] {
+  const grouped = sortId === 'rank' && !sortDesc;
+  const items: DisplayItem[] = [];
+  let seenElite = false;
+  let seenSolid = false;
+  const total = rows.length;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (grouped) {
+      const tier = rankTier(row.original.rank, total);
+      if (tier === 'elite' && !seenElite) {
+        items.push({
+          kind: 'band',
+          key: 'band-elite',
+          tier: 'elite',
+          label: 'Tier 1',
+          note: 'top 25%',
+        });
+        seenElite = true;
+      } else if (tier === 'solid' && !seenSolid) {
+        items.push({
+          kind: 'band',
+          key: 'band-solid',
+          tier: 'solid',
+          label: 'Tier 2',
+          note: 'next through 60%',
+        });
+        seenSolid = true;
+      }
+    }
+    items.push({ kind: 'player', key: row.id, tableIndex: i });
+  }
+  return items;
+}
+
+function TierBandLabel({
+  tier,
+  label,
+  note,
+}: {
+  tier: 'elite' | 'solid';
+  label: string;
+  note: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className={cn(
+          'h-1.5 w-1.5 rounded-full',
+          tier === 'elite' ? 'bg-emerald-500' : 'bg-amber-500',
+        )}
+        aria-hidden
+      />
+      <span className="text-[11px] font-semibold text-slate-300">{label}</span>
+      <span className="text-[11px] font-normal text-slate-500">{note}</span>
+    </span>
+  );
 }
 
 function PlayerAvatar({
@@ -442,6 +513,15 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   const [activeRowIndex, setActiveRowIndex] = React.useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
 
+  const maxFpts = useMemo(() => {
+    let max = 0;
+    for (const row of data) {
+      const v = row.fpts;
+      if (typeof v === 'number' && Number.isFinite(v) && v > max) max = v;
+    }
+    return max;
+  }, [data]);
+
   const columns = useMemo<ColumnDef<GridRow>[]>(() => {
     if (!data.length) return [];
 
@@ -525,6 +605,38 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             );
           }
 
+          if (key === 'fpts') {
+            if (val === null || val === undefined || val === '') {
+              return (
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-white/[0.06]" />
+                  <span className="null-value min-w-[2.75rem] text-right">—</span>
+                </div>
+              );
+            }
+            if (typeof val === 'number' && Number.isFinite(val)) {
+              const width =
+                maxFpts > 0 ? Math.max(0, Math.min(100, (val / maxFpts) * 100)) : 0;
+              const formatted = val.toLocaleString(undefined, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              });
+              return (
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-white/[0.06]">
+                    <div
+                      className="h-1.5 rounded-sm bg-sky-400"
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                  <span className="stat-primary min-w-[2.75rem] text-right tabular-nums">
+                    {formatted}
+                  </span>
+                </div>
+              );
+            }
+          }
+
           if (val === null || val === undefined || val === '') {
             return <span className="null-value">—</span>;
           }
@@ -550,12 +662,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
         size: WIDTH_BY_KEY[key] ?? WIDTH_BY_KIND[kind],
         meta: {
           kind,
-          align: ALIGN_BY_KIND[kind],
+          align: key === 'fpts' ? 'left' : ALIGN_BY_KIND[kind],
           optional: OPTIONAL_UNDER_1200.has(key),
         } satisfies GridColumnMeta,
       } satisfies ColumnDef<GridRow>;
     });
-  }, [data, viewMode, density]);
+  }, [data, viewMode, density, maxFpts]);
 
   const table = useReactTable({
     data,
@@ -571,6 +683,24 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   const preset = DENSITY[density];
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  const displayItems = useMemo(
+    () =>
+      buildDisplayItems(
+        rows,
+        sorting[0]?.id,
+        Boolean(sorting[0]?.desc),
+      ),
+    [rows, sorting],
+  );
+
+  const displayIndexByTableIndex = useMemo(() => {
+    const map = new Map<number, number>();
+    displayItems.forEach((item, index) => {
+      if (item.kind === 'player') map.set(item.tableIndex, index);
+    });
+    return map;
+  }, [displayItems]);
+
   React.useEffect(() => {
     if (rows.length === 0) {
       if (activeRowIndex !== 0) setActiveRowIndex(0);
@@ -582,9 +712,14 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
   }, [rows.length, activeRowIndex]);
 
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: displayItems.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => (isMobile ? MOBILE_CARD_H[density] : preset.rowHeight),
+    estimateSize: (index) => {
+      if (displayItems[index]?.kind === 'band') {
+        return isMobile ? MOBILE_BAND_H : BAND_H;
+      }
+      return isMobile ? MOBILE_CARD_H[density] : preset.rowHeight;
+    },
     overscan: isMobile ? 8 : 20,
   });
 
@@ -592,7 +727,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
     if (rows.length === 0) return;
     const next = Math.max(0, Math.min(rows.length - 1, index));
     setActiveRowIndex(next);
-    rowVirtualizer.scrollToIndex(next);
+    rowVirtualizer.scrollToIndex(displayIndexByTableIndex.get(next) ?? next);
     window.requestAnimationFrame(() => {
       const el = parentRef.current?.querySelector<HTMLElement>(
         `[data-row-index="${next}"] [data-row-activator="true"]`,
@@ -656,12 +791,32 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
         <div className="flex flex-col gap-2.5 p-3">
           {vItems.length > 0 && vItems[0].start > 0 && <div style={{ height: vItems[0].start }} />}
           {vItems.map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
+            const item = displayItems[virtualRow.index];
+            if (!item) return null;
+            if (item.kind === 'band') {
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{ minHeight: virtualRow.size }}
+                  className="flex items-center px-1"
+                >
+                  <TierBandLabel
+                    tier={item.tier}
+                    label={item.label}
+                    note={item.note}
+                  />
+                </div>
+              );
+            }
+            const row = rows[item.tableIndex];
+            const tier = rankTier(
+              (row.original as Record<string, unknown>).rank,
+              rows.length,
+            );
             return (
               <div
                 key={virtualRow.key}
-                data-row-index={virtualRow.index}
+                data-row-index={item.tableIndex}
                 style={{ minHeight: virtualRow.size }}
               >
                 <MobilePlayerCard
@@ -669,9 +824,9 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                   tier={tier}
                   density={density}
                   metric={resolvedMetric}
-                  tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
+                  tabIndex={item.tableIndex === activeRowIndex ? 0 : -1}
                   onClick={() => onRowClick?.(row.original)}
-                  onKeyDown={(event) => handleRovingKey(event, virtualRow.index)}
+                  onKeyDown={(event) => handleRovingKey(event, item.tableIndex)}
                 />
               </div>
             );
@@ -751,7 +906,7 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                         align === 'left' && 'justify-start',
                       )}
                     >
-                      <span className="text-[10px] tracking-widest font-bold text-slate-400">
+                      <span className="text-[11px] font-semibold text-slate-400">
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </span>
                       {{
@@ -778,7 +933,30 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             )}
 
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const row = rows[virtualRow.index];
+            const item = displayItems[virtualRow.index];
+            if (!item) return null;
+            if (item.kind === 'band') {
+              return (
+                <tr
+                  key={virtualRow.key}
+                  data-band={item.tier}
+                  className="pointer-events-none"
+                  style={{ height: `${virtualRow.size}px` }}
+                >
+                  <td
+                    colSpan={columns.length}
+                    className="tier-band-cell"
+                  >
+                    <TierBandLabel
+                      tier={item.tier}
+                      label={item.label}
+                      note={item.note}
+                    />
+                  </td>
+                </tr>
+              );
+            }
+            const row = rows[item.tableIndex];
             const tier = rankTier((row.original as Record<string, unknown>).rank, rows.length);
             const playerLabel = String(
               (row.original as Record<string, unknown>).player_name ??
@@ -788,8 +966,8 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
             return (
               <tr
                 key={virtualRow.key}
-                data-index={virtualRow.index}
-                data-row-index={virtualRow.index}
+                data-index={item.tableIndex}
+                data-row-index={item.tableIndex}
                 data-tier={tier}
                 onClick={() => onRowClick?.(row.original)}
                 className="group/row cursor-pointer transition-colors"
@@ -830,14 +1008,14 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
                         <button
                           type="button"
                           data-row-activator="true"
-                          tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
+                          tabIndex={item.tableIndex === activeRowIndex ? 0 : -1}
                           aria-label={`Open analytics for ${playerLabel}`}
                           className="flex items-center gap-2 min-w-0 w-full text-left bg-transparent border-0 p-0 cursor-pointer"
                           onClick={(event) => {
                             event.stopPropagation();
                             onRowClick?.(row.original);
                           }}
-                          onKeyDown={(event) => handleRovingKey(event, virtualRow.index)}
+                          onKeyDown={(event) => handleRovingKey(event, item.tableIndex)}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </button>

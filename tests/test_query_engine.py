@@ -41,6 +41,13 @@ class TestPositionValidation:
         with pytest.raises(InvalidRequestError):
             _require_position("not-a-position")
 
+    def test_imports_precede_require_position(self):
+        source = Path(query_engine_mod.__file__).read_text(encoding="utf-8")
+        attach = source.find("from backend.data.headshot_urls import attach_headshot_urls")
+        fn = source.find("def _require_position")
+        assert attach != -1 and fn != -1
+        assert attach < fn, "_require_position must sit below package imports"
+
 
 class TestSeasonalQueries:
     """Seasonal ranking query contract tests."""

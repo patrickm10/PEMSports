@@ -59,6 +59,22 @@ class TestWeeklyEndpoints:
         response = client.get("/api/v1/weekly-rankings?pos=QB&year=2024&week=1&limit=5")
         assert response.status_code == 200
 
+    def test_invalid_position_returns_422(self, client):
+        response = client.get("/api/v1/rankings/notapos")
+        assert response.status_code == 422
+
+    def test_injection_position_returns_422(self, client):
+        response = client.get("/api/v1/rankings/qb_seasonal%20t%20--")
+        assert response.status_code == 422
+
+    def test_week_19_returns_422(self, client):
+        response = client.get("/api/v1/rankings/QB/weekly?year=2024&week=19")
+        assert response.status_code == 422
+
+    def test_year_2017_returns_422(self, client):
+        response = client.get("/api/v1/rankings/QB?year=2017")
+        assert response.status_code == 422
+
 
 class TestPreviouslyBrokenRoutes:
     """Verify routes that previously crashed due to missing imports."""

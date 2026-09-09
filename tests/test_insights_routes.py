@@ -10,6 +10,7 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from backend.api.insights_routes import _parse_seasons
 from backend.main import app
 
 client = TestClient(app)
@@ -31,9 +32,49 @@ class TestInsightsRoutesValidation:
     def test_invalid_context_returns_422(self):
         resp = client.get(
             "/api/v1/insights",
-            params={"position": "rb", "context": "weather", "context_value": "Rain"},
+            params={"position": "rb", "context": "weather_impact", "context_value": "Yes"},
         )
         assert resp.status_code == 422
+
+    def test_weather_context_is_blocked_until_temp_coverage(self):
+        resp = client.get(
+            "/api/v1/insights",
+            params={"position": "rb", "context": "weather", "context_value": "Indoor"},
+        )
+        assert resp.status_code == 422
+
+    def test_week_22_returns_422(self):
+        resp = client.get(
+            "/api/v1/insights",
+            params={
+                "position": "rb",
+                "context": "surface",
+                "context_value": "Grass",
+                "week": 22,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_garbage_seasons_does_not_500(self):
+        resp = client.get(
+            "/api/v1/insights",
+            params={
+                "position": "rb",
+                "context": "surface",
+                "context_value": "Grass",
+                "seasons": "foo",
+            },
+        )
+        assert resp.status_code != 500
+
+    def test_parse_seasons_skips_non_ints(self):
+        assert _parse_seasons("2024,foo,2023") == [2024, 2023]
+        assert _parse_seasons("foo") is None
+        assert _parse_seasons("2024") == [2024]
+
+    def test_parse_seasons_skips_years_outside_rankings_bounds(self):
+        assert _parse_seasons("2024,1999,2031") == [2024]
+        assert _parse_seasons("2017") is None
 
 
 @pytest.mark.skipif(not DB_PATH.exists(), reason="Baked nfl_stats.db required")
@@ -104,6 +145,37 @@ class TestInsightsRoutesSuccess:
         assert body["context_value"] == sample
         assert body["insights"] is not None
 
+    def test_location_contexts_drive_leaderboard(self):
+        for context in ("indoor_outdoor", "elevation"):
+            resp = client.get(
+                "/api/v1/insights/contexts",
+                params={"position": "rb", "context": context, "year": 2024},
+            )
+            assert resp.status_code == 200, context
+            values = resp.json().get("values") or []
+            assert values, context
+            board = client.get(
+                "/api/v1/insights",
+                params={
+                    "position": "rb",
+                    "context": context,
+                    "context_value": values[0],
+                    "year": 2024,
+                    "limit": 5,
+                },
+            )
+            assert board.status_code == 200, context
+            body = board.json()
+            assert body["insights"] is not None
+            for row in body["insights"] or []:
+                assert row["sample_size"] >= 3
+            scores = [
+                r["insight_score"]
+                for r in (body["insights"] or [])
+                if r.get("insight_score") is not None
+            ]
+            assert scores == sorted(scores, reverse=True)
+
     def test_kc_and_slug_http_round_trip(self):
         abbr = client.get(
             "/api/v1/insights",
@@ -171,5 +243,9 @@ class TestInsightsRoutesSuccess:
         assert body["player_id"] == row["player_id"]
         assert "observations" in body
         if body["observations"]:
-            assert "stadium_name" in body["observations"][0]
-            assert "home_away" in body["observations"][0]
+            obs = body["observations"][0]
+            assert "stadium_name" in obs
+            assert "home_away" in obs
+            assert "weather_bucket" in obs
+            assert "indoor_outdoor" in obs
+            assert "elevation_band" in obs

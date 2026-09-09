@@ -10,7 +10,8 @@ import type { InsightContext, InsightPosition } from '../api/insightsTypes';
  * refetches for the new filters instead.
  *
  * Context value is reset on context change (Grass for surface; empty until
- * /insights/contexts returns values for opponent, stadium, and home_away).
+ * /insights/contexts returns values for opponent, stadium, home_away,
+ * indoor_outdoor, and elevation).
  */
 interface InsightsStore {
   position: InsightPosition;

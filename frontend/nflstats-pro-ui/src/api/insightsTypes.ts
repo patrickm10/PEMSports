@@ -1,6 +1,12 @@
 export type InsightPosition = 'all' | 'qb' | 'rb' | 'wr' | 'te';
 
-export type InsightContext = 'surface' | 'opponent' | 'stadium' | 'home_away';
+export type InsightContext =
+  | 'surface'
+  | 'opponent'
+  | 'stadium'
+  | 'home_away'
+  | 'indoor_outdoor'
+  | 'elevation';
 
 export type SampleStrength = 'Low' | 'Moderate' | 'Strong';
 
@@ -42,6 +48,9 @@ export interface InsightObservation {
   stadium_name: string | null;
   surface_type: string | null;
   home_away: string | null;
+  weather_bucket: string | null;
+  indoor_outdoor: string | null;
+  elevation_band: string | null;
   fantasy_points: number | null;
   season_baseline: number | null;
   relative_change_pct: number | null;

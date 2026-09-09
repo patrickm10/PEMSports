@@ -1,6 +1,7 @@
 export interface UserProfile {
   id: string;
   email: string;
+  plan?: string;
 }
 
 export interface AuthResponse {

@@ -10,9 +10,11 @@ Contract rules (frontend depends on these):
 
 from typing import Optional
 
-from fastapi import APIRouter, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 
+from backend.core.auth import UserProfile
+from backend.core.authz import require_player_analytics
 from backend.core.limiter import limiter
 from backend.data import query_engine
 
@@ -38,6 +40,7 @@ def player_splits(
     player_id: str,
     dimension: str = Path(..., pattern="^(opponent|stadium|surface|venue)$"),
     pos: str = Query(..., pattern="^(qb|rb|wr|te|k|dst)$"),
+    _user: UserProfile = Depends(require_player_analytics),
 ):
     """Explicit split resources (one per dimension)."""
     payload = query_engine.query_player_splits(position=pos, player_id=player_id, dimension=dimension)
@@ -51,6 +54,7 @@ def player_splits_by_year(
     player_id: str,
     dimension: str = Path(..., pattern="^(opponent|stadium|surface|venue)$"),
     pos: str = Query(..., pattern="^(qb|rb|wr|te|k|dst)$"),
+    _user: UserProfile = Depends(require_player_analytics),
 ):
     """Yearly split resource: grouped by (year, dimension)."""
     payload = query_engine.query_player_splits_by_year(
@@ -69,6 +73,7 @@ def player_weekly(
         default=None,
         description="Optional comma-separated season years (e.g. 2022,2023,2024).",
     ),
+    _user: UserProfile = Depends(require_player_analytics),
 ):
     years: list[int] | None = None
     if seasons:
@@ -93,6 +98,7 @@ def player_metadata(
     request: Request,
     player_id: str,
     pos: str = Query(..., pattern="^(qb|rb|wr|te|k|dst)$"),
+    _user: UserProfile = Depends(require_player_analytics),
 ):
     payload = query_engine.query_player_metadata(position=pos, player_id=player_id)
     return JSONResponse(content=payload)
