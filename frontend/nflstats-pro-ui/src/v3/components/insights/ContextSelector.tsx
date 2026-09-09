@@ -8,6 +8,8 @@ const CONTEXTS: { id: InsightContext; label: string }[] = [
   { id: 'opponent', label: 'Opponent' },
   { id: 'stadium', label: 'Stadium' },
   { id: 'home_away', label: 'Home vs Away' },
+  { id: 'indoor_outdoor', label: 'Indoor vs Outdoor' },
+  { id: 'elevation', label: 'Elevation' },
 ];
 
 /** Canonical observed surfaces — only Grass/Turf are normalized server-side. */
@@ -51,7 +53,11 @@ export function ContextSelector({ year }: ContextSelectorProps) {
         ? 'No opponents found for this season.'
         : context === 'stadium'
           ? 'No stadiums found for this season.'
-          : null;
+          : context === 'indoor_outdoor'
+            ? 'Indoor vs outdoor isn’t available for this selection.'
+            : context === 'elevation'
+              ? 'No elevation bands found for this season.'
+              : null;
 
   return (
     <div className="glass-card rounded-xl p-4 space-y-3">

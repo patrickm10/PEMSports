@@ -1,0 +1,14 @@
+---
+description: Insights contexts stay backend-owned; no raw temp/city as context_value
+globs: src/backend/analytics/**/*.py,src/backend/data/insights_queries.py,src/backend/api/insights_routes.py,src/backend/services/insights_service.py,frontend/nflstats-pro-ui/src/api/insightsTypes.ts,frontend/nflstats-pro-ui/src/v3/components/insights/**/*.tsx,frontend/nflstats-pro-ui/src/stores/insightsStore.ts
+alwaysApply: false
+---
+
+# Insights context lock
+
+New `context` values register in `CONTEXT_SPECS` (`context_normalization.py`) and bucket edges in `insights_config.py`. Additive JSON; missing fields stay `null`. Derived dimensions use `ContextSpec.required_columns` plus SQL — do not pretend they are a baked column.
+
+- Scores and relative deltas: `insights_math.py` only. React renders `InsightRow`.
+- Do not use raw continuous `temp` or raw `city` as `context_value` (cardinality / `MIN_SAMPLE_SIZE`).
+- Opponent and stadium already exist — extend them, do not fork a second leaderboard.
+- Unknown weather/location → `null` (excluded), never guessed.

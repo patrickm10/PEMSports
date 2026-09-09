@@ -24,3 +24,24 @@ INSIGHT_POSITIONS = ("qb", "rb", "wr", "te")
 SUPPORTED_METRICS = ("fpts_ppr", "fpts")
 
 DEFAULT_METRIC = "fpts_ppr"
+
+# Elevation bands for Insights context `elevation`.
+# Must match query_engine.py player-splits CASE until a later extract:
+#   CASE WHEN elevation >= 500 THEN 'High'
+#   WHEN elevation BETWEEN 100 AND 499 THEN 'Med'
+#   ELSE 'Low' END
+# Do not edit query_engine.py in the Insights location PR (ranking SQL contract).
+ELEVATION_HIGH_MIN = 500
+ELEVATION_MED_MIN = 100
+CANONICAL_ELEVATION_VALUES = ("High", "Med", "Low")
+
+# Weather buckets — specified, not registered in SUPPORTED_CONTEXTS until temp coverage
+# and unit are proven. Pipeline source is temp_C in enrichment.py; baked column is `temp`.
+# Gate 1 (2026-09-08): count(temp)=0 on qb/rb/wr/te weekly, so WEATHER_TEMP_UNIT is unproven.
+# Do not apply these Fahrenheit edges to Celsius values.
+WEATHER_TEMP_UNIT = None  # "F" after outdoor non-nulls + unit proof
+WEATHER_COLD_LT = 32  # Cold < 32°F
+WEATHER_COOL_LT = 55  # Cool 32–54 → [32, 55)
+WEATHER_MILD_LT = 80  # Mild 55–79 → [55, 80); Hot ≥ 80
+CANONICAL_WEATHER_VALUES = ("Cold", "Cool", "Mild", "Hot", "Indoor")
+CANONICAL_INDOOR_OUTDOOR_VALUES = ("Indoor", "Outdoor")
