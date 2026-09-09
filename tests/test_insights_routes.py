@@ -10,6 +10,7 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from backend.api.insights_routes import _parse_seasons
 from backend.main import app
 
 client = TestClient(app)
@@ -34,6 +35,39 @@ class TestInsightsRoutesValidation:
             params={"position": "rb", "context": "weather", "context_value": "Rain"},
         )
         assert resp.status_code == 422
+
+    def test_week_22_returns_422(self):
+        resp = client.get(
+            "/api/v1/insights",
+            params={
+                "position": "rb",
+                "context": "surface",
+                "context_value": "Grass",
+                "week": 22,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_garbage_seasons_does_not_500(self):
+        resp = client.get(
+            "/api/v1/insights",
+            params={
+                "position": "rb",
+                "context": "surface",
+                "context_value": "Grass",
+                "seasons": "foo",
+            },
+        )
+        assert resp.status_code != 500
+
+    def test_parse_seasons_skips_non_ints(self):
+        assert _parse_seasons("2024,foo,2023") == [2024, 2023]
+        assert _parse_seasons("foo") is None
+        assert _parse_seasons("2024") == [2024]
+
+    def test_parse_seasons_skips_years_outside_rankings_bounds(self):
+        assert _parse_seasons("2024,1999,2031") == [2024]
+        assert _parse_seasons("2017") is None
 
 
 @pytest.mark.skipif(not DB_PATH.exists(), reason="Baked nfl_stats.db required")

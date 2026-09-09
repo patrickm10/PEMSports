@@ -24,6 +24,15 @@ from backend.data.query_engine import (
     query_player_impact_metrics,
     query_team_defense_stats,
 )
+from backend.data.ranking_store import stats_generation
+
+
+def _key(prefix: str, *parts: Any) -> str:
+    return ":".join([str(stats_generation()), prefix, *[str(p) for p in parts]])
+
+
+def invalidate_rankings_cache() -> None:
+    cache.clear()
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +53,7 @@ def get_rankings(
     pages are cached independently. For the current data size (<2000 rows
     per position), a limit of 200-500 covers all practical use cases.
     """
-    cache_key = f"rankings:{position}:{year}:{limit}:{offset}"
+    cache_key = _key("rankings", position, year, limit, offset)
 
     
     cached = cache.get(cache_key)
@@ -68,7 +77,7 @@ def get_available_seasons(position: Any) -> List[int]:
     Return descending list of seasons available for a position.
     Cache key: "seasons:{position}"
     """
-    cache_key = f"seasons:{position}"
+    cache_key = _key("seasons", position)
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -89,7 +98,7 @@ def get_weekly_rankings(
     Return weekly ranked player records for a position.
     Cache key: "weekly:{position}:{year}:{week}:{limit}:{offset}"
     """
-    cache_key = f"weekly:{position}:{year}:{week}:{limit}:{offset}"
+    cache_key = _key("weekly", position, year, week, limit, offset)
 
     
     cached = cache.get(cache_key)
@@ -112,7 +121,7 @@ def get_weekly_rankings(
 
 def get_available_weeks(position: Any, year: Optional[int] = None) -> list[int]:
     """Returns available weeks for a given position and year."""
-    cache_key = f"weeks:{position}:{year or 'all'}"
+    cache_key = _key("weeks", position, year or "all")
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -124,7 +133,7 @@ def get_available_weeks(position: Any, year: Optional[int] = None) -> list[int]:
 
 def get_player_impact(position: Any, player_id: str, metric_type: str) -> list[dict[str, Any]]:
     """Returns performance impact metrics for a player."""
-    cache_key = f"impact:{player_id}:{metric_type}"
+    cache_key = _key("impact", player_id, metric_type)
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -136,7 +145,7 @@ def get_player_impact(position: Any, player_id: str, metric_type: str) -> list[d
 
 def get_defense_stats(position: Any) -> list[dict[str, Any]]:
     """Returns defense-allowed stats for a position."""
-    cache_key = f"defense:{position}"
+    cache_key = _key("defense", position)
     cached = cache.get(cache_key)
     if cached is not None:
         return cached

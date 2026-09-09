@@ -29,13 +29,25 @@ from backend.analytics.insights_config import (
     INSIGHT_POSITIONS,
 )
 from backend.analytics.insights_math import enrich_insight_row, passes_min_sample
-from backend.data.query_engine import _execute, _table_columns
+from backend.core.exceptions import InvalidRequestError
+from backend.data.query_engine import _execute, _require_position, _table_columns
 
 
 def _metric_column(metric: str) -> str:
     if metric not in ("fpts_ppr", "fpts"):
         raise ValueError(f"Unsupported metric: {metric}")
     return metric
+
+
+def _require_insight_position(position: str, *, allow_all: bool = False) -> str:
+    """Allowlist before any `{pos}_weekly` interpolation. `all` is not a table."""
+    pos = (position or "").strip().lower()
+    if allow_all and pos == "all":
+        return pos
+    serve = _require_position(position)
+    if serve not in INSIGHT_POSITIONS:
+        raise InvalidRequestError(f"Unsupported position: {position!r}")
+    return serve
 
 
 def _season_filter_sql(
@@ -129,7 +141,8 @@ def _weekly_select_sql(
     Build SQL returning per-observation rows with LOO baseline and context flag.
     """
     context_value = normalize_context_value(context, context_value)
-    table = f"{position.lower()}_weekly"
+    pos = _require_insight_position(position)
+    table = f"{pos}_weekly"
     metric_col = _metric_column(metric)
     raw_ctx_col = context_column(context)
 
@@ -265,7 +278,7 @@ def query_insights_leaderboard(
     """
     Return insights leaderboard for one position, or grouped by position when position=all.
     """
-    pos = position.lower()
+    pos = _require_insight_position(position, allow_all=True)
     display_value = _display_context_value(context, context_value)
     base_meta = {
         "context": context,
@@ -301,9 +314,6 @@ def query_insights_leaderboard(
             "groups": groups,
             "insights": None,
         }
-
-    if pos not in INSIGHT_POSITIONS:
-        raise ValueError(f"Unsupported position: {position}")
 
     result = _query_single_position_leaderboard(
         position=pos,
@@ -365,10 +375,7 @@ def query_insights_player_detail(
     week: int | None = None,
 ) -> dict[str, Any]:
     """Weekly observations for one player with LOO baselines and relative change."""
-    pos = position.lower()
-    if pos not in INSIGHT_POSITIONS:
-        raise ValueError(f"Unsupported position: {position}")
-
+    pos = _require_insight_position(position)
     context_value = normalize_context_value(context, context_value)
     display_value = display_context_value(context, context_value)
 
@@ -581,7 +588,7 @@ def query_insights_context_values(
     year: int | None = None,
 ) -> dict[str, Any]:
     """List distinct normalized context values available for a position."""
-    pos = position.lower()
+    pos = _require_insight_position(position, allow_all=True)
     positions = list(INSIGHT_POSITIONS) if pos == "all" else [pos]
     values: set[str] = set()
 

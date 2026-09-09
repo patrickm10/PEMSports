@@ -12,7 +12,8 @@
 #   build_players_dimension.py, enrich_espn_player_ids.py (fail-open), then
 #   bake_db.py to materialize data/nfl_stats.db before start.
 #
-# Auth Postgres lives on Neon (not Render). Rankings stay in baked DuckDB.
+# Auth Postgres and rankings warehouse live on Neon.
+# RANKINGS_STORE=postgres: FastAPI reads stats.* ; DuckDB bake is CI/local only.
 
 services:
   - type: web
@@ -34,6 +35,10 @@ services:
       # Use the pooled connection string; include ?sslmode=require if not present.
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: RANKINGS_STORE
+        value: postgres
       - key: ALLOWED_ORIGINS
         value: https://pemsports.com,https://www.pemsports.com
     healthCheckPath: /health
