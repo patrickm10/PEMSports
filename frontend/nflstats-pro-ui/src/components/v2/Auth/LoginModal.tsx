@@ -24,8 +24,8 @@ export function LoginModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Enter an email and password.');
+    if (isRegistering && password.length < 10) {
+      setError('Password must be at least 10 characters.');
       return;
     }
 
@@ -113,6 +113,7 @@ export function LoginModal({
             onChange={(e) => setPassword(e.target.value)}
             className="block w-full rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-sky-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
             placeholder="••••••••"
+            minLength={isRegistering ? 10 : undefined}
             required
           />
         </div>

@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
+from backend.core.authz import require_draft_lab
 from backend.core.limiter import limiter
 from backend.models.draft_lab_models import (
     BacktestList,
@@ -27,7 +28,7 @@ from backend.models.draft_lab_models import (
 )
 from backend.services import draft_lab_service
 
-router = APIRouter(prefix="/draft-lab")
+router = APIRouter(prefix="/draft-lab", dependencies=[Depends(require_draft_lab)])
 
 
 @router.get("/leagues", response_model=LeagueList)

@@ -242,8 +242,8 @@ def validate(*, mode: str, db_path: Path) -> dict[str, Any]:
     failures: list[Failure] = []
     parquets = _discover_parquets()
 
-    # Mode: parquet | duckdb | both
-    if mode not in {"parquet", "duckdb", "both"}:
+    # Mode: parquet | duckdb | both | postgres
+    if mode not in {"parquet", "duckdb", "both", "postgres"}:
         raise ValueError(f"Invalid mode: {mode}")
 
     # Always use a separate connection for Parquet scans.
@@ -379,6 +379,107 @@ def validate(*, mode: str, db_path: Path) -> dict[str, Any]:
 
             db.close()
 
+    pg_summary: dict[str, Any] = {"checked": False}
+    if mode == "postgres":
+        dsn = os.environ.get("DATABASE_URL_UNPOOLED") or os.environ.get("DATABASE_URL")
+        if not dsn:
+            failures.append(
+                Failure(
+                    type="postgres_missing_url",
+                    classification="baking",
+                    subject="DATABASE_URL",
+                    details={"message": "DATABASE_URL is required for --mode postgres."},
+                )
+            )
+        else:
+            import psycopg
+
+            pg_summary["checked"] = True
+            with psycopg.connect(dsn) as pg:
+                pg.execute("SET search_path TO stats, app, public")
+                tables = {
+                    r[0]
+                    for r in pg.execute(
+                        "SELECT table_name FROM information_schema.tables "
+                        "WHERE table_schema = 'stats'"
+                    ).fetchall()
+                }
+                pg_summary["tables"] = sorted(tables)
+                y0, y1 = EXPECTED_YEARS[0], EXPECTED_YEARS[-1]
+                w0, w1 = EXPECTED_WEEKS[0], EXPECTED_WEEKS[-1]
+                for pos, kinds in parquets.items():
+                    for kind, p in kinds.items():
+                        table = _table_name_from_parquet(p)
+                        if table not in tables:
+                            failures.append(
+                                Failure(
+                                    type="missing_table_for_parquet",
+                                    classification="baking",
+                                    subject=f"stats.{table}",
+                                    details={"parquet": str(p)},
+                                )
+                            )
+                            continue
+                        if kind == "weekly":
+                            missing = pg.execute(
+                                f"""
+                                WITH expected AS (
+                                  SELECT y AS year, w AS week
+                                  FROM generate_series(%s, %s) AS y
+                                  CROSS JOIN generate_series(%s, %s) AS w
+                                ),
+                                present AS (
+                                  SELECT DISTINCT year::int AS year, week::int AS week
+                                  FROM stats.{table}
+                                )
+                                SELECT expected.year, expected.week
+                                FROM expected
+                                LEFT JOIN present USING (year, week)
+                                WHERE present.year IS NULL
+                                ORDER BY 1, 2
+                                """,
+                                (y0, y1, w0, w1),
+                            ).fetchall()
+                            if missing:
+                                failures.append(
+                                    Failure(
+                                        type="missing_year_week",
+                                        classification="baking",
+                                        subject=f"stats.{table}",
+                                        details={
+                                            "missing": [
+                                                {"year": int(r[0]), "week": int(r[1])}
+                                                for r in missing
+                                            ]
+                                        },
+                                    )
+                                )
+                        else:
+                            missing_years = pg.execute(
+                                f"""
+                                WITH expected AS (
+                                  SELECT y AS year FROM generate_series(%s, %s) AS y
+                                ),
+                                present AS (
+                                  SELECT DISTINCT year::int AS year FROM stats.{table}
+                                )
+                                SELECT expected.year FROM expected
+                                LEFT JOIN present USING (year)
+                                WHERE present.year IS NULL
+                                ORDER BY 1
+                                """,
+                                (y0, y1),
+                            ).fetchall()
+                            if missing_years:
+                                failures.append(
+                                    Failure(
+                                        type="missing_year",
+                                        classification="baking",
+                                        subject=f"stats.{table}",
+                                        details={"missing_years": [int(r[0]) for r in missing_years]},
+                                    )
+                                )
+
     report = {
         "status": "pass" if not failures else "fail",
         "mode": mode,
@@ -387,6 +488,7 @@ def validate(*, mode: str, db_path: Path) -> dict[str, Any]:
         "expected": {"years": EXPECTED_YEARS, "weeks": EXPECTED_WEEKS},
         "duckdb_path": str(db_path),
         "duckdb": db_summary,
+        "postgres": pg_summary,
         "parquet": parquet_summaries,
         "failures": [f.to_dict() for f in failures],
     }
@@ -397,7 +499,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Parquet and/or DuckDB completeness.")
     parser.add_argument(
         "--mode",
-        choices=["parquet", "duckdb", "both"],
+        choices=["parquet", "duckdb", "both", "postgres"],
         default="both",
         help="Validation target. CI should typically use 'parquet'.",
     )

@@ -3,6 +3,7 @@ NFL Weekly Rankings orchestrator — FantasyPros Scraper Integration.
 Builds standardized weekly rank mappings using FantasyPros stats.
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -35,7 +36,10 @@ CORE_ENRICHMENT_COLS = [
     "temp", "humidity", "wind", "game_result", "home_away",
 ]
 
-def main() -> None:
+def main(years: list[int] | None = None, weeks: list[int] | None = None) -> None:
+    years = years or YEARS
+    weeks = weeks or WEEKS
+    scoped = years != YEARS or weeks != WEEKS
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     LOCAL_RAW_DIR.mkdir(parents=True, exist_ok=True)
     
@@ -61,8 +65,8 @@ def main() -> None:
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                 futures = []
-                for year in YEARS:
-                    for week in WEEKS:
+                for year in years:
+                    for week in weeks:
                         futures.append(executor.submit(fetch_week, year, week))
                 
                 for f in concurrent.futures.as_completed(futures):
@@ -81,14 +85,32 @@ def main() -> None:
                 if col not in combined_df.columns:
                     combined_df = combined_df.with_columns(pl.lit(None).alias(col))
             
-            final_df = combined_df.sort(["year", "week", "fpts_ppr"], descending=[True, True, True])
-            
             out_parquet = OUTPUT_DIR / f"{pos}_weekly.parquet"
+            if scoped and out_parquet.exists():
+                existing = pl.read_parquet(out_parquet)
+                drop_keys = combined_df.select(["year", "week"]).unique()
+                if "year" in existing.columns and "week" in existing.columns:
+                    existing = existing.join(drop_keys, on=["year", "week"], how="anti")
+                combined_df = pl.concat([existing, combined_df], how="diagonal")
+                logger.info(
+                    "Merged %s weekly scrape into existing parquet (%d rows)",
+                    pos,
+                    combined_df.height,
+                )
+
+            final_df = combined_df.sort(["year", "week", "fpts_ppr"], descending=[True, True, True])
             final_df.write_parquet(out_parquet)
             
             logger.info("Saved consolidated %s Weekly to %s", pos, out_parquet)
 
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Scrape FantasyPros weekly rankings.")
+    parser.add_argument("--year", type=int, default=None, help="Single season year (default: 2020-2025).")
+    parser.add_argument("--week", type=int, default=None, help="Single week 1-18 (default: all weeks).")
+    args = parser.parse_args()
+    years = [args.year] if args.year is not None else None
+    weeks = [args.week] if args.week is not None else None
+    main(years=years, weeks=weeks)
 
 

@@ -24,7 +24,7 @@ def _set_prod_env(monkeypatch, **overrides):
         "ALLOWED_ORIGINS": _GOOD_ORIGINS,
     }
     env.update(overrides)
-    for key in ("APP_ENV", "JWT_SECRET", "DATABASE_URL", "ALLOWED_ORIGINS"):
+    for key in ("APP_ENV", "JWT_SECRET", "DATABASE_URL", "ALLOWED_ORIGINS", "RANKINGS_STORE"):
         value = env.get(key)
         if value is None:
             monkeypatch.delenv(key, raising=False)
@@ -62,6 +62,19 @@ def test_production_rejects_dev_jwt_secret(monkeypatch):
         config_module._load()
 
 
+def test_production_defaults_rankings_store_to_postgres(monkeypatch):
+    _set_prod_env(monkeypatch)
+    cfg = config_module._load()
+    assert cfg.rankings_store == "postgres"
+
+
+def test_rankings_store_override(monkeypatch):
+    _set_prod_env(monkeypatch)
+    monkeypatch.setenv("RANKINGS_STORE", "duckdb")
+    cfg = config_module._load()
+    assert cfg.rankings_store == "duckdb"
+
+
 def test_development_allows_mock_auth_and_defaults(monkeypatch):
     for key in ("JWT_SECRET", "DATABASE_URL", "ALLOWED_ORIGINS"):
         monkeypatch.delenv(key, raising=False)
@@ -70,4 +83,5 @@ def test_development_allows_mock_auth_and_defaults(monkeypatch):
     assert cfg.is_development
     assert cfg.allow_mock_auth is True
     assert cfg.jwt_secret == config_module._DEV_JWT_SECRET
-    assert cfg.allowed_origins  # localhost defaults applied
+    assert "http://localhost:5174" in cfg.allowed_origins
+    assert "http://127.0.0.1:5174" in cfg.allowed_origins

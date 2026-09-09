@@ -22,4 +22,7 @@ class SimpleCache:
             "expires_at": expires_at
         }
 
+    def clear(self) -> None:
+        self._store.clear()
+
 cache = SimpleCache()

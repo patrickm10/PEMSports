@@ -49,23 +49,24 @@ def headshot_url_for(player_id: Any, espn_player_id: Any = None) -> str:
 
 def _load_espn_map(conn: Any) -> dict[str, str]:
     try:
-        tables = {r[0] for r in conn.execute("SHOW TABLES").fetchall()}
+        from backend.data.ranking_store import execute_sql, list_tables
+
+        tables = list_tables()
         if "players" not in tables:
             return {}
-        cols = {d[0].lower() for d in conn.execute("SELECT * FROM players LIMIT 0").description}
-        if "player_id" not in cols or "espn_player_id" not in cols:
-            return {}
-        rows = conn.execute(
+        rows = execute_sql(
             """
             SELECT CAST(player_id AS VARCHAR) AS player_id,
                    CAST(espn_player_id AS VARCHAR) AS espn_player_id
             FROM players
             WHERE espn_player_id IS NOT NULL
               AND CAST(espn_player_id AS VARCHAR) <> ''
-            """
-        ).fetchall()
+            """,
+            context="players (espn map)",
+        )
         out: dict[str, str] = {}
-        for pid, eid in rows:
+        for row in rows:
+            pid, eid = row.get("player_id"), row.get("espn_player_id")
             if pid is None or eid is None:
                 continue
             ps, es = str(pid).strip(), str(eid).strip()

@@ -1,6 +1,6 @@
 # PEM Sports Website
 
-Fantasy rankings analytics: **Polars pipelines** → **Parquet** (`data/rankings/`) → **baked DuckDB** (`data/nfl_stats.db`) → **FastAPI** → **Vite + React** dashboard.
+Fantasy rankings analytics: **Polars pipelines** → **Parquet** (`data/rankings/`) → **baked DuckDB** (local/CI) → **Neon Postgres `stats` schema** (production) → **FastAPI** → **Vite + React** dashboard.
 
 **Python 3.10+** · **Node 20** (see CI) · **DuckDB 1.3.1** · **FastAPI** (pinned in `requirements.txt`)
 
@@ -9,20 +9,23 @@ Fantasy rankings analytics: **Polars pipelines** → **Parquet** (`data/rankings
 ## Architecture
 
 ```text
-data/rankings/{QB,RB,...}_{weekly|seasonal}.parquet   (git-tracked)
+data/rankings/{QB,RB,...}_{weekly|seasonal}.parquet   (git-tracked lake)
         │
-        ▼  scripts/bake_db.py
-data/nfl_stats.db                                     (local build artifact, gitignored)
+        ▼  scripts/bake_db.py                         (local / CI artifact)
+data/nfl_stats.db
         │
-        ▼  src/backend/data/query_engine.py (read-only DuckDB)
+        ▼  scripts/publish_rankings_pg.py             (full or incremental)
+Neon Postgres  schemas app (users) + stats (rankings)
+        │
+        ▼  RANKINGS_STORE=postgres (production) or duckdb (local)
 FastAPI  src/backend/main.py  /api/v1/rankings/...
         │
-        ▼  HTTP + CORS
+        ▼  HTTP + CORS + httpOnly auth cookies
 frontend/nflstats-pro-ui  (Vite, React 19)  →  https://pemsports.com
 ```
 
-- **Rankings data:** Parquet on disk → materialized tables in `nfl_stats.db` for stable SQL and low cold-start cost on Render.
-- **Transactional / auth:** PostgreSQL via `psycopg` (`src/backend/data/postgres.py`). In **development**, a missing DB logs a warning and auth features degrade; **staging/production** fail startup if the pool cannot open (`src/backend/core/config.py` policy).
+- **Rankings data:** Parquet remains the ETL lake. Local DuckDB is the bake/validate snapshot. Production FastAPI reads Neon `stats.*` (`RANKINGS_STORE=postgres`).
+- **Accounts:** Neon schema `app` (users, refresh tokens, entitlements). FastAPI JWT in httpOnly cookies. Rankings grids stay public; Insights, player splits, and Draft Lab require a premium plan.
 - **ETL:** Canonical code under **`src/pipelines/`** — operator commands in [`docs/PIPELINE_RUNBOOK.md`](docs/PIPELINE_RUNBOOK.md). Root `pipelines/` is deprecated (redirect README only).
 
 ---
@@ -42,7 +45,9 @@ frontend/nflstats-pro-ui  (Vite, React 19)  →  https://pemsports.com
 |----------|----------|-------|
 | Vercel (frontend) | `VITE_API_BASE` | `https://nflstats-api.onrender.com/api/v1` |
 | Render (backend) | `ALLOWED_ORIGINS` | `https://pemsports.com,https://www.pemsports.com` |
-| Render (backend) | `DATABASE_URL` | Auto-linked from `nflstats-db` via [`render.yaml`](render.yaml) |
+| Render (backend) | `DATABASE_URL` | Neon pooled connection string (`render.yaml` `sync: false`) |
+| Render (backend) | `DATABASE_URL_UNPOOLED` | Neon direct URL for `publish_rankings_pg.py` COPY |
+| Render (backend) | `RANKINGS_STORE` | `postgres` |
 | GitHub (backend CD) | `RENDER_DEPLOY_HOOK_URL` | Deploy hook from Render service settings (optional) |
 
 **Verify when live**
