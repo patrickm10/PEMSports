@@ -27,6 +27,8 @@ const CONTEXT_LABELS: Record<string, string> = {
   opponent: 'Opponent',
   stadium: 'Stadium',
   home_away: 'Home vs Away',
+  indoor_outdoor: 'Indoor vs Outdoor',
+  elevation: 'Elevation',
 };
 
 export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsViewProps) {
@@ -68,7 +70,7 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
     <div className="space-y-5 max-w-7xl mx-auto">
       <p className="text-slate-400 text-sm">
         See who over- or under-performed their own season average in a situation
-        (surface, opponent, stadium, or home/away).
+        (surface, opponent, stadium, home/away, indoor/outdoor, or elevation).
       </p>
 
       <PositionTabs active={position} onChange={setPosition} />

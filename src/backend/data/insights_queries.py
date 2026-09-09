@@ -14,14 +14,17 @@ from __future__ import annotations
 from typing import Any
 
 from backend.analytics.context_normalization import (
-    context_column,
+    context_spec,
     display_context_value,
+    elevation_band_sql,
     normalize_context_value,
     normalized_context_sql,
     normalized_home_away_sql,
+    normalized_indoor_outdoor_sql,
     normalized_opponent_sql,
     normalized_surface_sql,
     observation_schema_keys,
+    weather_bucket_sql,
 )
 from backend.analytics.insights_config import (
     DEFAULT_LEADERBOARD_LIMIT,
@@ -83,12 +86,74 @@ def _table_has_column(table: str, column: str) -> bool:
     return column.lower() in _table_columns(table)
 
 
+def _table_has_all_columns(table: str, columns: tuple[str, ...]) -> bool:
+    return all(_table_has_column(table, col) for col in columns)
+
+
 def _col_or_null(table: str, column: str, *, alias: str | None = None, table_alias: str = "w") -> str:
     """Select a baked column or NULL when it is not present — never guess values."""
     name = alias or column
     if _table_has_column(table, column):
-        return f"{table_alias}.{column} AS {name}"
+        prefix = f"{table_alias}." if table_alias else ""
+        return f"{prefix}{column} AS {name}"
     return f"NULL AS {name}"
+
+
+def _qualified(table_alias: str, column: str) -> str:
+    return f"{table_alias}.{column}" if table_alias else column
+
+
+def _observation_dimension_sql(table: str, table_alias: str = "w") -> str:
+    """SELECT fragments for observation dimension keys (null when not baked)."""
+    opponent_sql = (
+        f"{normalized_opponent_sql(_qualified(table_alias, 'opponent'))} AS opponent"
+        if _table_has_column(table, "opponent")
+        else "NULL AS opponent"
+    )
+    stadium_sql = _col_or_null(table, "stadium_name", table_alias=table_alias)
+    surface_sql = (
+        f"{normalized_surface_sql(_qualified(table_alias, 'surface_type'))} AS surface_type"
+        if _table_has_column(table, "surface_type")
+        else "NULL AS surface_type"
+    )
+    home_away_sql = (
+        f"{normalized_home_away_sql(_qualified(table_alias, 'home_away'))} AS home_away"
+        if _table_has_column(table, "home_away")
+        else "NULL AS home_away"
+    )
+    indoor_sql = (
+        f"{normalized_indoor_outdoor_sql(_qualified(table_alias, 'indoor_outdoor'))} AS indoor_outdoor"
+        if _table_has_column(table, "indoor_outdoor")
+        else "NULL AS indoor_outdoor"
+    )
+    elevation_sql = (
+        f"{elevation_band_sql(_qualified(table_alias, 'elevation'))} AS elevation_band"
+        if _table_has_column(table, "elevation")
+        else "NULL AS elevation_band"
+    )
+    if _table_has_column(table, "indoor_outdoor"):
+        temp_col = (
+            _qualified(table_alias, "temp")
+            if _table_has_column(table, "temp")
+            else "NULL"
+        )
+        weather_sql = (
+            f"{weather_bucket_sql(indoor_outdoor_column=_qualified(table_alias, 'indoor_outdoor'), temp_column=temp_col)} "
+            "AS weather_bucket"
+        )
+    else:
+        weather_sql = "NULL AS weather_bucket"
+    return ",\n            ".join(
+        (
+            opponent_sql,
+            stadium_sql,
+            surface_sql,
+            home_away_sql,
+            weather_sql,
+            indoor_sql,
+            elevation_sql,
+        )
+    )
 
 
 def _display_context_value(context: str, context_value: str) -> str:
@@ -144,15 +209,15 @@ def _weekly_select_sql(
     pos = _require_insight_position(position)
     table = f"{pos}_weekly"
     metric_col = _metric_column(metric)
-    raw_ctx_col = context_column(context)
+    spec = context_spec(context)
 
     if not _table_has_column(table, metric_col):
         raise ValueError(f"Metric column {metric_col} missing from {table}")
-    if not _table_has_column(table, raw_ctx_col):
-        # Stable empty result — column not baked (e.g. home_away before rebake).
+    if not _table_has_all_columns(table, spec.required_columns):
+        # Stable empty result — required columns not baked (e.g. home_away before rebake).
         return "", []
 
-    norm_ctx_expr = normalized_context_sql(context, f"w.{raw_ctx_col}")
+    norm_ctx_expr = normalized_context_sql(context, table_alias="w")
     season_clause, season_params = _season_filter_sql(years, year, table_alias="w")
     week_clause, week_params = _observation_week_filter_sql(week, table_alias="o")
 
@@ -167,23 +232,7 @@ def _weekly_select_sql(
     observation_where = " AND ".join(obs_parts) if obs_parts else "TRUE"
 
     params = list(season_params) + list(week_params) + [context_value]
-
-    opponent_sql = (
-        f"{normalized_opponent_sql('w.opponent')} AS opponent"
-        if _table_has_column(table, "opponent")
-        else "NULL AS opponent"
-    )
-    stadium_sql = _col_or_null(table, "stadium_name")
-    surface_sql = (
-        f"{normalized_surface_sql('w.surface_type')} AS surface_type"
-        if _table_has_column(table, "surface_type")
-        else "NULL AS surface_type"
-    )
-    home_away_sql = (
-        f"{normalized_home_away_sql('w.home_away')} AS home_away"
-        if _table_has_column(table, "home_away")
-        else "NULL AS home_away"
-    )
+    dimension_sql = _observation_dimension_sql(table, table_alias="w")
 
     sql = f"""
     WITH baseline_pool AS (
@@ -194,10 +243,7 @@ def _weekly_select_sql(
             CAST(w.year AS INTEGER) AS year,
             CAST(w.week AS INTEGER) AS week,
             CAST(w.{metric_col} AS DOUBLE) AS metric_value,
-            {opponent_sql},
-            {stadium_sql},
-            {surface_sql},
-            {home_away_sql},
+            {dimension_sql},
             {norm_ctx_expr} AS context_value
         FROM {table} w
         WHERE {baseline_where}
@@ -381,15 +427,15 @@ def query_insights_player_detail(
 
     table = f"{pos}_weekly"
     metric_col = _metric_column(metric)
-    raw_ctx_col = context_column(context)
+    spec = context_spec(context)
 
     if not _table_has_column(table, metric_col):
         return _empty_player_detail(pos, player_id, context, display_value, metric)
 
-    if not _table_has_column(table, raw_ctx_col):
+    if not _table_has_all_columns(table, spec.required_columns):
         return _empty_player_detail(pos, player_id, context, display_value, metric)
 
-    norm_ctx_expr = normalized_context_sql(context, f"w.{raw_ctx_col}")
+    norm_ctx_expr = normalized_context_sql(context, table_alias="w")
     season_clause, season_params = _season_filter_sql(years, year, table_alias="w")
     week_clause, week_params = _observation_week_filter_sql(week, table_alias="o")
 
@@ -405,22 +451,8 @@ def query_insights_player_detail(
         obs_parts.append(week_clause)
     observation_where = " AND ".join(obs_parts) if obs_parts else "TRUE"
 
-    opponent_sql = (
-        f"{normalized_opponent_sql('w.opponent')} AS opponent"
-        if _table_has_column(table, "opponent")
-        else "NULL AS opponent"
-    )
-    stadium_sql = _col_or_null(table, "stadium_name")
-    surface_sql = (
-        f"{normalized_surface_sql('w.surface_type')} AS surface_type"
-        if _table_has_column(table, "surface_type")
-        else "NULL AS surface_type"
-    )
-    home_away_sql = (
-        f"{normalized_home_away_sql('w.home_away')} AS home_away"
-        if _table_has_column(table, "home_away")
-        else "NULL AS home_away"
-    )
+    dimension_sql = _observation_dimension_sql(table, table_alias="w")
+    # SELECT aliases must match observation_schema_keys() (additive keys stay null).
 
     sql = f"""
     WITH baseline_pool AS (
@@ -431,10 +463,7 @@ def query_insights_player_detail(
             CAST(w.year AS INTEGER) AS season,
             CAST(w.week AS INTEGER) AS week,
             CAST(w.{metric_col} AS DOUBLE) AS metric_value,
-            {opponent_sql},
-            {stadium_sql},
-            {surface_sql},
-            {home_away_sql},
+            {dimension_sql},
             {norm_ctx_expr} AS context_value
         FROM {table} w
         WHERE {baseline_where}
@@ -467,6 +496,9 @@ def query_insights_player_detail(
         stadium_name,
         surface_type,
         home_away,
+        weather_bucket,
+        indoor_outdoor,
+        elevation_band,
         ROUND(metric_value, 2) AS fantasy_points,
         ROUND(season_baseline, 2) AS season_baseline,
         CASE
@@ -591,16 +623,15 @@ def query_insights_context_values(
     pos = _require_insight_position(position, allow_all=True)
     positions = list(INSIGHT_POSITIONS) if pos == "all" else [pos]
     values: set[str] = set()
-
-    raw_ctx_col = context_column(context)
+    spec = context_spec(context)
 
     for p in positions:
         table = f"{p}_weekly"
-        if not _table_has_column(table, raw_ctx_col):
+        if not _table_has_all_columns(table, spec.required_columns):
             continue
-        norm_expr = normalized_context_sql(context, raw_ctx_col)
+        norm_expr = normalized_context_sql(context, table_alias="")
         season_clause, season_params = _season_filter_sql(years, year)
-        where = f"{raw_ctx_col} IS NOT NULL"
+        where = f"({norm_expr}) IS NOT NULL"
         if season_clause:
             where = f"{where} AND {season_clause}"
 
@@ -608,7 +639,6 @@ def query_insights_context_values(
             SELECT DISTINCT {norm_expr} AS ctx_val
             FROM {table}
             WHERE {where}
-              AND {norm_expr} IS NOT NULL
             ORDER BY ctx_val
         """
         rows = _execute(sql, season_params, context=f"{table} (insights/contexts)")
