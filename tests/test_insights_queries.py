@@ -159,8 +159,15 @@ class TestOpponentNormalization:
 
 
 class TestLocationCoverage:
-    def test_location_columns_exist_with_non_nulls_temp_empty(self):
+    def test_location_columns_exist_with_non_nulls_weather_unregistered(self):
         import duckdb
+
+        from backend.analytics.context_normalization import CONTEXT_SPECS, SUPPORTED_CONTEXTS
+        from backend.analytics.insights_config import WEATHER_TEMP_UNIT
+
+        assert "weather" not in SUPPORTED_CONTEXTS
+        assert "weather" not in CONTEXT_SPECS
+        assert WEATHER_TEMP_UNIT == "C"
 
         con = duckdb.connect(str(DB_PATH), read_only=True)
         for pos in ("qb", "rb", "wr", "te"):
@@ -179,9 +186,7 @@ class TestLocationCoverage:
             ).fetchone()[0]
             assert io > 0, f"{table} indoor_outdoor has no non-nulls"
             assert el > 0, f"{table} elevation has no non-nulls"
-            assert tmp == 0, (
-                f"{table} temp is populated ({tmp}); un-block weather only after unit proof"
-            )
+            assert tmp > 0, f"{table} temp still empty after weather PIPE"
             distinct_io = {
                 r[0]
                 for r in con.execute(

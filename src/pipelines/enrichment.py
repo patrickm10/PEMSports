@@ -112,6 +112,7 @@ def get_rich_schedule() -> pl.DataFrame:
         pl.col("wind").cast(pl.Float64, strict=False) if "wind" in df.columns else pl.lit(None).cast(pl.Float64).alias("wind"),
         pl.col("city") if "city" in df.columns else pl.lit(None).alias("city"),
         pl.col("state") if "state" in df.columns else pl.lit(None).alias("state"),
+        pl.col("weather_impact") if "weather_impact" in df.columns else pl.lit(None).alias("weather_impact"),
         pl.col("home_team") if "home_team" in df.columns else pl.lit(None).alias("home_team"),
     ]
 

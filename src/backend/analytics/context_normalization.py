@@ -11,8 +11,8 @@ Opponent identity matches Rankings: SQL groups by canonical TEAM_MAP abbreviatio
 resolve to the same group. API context values are those stable abbreviations.
 
 Location (indoor_outdoor, elevation) uses ContextSpec: required baked columns plus
-a SQL expression. Weather is specified (weather_bucket_sql) but not registered in
-SUPPORTED_CONTEXTS until weekly `temp` has non-null coverage and a proven unit.
+a SQL expression. Weather SQL is specified (weather_bucket_sql) but not registered
+in SUPPORTED_CONTEXTS until Celsius `temp` is converted or F edges are replaced.
 """
 
 from __future__ import annotations
@@ -224,9 +224,9 @@ def weather_bucket_sql(
     """DuckDB expression for Cold | Cool | Mild | Hot | Indoor | NULL.
 
     Indoor uses the same Indoor SQL as indoor_outdoor (shared). Outdoor null
-    temp is excluded. Fahrenheit edges from insights_config — do not apply
-    until WEATHER_TEMP_UNIT is proven. Not registered as an Insights context
-    until weekly temp has outdoor non-null coverage.
+    temp is excluded. Fahrenheit edges from insights_config. Callers must pass
+    Fahrenheit (convert Celsius at the call site when WEATHER_TEMP_UNIT is C).
+    Not registered as an Insights context until Goal 2.
     """
     indoor_expr = normalized_indoor_outdoor_sql(indoor_outdoor_column)
     return f"""

@@ -35,12 +35,12 @@ ELEVATION_HIGH_MIN = 500
 ELEVATION_MED_MIN = 100
 CANONICAL_ELEVATION_VALUES = ("High", "Med", "Low")
 
-# Weather buckets — specified, not registered in SUPPORTED_CONTEXTS until temp coverage
-# and unit are proven. Pipeline source is temp_C in enrichment.py; baked column is `temp`.
-# Gate 1 (2026-09-08): count(temp)=0 on qb/rb/wr/te weekly, so WEATHER_TEMP_UNIT is unproven.
-# Do not apply these Fahrenheit edges to Celsius values.
-WEATHER_TEMP_UNIT = None  # "F" after outdoor non-nulls + unit proof
-WEATHER_COLD_LT = 32  # Cold < 32°F
+# Weather buckets — specified, not registered in SUPPORTED_CONTEXTS until edges
+# match the stored unit. Pipeline source is temp_C; baked column is `temp`.
+# Gate 1 (2026-09-09): outdoor QB_weekly temp min/max/median = -16.2 / 38.0 / 15.8 °C.
+# Do not apply the Fahrenheit edges below to these Celsius values.
+WEATHER_TEMP_UNIT = "C"  # convert edges or values before registering `weather`
+WEATHER_COLD_LT = 32  # Cold < 32°F — unused until unit is F or edges are converted
 WEATHER_COOL_LT = 55  # Cool 32–54 → [32, 55)
 WEATHER_MILD_LT = 80  # Mild 55–79 → [55, 80); Hot ≥ 80
 CANONICAL_WEATHER_VALUES = ("Cold", "Cool", "Mild", "Hot", "Indoor")
