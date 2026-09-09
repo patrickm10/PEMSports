@@ -30,6 +30,7 @@ from backend.analytics.insights_config import (
     DEFAULT_LEADERBOARD_LIMIT,
     DEFAULT_METRIC,
     INSIGHT_POSITIONS,
+    WEATHER_TEMP_UNIT,
 )
 from backend.analytics.insights_math import enrich_insight_row, passes_min_sample
 from backend.core.exceptions import InvalidRequestError
@@ -137,8 +138,14 @@ def _observation_dimension_sql(table: str, table_alias: str = "w") -> str:
             if _table_has_column(table, "temp")
             else "NULL"
         )
+        # Baked `temp` is Celsius; bucket edges are Fahrenheit.
+        temp_for_bucket = (
+            f"({temp_col} * 9.0 / 5.0 + 32.0)"
+            if WEATHER_TEMP_UNIT == "C" and temp_col != "NULL"
+            else temp_col
+        )
         weather_sql = (
-            f"{weather_bucket_sql(indoor_outdoor_column=_qualified(table_alias, 'indoor_outdoor'), temp_column=temp_col)} "
+            f"{weather_bucket_sql(indoor_outdoor_column=_qualified(table_alias, 'indoor_outdoor'), temp_column=temp_for_bucket)} "
             "AS weather_bucket"
         )
     else:

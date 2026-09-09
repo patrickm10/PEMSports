@@ -31,6 +31,7 @@ TEAM_MAP: Dict[str, str] = {
     "SD":  "los_angeles_chargers",
     "LAR": "los_angeles_rams",
     "STL": "los_angeles_rams",
+    "LA":  "los_angeles_rams",  # FantasyPros Rams abbr; Chargers stay LAC
     "MIA": "miami_dolphins",
     "MIN": "minnesota_vikings",
     "NE":  "new_england_patriots",

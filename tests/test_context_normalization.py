@@ -58,6 +58,8 @@ def test_kc_and_slug_normalize_to_same_abbr():
 def test_alias_abbreviations_collapse_to_canonical():
     assert canonical_opponent_abbr("JAC") == canonical_opponent_abbr("JAX")
     assert canonical_opponent_abbr("OAK") == canonical_opponent_abbr("LV")
+    assert canonical_opponent_abbr("LA") == "LAR"
+    assert canonical_opponent_abbr("LAR") == "LAR"
 
 
 def test_opponent_sql_maps_abbr_and_slug():

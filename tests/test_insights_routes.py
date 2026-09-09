@@ -36,7 +36,7 @@ class TestInsightsRoutesValidation:
         )
         assert resp.status_code == 422
 
-    def test_weather_context_is_blocked_until_temp_coverage(self):
+    def test_weather_context_stays_unregistered(self):
         resp = client.get(
             "/api/v1/insights",
             params={"position": "rb", "context": "weather", "context_value": "Indoor"},
