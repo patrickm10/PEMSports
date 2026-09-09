@@ -77,7 +77,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
               {player.player_name}
             </h2>
-            <div className="flex items-center gap-2 mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400">
+            <div className="flex items-center gap-2 mt-1 text-xs font-medium text-slate-400">
               <span className="px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/30 text-sky-300">
                 {player.position?.toUpperCase() ?? '—'}
               </span>
@@ -104,7 +104,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <button
               type="button"
               onClick={onClearComparison}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15"
             >
               <X size={14} /> Clear compare
             </button>
@@ -112,7 +112,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenComparison}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-200 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-200 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
             >
               <GitCompareArrows size={14} /> Compare
             </button>
@@ -121,7 +121,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mr-1">
+        <span className="text-[11px] font-medium text-slate-500 mr-1">
           Charts
         </span>
         {ALL_ANALYTICS_PANELS.map((p) => {
@@ -134,7 +134,7 @@ export const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
               aria-pressed={active}
               aria-label={`${active ? 'Hide' : 'Show'} ${PANEL_LABELS[p]} chart`}
               className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider border transition-colors',
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-colors',
                 active
                   ? 'bg-sky-500/10 border-sky-500/30 text-sky-200'
                   : 'bg-slate-950/40 border-white/[0.05] text-slate-500 hover:text-slate-300',
