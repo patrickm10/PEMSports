@@ -42,6 +42,15 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 
 type WorkspaceView = 'dashboard' | 'rankings' | 'player' | 'insights';
 
+const INSIGHT_POSITIONS: ReadonlySet<string> = new Set(['qb', 'rb', 'wr', 'te']);
+
+function syncInsightsPosition(position: string) {
+  if (!INSIGHT_POSITIONS.has(position)) return;
+  useInsightsStore
+    .getState()
+    .setPosition(position as Exclude<InsightPosition, 'all'>);
+}
+
 const POSITION_TABS: ReadonlySet<string> = new Set([
   'qb',
   'rb',
@@ -182,7 +191,16 @@ export default function App() {
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
+    if (workspaceView === 'insights') {
+      syncInsightsPosition(newTab);
+    }
   };
+
+  useEffect(() => {
+    if (workspaceView === 'insights') {
+      syncInsightsPosition(activeTab);
+    }
+  }, [workspaceView, activeTab]);
 
   const handleViewModeChange = (newMode: 'season' | 'weekly') => {
     setViewMode(newMode);
@@ -391,6 +409,7 @@ export default function App() {
               selectedYear={selectedYear}
               selectedWeek={selectedWeek}
               viewMode={viewMode}
+              onPositionChange={setActiveTab}
             />
           )}
         </div>

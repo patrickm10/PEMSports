@@ -13,6 +13,7 @@ interface InsightsViewProps {
   selectedYear: string;
   selectedWeek: string;
   viewMode: 'season' | 'weekly';
+  onPositionChange?: (position: Exclude<InsightPosition, 'all'>) => void;
 }
 
 const POSITION_LABELS: Record<string, string> = {
@@ -31,7 +32,12 @@ const CONTEXT_LABELS: Record<string, string> = {
   elevation: 'Elevation',
 };
 
-export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsViewProps) {
+export function InsightsView({
+  selectedYear,
+  selectedWeek,
+  viewMode,
+  onPositionChange,
+}: InsightsViewProps) {
   const position = useInsightsStore((s) => s.position);
   const context = useInsightsStore((s) => s.context);
   const contextValue = useInsightsStore((s) => s.contextValue);
@@ -66,6 +72,13 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
     selectPlayer(row.player_id, pos);
   };
 
+  const handlePositionChange = (next: InsightPosition) => {
+    setPosition(next);
+    if (next !== 'all') {
+      onPositionChange?.(next);
+    }
+  };
+
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       <p className="text-slate-400 text-sm">
@@ -73,7 +86,7 @@ export function InsightsView({ selectedYear, selectedWeek, viewMode }: InsightsV
         (surface, opponent, stadium, home/away, indoor/outdoor, or elevation).
       </p>
 
-      <PositionTabs active={position} onChange={setPosition} />
+      <PositionTabs active={position} onChange={handlePositionChange} />
 
       <ContextSelector year={selectedYear} />
 
