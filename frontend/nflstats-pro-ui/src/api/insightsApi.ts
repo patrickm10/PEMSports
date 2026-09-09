@@ -6,24 +6,12 @@ import type {
   InsightsLeaderboardResponse,
   InsightsPlayerDetailResponse,
 } from './insightsTypes';
+import { apiFetchJson } from './apiClient';
 
 const API_BASE = getApiBaseUrl();
 
-class ApiError extends Error {
-  status?: number;
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
-}
-
 async function fetchJson<T>(url: URL, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url.toString(), { signal });
-  if (!response.ok) {
-    throw new ApiError(`HTTP ${response.status}`, response.status);
-  }
-  return response.json() as Promise<T>;
+  return apiFetchJson<T>(url.toString(), { signal });
 }
 
 export interface InsightsQueryParams {
