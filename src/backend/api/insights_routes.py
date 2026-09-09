@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
 
 from backend.analytics.context_normalization import SUPPORTED_CONTEXTS
@@ -18,6 +18,7 @@ from backend.analytics.insights_config import (
     INSIGHT_POSITIONS,
     SUPPORTED_METRICS,
 )
+from backend.core.authz import require_insights
 from backend.core.limiter import limiter
 from backend.services.insights_service import (
     get_insights_context_values,
@@ -25,11 +26,15 @@ from backend.services.insights_service import (
     get_insights_player_detail,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_insights)])
 
 _POSITION_PATTERN = "^(all|qb|rb|wr|te)$"
 _CONTEXT_PATTERN = "^(" + "|".join(SUPPORTED_CONTEXTS) + ")$"
 _METRIC_PATTERN = "^(" + "|".join(SUPPORTED_METRICS) + ")$"
+
+
+_YEAR_MIN = 2018
+_YEAR_MAX = 2030
 
 
 def _parse_seasons(seasons: Optional[str]) -> list[int] | None:
@@ -41,9 +46,11 @@ def _parse_seasons(seasons: Optional[str]) -> list[int] | None:
         if not part:
             continue
         try:
-            parsed.append(int(part))
+            year = int(part)
         except ValueError:
             continue
+        if _YEAR_MIN <= year <= _YEAR_MAX:
+            parsed.append(year)
     return parsed or None
 
 
@@ -56,7 +63,7 @@ def api_get_insights(
     context_value: str = Query(..., min_length=1),
     metric: str = Query(default=DEFAULT_METRIC, pattern=_METRIC_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
-    week: Optional[int] = Query(default=None, ge=1, le=22),
+    week: Optional[int] = Query(default=None, ge=1, le=18),
     seasons: Optional[str] = Query(
         default=None,
         description="Optional comma-separated season years (e.g. 2022,2023,2024).",
@@ -108,7 +115,7 @@ def api_get_insights_player(
     context_value: str = Query(..., min_length=1),
     metric: str = Query(default=DEFAULT_METRIC, pattern=_METRIC_PATTERN),
     year: Optional[int] = Query(default=None, ge=2018, le=2030),
-    week: Optional[int] = Query(default=None, ge=1, le=22),
+    week: Optional[int] = Query(default=None, ge=1, le=18),
     seasons: Optional[str] = Query(default=None),
 ):
     """Weekly observations and summary for one player in a context."""

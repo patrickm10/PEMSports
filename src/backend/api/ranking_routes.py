@@ -2,8 +2,8 @@
 API v1 routes — rankings endpoints.
 
 Contract rules:
-- Position is validated via the Position enum at the FastAPI boundary.
-  Invalid positions return 422 (Unprocessable Entity), not 400.
+- Position is allowlisted at the FastAPI Path/Query boundary
+  (`qb|rb|wr|te|k|dst`). Invalid positions return 422, not 400.
 - Year is bounded to [2018, 2030]. Values outside throw a 422.
 - Pagination defaults: limit=200, offset=0. Max limit=1000.
 - Response shape is stable — adding fields is not a breaking change,

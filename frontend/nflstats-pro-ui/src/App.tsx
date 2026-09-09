@@ -33,9 +33,11 @@ import {
 import { ResponsiveDock } from './v3/components/layout/ResponsiveDock';
 import { SearchModal } from './v3/components/search/SearchModal';
 import { PlayerAnalyticsView } from './v3/components/playerAnalytics/PlayerAnalyticsView';
+import { PlayerPeekDrawer } from './v3/components/playerAnalytics/PlayerPeekDrawer';
 import { InsightsView } from './v3/components/insights/InsightsView';
 import { useSearchStore } from './stores/searchStore';
 import { usePlayerAnalyticsStore } from './stores/playerAnalyticsStore';
+import { usePlayerAnalytics } from './hooks/usePlayerAnalytics';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 type WorkspaceView = 'dashboard' | 'rankings' | 'player' | 'insights';
@@ -58,6 +60,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [density, setDensity] = useState<GridDensity>('standard');
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('rankings');
+  const [peekFocusSerial, setPeekFocusSerial] = useState(0);
 
   const openSearch = useSearchStore((s) => s.open);
   const pushRecent = useSearchStore((s) => s.pushRecent);
@@ -73,9 +76,18 @@ export default function App() {
     if (pos && POSITION_TABS.has(pos) && pos !== activeTab) {
       setActiveTab(pos);
     }
-    setWorkspaceView('player');
+    setWorkspaceView((current) =>
+      current === 'insights' ? 'rankings' : current,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyticsPlayer]);
+
+  const peekOpen = Boolean(
+    analyticsPlayer &&
+      workspaceView !== 'player' &&
+      workspaceView !== 'insights',
+  );
+  const peekAnalytics = usePlayerAnalytics(peekOpen ? analyticsPlayer : null);
 
   const {
     data: availableYears = [],
@@ -139,6 +151,14 @@ export default function App() {
     );
   }, [sortedData, searchQuery]);
 
+  const peekRankingRow = useMemo(() => {
+    if (!analyticsPlayer) return null;
+    return (
+      filteredData.find((row) => row.player_id === analyticsPlayer.player_id) ??
+      null
+    );
+  }, [analyticsPlayer, filteredData]);
+
   const resolvedMetric = useMemo(
     () => resolvePrimaryMetric(filteredData),
     [filteredData],
@@ -177,11 +197,25 @@ export default function App() {
   };
 
   const handleWorkspaceViewChange = (v: WorkspaceView) => {
-    if (v === 'player' && !analyticsPlayer) {
-      openSearch();
+    if (v === 'player') {
+      if (!analyticsPlayer) {
+        openSearch();
+        return;
+      }
+      if (workspaceView === 'player') return;
+      if (workspaceView === 'insights') setWorkspaceView('rankings');
+      setPeekFocusSerial((n) => n + 1);
       return;
     }
     setWorkspaceView(v);
+  };
+
+  const handleClosePeek = () => {
+    clearAnalytics();
+  };
+
+  const handleOpenFullAnalytics = () => {
+    setWorkspaceView('player');
   };
 
   const handleBackFromAnalytics = () => {
@@ -245,6 +279,7 @@ export default function App() {
         viewMode={viewMode}
         selectedYear={selectedYear}
         selectedWeek={selectedWeek}
+        playerCount={filteredData.length}
       >
         <div
           id="pem-main-content"
@@ -360,6 +395,18 @@ export default function App() {
           )}
         </div>
       </ResponsiveDock>
+
+      <PlayerPeekDrawer
+        isOpen={peekOpen}
+        player={analyticsPlayer}
+        rankingRow={peekRankingRow}
+        weekly={peekAnalytics.weekly}
+        metadata={peekAnalytics.metadata}
+        surface={peekAnalytics.surface}
+        focusSerial={peekFocusSerial}
+        onClose={handleClosePeek}
+        onOpenFull={handleOpenFullAnalytics}
+      />
 
       <SearchModal />
     </>

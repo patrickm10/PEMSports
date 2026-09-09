@@ -188,7 +188,7 @@ export const Sidebar = ({
             onClick={() => onWorkspaceViewChange('player')}
             hint={
               hasSelectedPlayer
-                ? 'View selected player analytics'
+                ? 'Open selected player peek'
                 : 'Find a player to open analytics'
             }
           />
