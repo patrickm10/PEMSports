@@ -151,9 +151,8 @@ html, body, #root {
   padding: var(--grid-header-pad-y, 8px) var(--grid-pad-x, 8px);
   text-align: center;
   font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--label-muted);
   border-bottom: 1px solid var(--border);
 }
@@ -180,6 +179,13 @@ html, body, #root {
 
 .analysis-grid tbody tr[data-tier="solid"] td[data-kind="rank"] {
   box-shadow: inset 3px 0 0 0 rgba(245, 158, 11, 0.8);
+}
+
+.analysis-grid td.tier-band-cell {
+  padding: 8px 12px;
+  background: rgba(2, 6, 23, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
 }
 
 .analysis-grid td[data-kind="name"] {
@@ -635,9 +641,8 @@ html, body, #root {
   color: var(--text-secondary);
   padding: 0.6rem 1.25rem;
   font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition);
@@ -711,6 +716,15 @@ html, body, #root {
 
 .analysis-grid tbody tr:hover td {
   color: var(--text-primary);
+}
+
+.analysis-grid tbody tr[data-band] {
+  background: transparent;
+}
+
+.analysis-grid tbody tr[data-band]:hover {
+  background: transparent;
+  box-shadow: none;
 }
 
 .analysis-grid tbody tr[data-tier="elite"]:hover {

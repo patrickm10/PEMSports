@@ -4,7 +4,6 @@ import {
   Calendar,
   Hash,
   ChevronDown,
-  Rows3,
   RotateCcw,
   AlertCircle,
 } from 'lucide-react';
@@ -64,32 +63,15 @@ export function ControlBar({
   showSearch = true,
 }: ControlBarProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div
         role="toolbar"
         aria-label="Rankings filters"
-        className="flex flex-wrap items-center justify-between gap-3 w-full min-h-11 px-1"
+        className="flex flex-wrap items-center justify-between gap-2 w-full min-h-8 px-0"
       >
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onResetFilters && (
-            <button
-              type="button"
-              onClick={onResetFilters}
-              className={cn(
-                'inline-flex items-center gap-1.5 h-9 px-3 rounded-[var(--radius-md)] bg-slate-950/40 text-[11px] font-semibold leading-none text-slate-400 hover:text-white transition-colors',
-                FOCUS,
-              )}
-              aria-label="Reset filters"
-            >
-              <RotateCcw className="w-3.5 h-3.5" aria-hidden />
-              Reset
-            </button>
-          )}
-
-          <div className="w-px h-6 bg-white/[0.06] hidden sm:block" />
-
+        <div className="flex items-center gap-2 flex-wrap">
           <div
-            className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-[var(--radius-md)]"
+            className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-lg border border-white/[0.06]"
             role="group"
             aria-label="Season or weekly"
           >
@@ -100,7 +82,7 @@ export function ControlBar({
                 aria-pressed={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 className={cn(
-                  'relative inline-flex items-center justify-center h-9 min-w-[3.75rem] px-3 rounded-[var(--radius-sm)] text-[11px] font-semibold leading-none whitespace-nowrap transition-all duration-200',
+                  'relative inline-flex items-center justify-center h-7 min-w-[3.5rem] px-3 rounded-md text-xs font-semibold leading-none whitespace-nowrap transition-all duration-200',
                   FOCUS,
                   viewMode === mode
                     ? 'text-white'
@@ -110,7 +92,7 @@ export function ControlBar({
                 {viewMode === mode && (
                   <motion.div
                     layoutId="viewToggle"
-                    className="absolute inset-0 bg-[var(--accent)] rounded-[var(--radius-sm)] shadow-lg shadow-blue-500/20"
+                    className="absolute inset-0 bg-[var(--accent)] rounded-md shadow-lg shadow-blue-500/20"
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   />
                 )}
@@ -121,7 +103,7 @@ export function ControlBar({
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-[var(--radius-md)]">
+          <div className="flex items-center gap-1.5 h-8 bg-slate-950/40 pl-2.5 pr-2 rounded-lg border border-white/[0.06]">
             <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
             <div className="relative flex items-center">
               <label htmlFor="pem-filter-year" className="sr-only">
@@ -134,7 +116,7 @@ export function ControlBar({
                 onChange={(e) => setSelectedYear(e.target.value)}
                 disabled={availableYears.length === 0}
                 className={cn(
-                  'bg-transparent min-w-[6.5rem] text-[11px] font-semibold leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
+                  'bg-transparent min-w-[5.5rem] text-xs font-medium leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
                   FOCUS,
                 )}
               >
@@ -167,7 +149,7 @@ export function ControlBar({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2.5 pr-2 rounded-[var(--radius-md)]">
+                <div className="flex items-center gap-1.5 h-8 bg-slate-950/40 pl-2.5 pr-2 rounded-lg border border-white/[0.06]">
                   <Hash className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
                   <div className="relative flex items-center">
                     <label htmlFor="pem-filter-week" className="sr-only">
@@ -180,7 +162,7 @@ export function ControlBar({
                       onChange={(e) => setSelectedWeek(e.target.value)}
                       disabled={availableWeeks.length === 0}
                       className={cn(
-                        'bg-transparent min-w-[5.5rem] text-[11px] font-semibold leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
+                        'bg-transparent min-w-[5rem] text-xs font-medium leading-none text-slate-300 cursor-pointer py-1 pr-5 appearance-none z-10 disabled:opacity-50',
                         FOCUS,
                       )}
                     >
@@ -206,15 +188,33 @@ export function ControlBar({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {onResetFilters && (
+            <>
+              <div className="w-px h-5 bg-white/[0.07] hidden sm:block" />
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className={cn(
+                  'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-medium leading-none text-slate-400 hover:text-white transition-colors',
+                  FOCUS,
+                )}
+                aria-label="Reset filters"
+              >
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden />
+                Reset filters
+              </button>
+            </>
+          )}
         </div>
 
         {(showDensity || showSearch) && (
-          <div className="flex items-center gap-2 sm:gap-3 ml-auto flex-wrap">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             {showDensity && (
-              <div className="flex items-center gap-1.5 h-9 bg-slate-950/40 pl-2 pr-1 rounded-[var(--radius-md)]">
-                <Rows3 className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden />
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-medium text-slate-500">Density</span>
                 <div
-                  className="flex items-center gap-0.5 bg-slate-950/80 p-0.5 rounded-[var(--radius-sm)]"
+                  className="flex items-center gap-0.5 bg-slate-950/60 p-0.5 rounded-lg border border-white/[0.06]"
                   role="group"
                   aria-label="Table density"
                 >
@@ -226,10 +226,10 @@ export function ControlBar({
                       aria-label={DENSITY_LABELS[d]}
                       onClick={() => setDensity(d)}
                       className={cn(
-                        'inline-flex items-center justify-center h-8 min-w-[4.25rem] px-2.5 text-[11px] font-semibold leading-none whitespace-nowrap rounded-[var(--radius-sm)] transition-colors',
+                        'inline-flex items-center justify-center h-7 min-w-[4rem] px-2.5 text-xs font-medium leading-none whitespace-nowrap rounded-md transition-colors',
                         FOCUS,
                         density === d
-                          ? 'bg-[var(--accent)] text-white shadow shadow-blue-500/20'
+                          ? 'bg-white/[0.09] text-white'
                           : 'text-slate-400 hover:text-slate-200',
                       )}
                       title={`${DENSITY_LABELS[d]} density`}
@@ -242,7 +242,7 @@ export function ControlBar({
             )}
 
             {showSearch && (
-              <div className="relative w-full max-w-[12rem] group">
+              <div className="relative w-full max-w-[14rem] group">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-blue-400 transition-colors"
                   aria-hidden
@@ -253,11 +253,11 @@ export function ControlBar({
                 <input
                   id="pem-filter-search"
                   type="search"
-                  placeholder="Filter by player or team"
+                  placeholder="Search players or teams"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className={cn(
-                    'w-full bg-slate-950/40 rounded-[var(--radius-md)] h-9 py-1.5 !pl-10 pr-3 text-[11px] font-medium leading-none placeholder:text-slate-500',
+                    'w-full bg-slate-950/40 rounded-lg h-8 py-1.5 !pl-9 pr-3 text-xs font-medium leading-none placeholder:text-slate-500 border border-white/[0.07]',
                     FOCUS,
                   )}
                 />
@@ -268,7 +268,7 @@ export function ControlBar({
       </div>
 
       {isError && (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-0">
           <div className="flex items-center gap-2 text-xs text-rose-300" role="alert">
             <AlertCircle className="w-3.5 h-3.5" aria-hidden />
             <span>Couldn’t load rankings.</span>
