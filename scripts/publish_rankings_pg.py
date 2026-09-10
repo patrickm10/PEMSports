@@ -221,42 +221,60 @@ def publish(
             is_seasonal = table.endswith("_seasonal")
             pos = table.split("_")[0]
 
+            source_sql: str | None = None
+            replace_mode: str | None = None  # "truncate" | "weekly" | "seasonal"
+
             if mode == "full":
-                pg.execute(f"TRUNCATE stats.{ident}")
                 source_sql = f"SELECT * FROM {table}"
+                replace_mode = "truncate"
             elif is_weekly and year is not None and week is not None:
-                pg.execute(
-                    f"DELETE FROM stats.{ident} WHERE year = %s AND week = %s",
-                    (year, week),
-                )
                 source_sql = (
                     f"SELECT * FROM {table} WHERE CAST(year AS INTEGER) = {int(year)} "
                     f"AND CAST(week AS INTEGER) = {int(week)}"
                 )
+                replace_mode = "weekly"
             elif is_seasonal and year is not None:
-                pg.execute(
-                    f"DELETE FROM stats.{ident} WHERE year = %s",
-                    (year,),
-                )
                 source_sql = (
                     f"SELECT * FROM {table} WHERE CAST(year AS INTEGER) = {int(year)}"
                 )
+                replace_mode = "seasonal"
             elif table == "players" or table.startswith("draft_lab_"):
                 if mode == "incremental" and year is not None:
                     # Refresh dimension/lab on full or when explicitly full-loading those tables
                     if table == "players":
-                        pg.execute(f"TRUNCATE stats.{ident}")
                         source_sql = f"SELECT * FROM {table}"
+                        replace_mode = "truncate"
                     else:
                         continue
                 else:
-                    pg.execute(f"TRUNCATE stats.{ident}")
                     source_sql = f"SELECT * FROM {table}"
+                    replace_mode = "truncate"
             else:
                 continue
 
             result = duck.execute(source_sql)
             raw_rows = result.fetchall()
+            if not raw_rows and mode == "incremental":
+                logger.warning(
+                    "Skipping %s: no DuckDB rows for incremental publish; "
+                    "existing Postgres partition kept",
+                    table,
+                )
+                continue
+
+            if replace_mode == "truncate":
+                pg.execute(f"TRUNCATE stats.{ident}")
+            elif replace_mode == "weekly":
+                pg.execute(
+                    f"DELETE FROM stats.{ident} WHERE year = %s AND week = %s",
+                    (year, week),
+                )
+            elif replace_mode == "seasonal":
+                pg.execute(
+                    f"DELETE FROM stats.{ident} WHERE year = %s",
+                    (year,),
+                )
+
             n = _copy_rows(pg, table, cols, raw_rows) if raw_rows else 0
             logger.info("Published %s (%s) → %d rows", table, mode, n)
             _log_refresh(
