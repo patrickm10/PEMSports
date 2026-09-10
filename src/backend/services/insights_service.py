@@ -14,11 +14,12 @@ from backend.data.insights_queries import (
     query_insights_leaderboard,
     query_insights_player_detail,
 )
+from backend.data.ranking_store import stats_generation
 
 
 def _cache_key(prefix: str, **parts: Any) -> str:
     ordered = ":".join(f"{k}={parts[k]}" for k in sorted(parts.keys()))
-    return f"{prefix}:{ordered}"
+    return f"{stats_generation()}:{prefix}:{ordered}"
 
 
 def get_insights_leaderboard(
