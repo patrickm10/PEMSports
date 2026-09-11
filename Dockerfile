@@ -18,4 +18,4 @@ RUN python scripts/build_players_dimension.py && python scripts/enrich_espn_play
 
 EXPOSE 8000
 
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "backend.main:app"]
+CMD exec python -u -m gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers 1 --timeout 60 --log-level info backend.main:app
