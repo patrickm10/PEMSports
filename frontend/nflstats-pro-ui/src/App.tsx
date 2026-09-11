@@ -96,22 +96,22 @@ export default function App() {
     refetch: refetchSeasons,
   } = useSeasons(activeTab);
 
-  const { data: availableWeeks = [] } = useWeeks(activeTab, selectedYear);
+  const displayYear = pickDefaultYear(availableYears, selectedYear);
+  const { data: availableWeeks = [] } = useWeeks(activeTab, displayYear);
+  const displayWeek = pickDefaultWeek(availableWeeks, selectedWeek);
 
   useEffect(() => {
-    const next = pickDefaultYear(availableYears, selectedYear);
-    if (next !== selectedYear) setSelectedYear(next);
-  }, [availableYears, selectedYear]);
+    if (displayYear !== selectedYear) setSelectedYear(displayYear);
+  }, [displayYear, selectedYear]);
 
   useEffect(() => {
-    const next = pickDefaultWeek(availableWeeks, selectedWeek);
-    if (next !== selectedWeek) setSelectedWeek(next);
-  }, [availableWeeks, selectedWeek]);
+    if (displayWeek !== selectedWeek) setSelectedWeek(displayWeek);
+  }, [displayWeek, selectedWeek]);
 
-  const yearOk = isValidYear(selectedYear, availableYears);
-  const weekOk = isValidWeek(selectedWeek, availableWeeks);
-  const validYearInput = yearOk ? selectedYear : '';
-  const validWeekInput = weekOk ? selectedWeek : '';
+  const yearOk = isValidYear(displayYear, availableYears);
+  const weekOk = isValidWeek(displayWeek, availableWeeks);
+  const validYearInput = yearOk ? displayYear : '';
+  const validWeekInput = weekOk ? displayWeek : '';
 
   const rankingsEnabled = workspaceView !== 'insights';
   const seasonQuery = useRankings(
@@ -130,16 +130,16 @@ export default function App() {
   const {
     data: queryData = [],
     isLoading,
+    isFetching,
     isError,
-    isPlaceholderData,
     refetch,
   } = activeQuery;
 
   const sortedData = useMemo(
-    () => (isPlaceholderData ? [] : (queryData as Ranking[])),
-    [isPlaceholderData, queryData],
+    () => queryData as Ranking[],
+    [queryData],
   );
-  const rankingsBusy = isLoading || seasonsLoading || isPlaceholderData;
+  const rankingsBusy = isLoading || isFetching || seasonsLoading;
 
   const filteredData = useMemo<Ranking[]>(() => {
     if (!searchQuery) return sortedData as Ranking[];
@@ -245,15 +245,15 @@ export default function App() {
       return `No seasons yet for ${positionFullName(activeTab)}.`;
     }
     if (viewMode === 'weekly' && !validWeekInput) {
-      return `No weeks yet for ${selectedYear || 'the selected year'}.`;
+      return `No weeks yet for ${displayYear || 'the selected year'}.`;
     }
     if (searchQuery && sortedData.length > 0 && filteredData.length === 0) {
       return `No players match “${searchQuery}”.`;
     }
     const slice =
       viewMode === 'weekly'
-        ? `${selectedYear} week ${selectedWeek}`
-        : `${selectedYear} season`;
+        ? `${displayYear} week ${displayWeek}`
+        : `${displayYear} season`;
     return `No ${positionFullName(activeTab)} ${slice} rankings yet.`;
   })();
 
@@ -277,8 +277,8 @@ export default function App() {
         hasSelectedPlayer={Boolean(analyticsPlayer)}
         onOpenSearch={openSearch}
         viewMode={viewMode}
-        selectedYear={selectedYear}
-        selectedWeek={selectedWeek}
+        selectedYear={displayYear}
+        selectedWeek={displayWeek}
         playerCount={filteredData.length}
       >
         <div
@@ -294,10 +294,10 @@ export default function App() {
               <ControlBar
                 viewMode={viewMode}
                 setViewMode={handleViewModeChange}
-                selectedYear={selectedYear}
+                selectedYear={displayYear}
                 setSelectedYear={setSelectedYear}
                 availableYears={availableYears}
-                selectedWeek={selectedWeek}
+                selectedWeek={displayWeek}
                 setSelectedWeek={setSelectedWeek}
                 availableWeeks={availableWeeks}
                 searchQuery={searchQuery}
@@ -388,8 +388,8 @@ export default function App() {
 
           {workspaceView === 'insights' && (
             <InsightsView
-              selectedYear={selectedYear}
-              selectedWeek={selectedWeek}
+              selectedYear={displayYear}
+              selectedWeek={displayWeek}
               viewMode={viewMode}
             />
           )}
