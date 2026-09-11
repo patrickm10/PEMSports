@@ -8,25 +8,25 @@
 #   4. ALLOWED_ORIGINS is set below for pemsports.com
 #
 # Data:
-#   Ranking Parquet under data/rankings/ is committed. buildCommand runs
-#   build_players_dimension.py, enrich_espn_player_ids.py (fail-open), then
-#   bake_db.py to materialize data/nfl_stats.db before start.
-#
-# Auth Postgres and rankings warehouse live on Neon.
-# RANKINGS_STORE=postgres: FastAPI reads stats.* ; DuckDB bake is CI/local only.
+#   RANKINGS_STORE=postgres: FastAPI reads Neon stats.* at runtime.
+#   DuckDB bake (bake_db.py + validate_db_completeness) stays in CI/local
+#   and the Dockerfile image build — not on the Render web build, which is
+#   512MB free and must reach gunicorn listen before the port-scan window.
 
 services:
   - type: web
     name: nflstats-api
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python scripts/build_players_dimension.py && python scripts/enrich_espn_player_ids.py && python scripts/bake_db.py && python scripts/validate_db_completeness.py --mode both
-    startCommand: gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 1 --timeout 60 backend.main:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -u -m gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 1 --timeout 60 --log-level info backend.main:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: PYTHONPATH
         value: src
+      - key: PYTHONUNBUFFERED
+        value: "1"
       - key: APP_ENV
         value: production
       - key: JWT_SECRET
