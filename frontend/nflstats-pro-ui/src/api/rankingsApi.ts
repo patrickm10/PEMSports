@@ -3,7 +3,10 @@ import { getApiBaseUrl } from '../utils/backendOrigin';
 
 const API_BASE = getApiBaseUrl();
 
-class ApiError extends Error {
+/** Under gunicorn --timeout 60; long enough for one Render free-tier wake. */
+export const REQUEST_TIMEOUT_MS = 30_000;
+
+export class ApiError extends Error {
   status?: number;
   constructor(message: string, status?: number) {
     super(message);
@@ -19,6 +22,14 @@ function isAbortError(err: unknown): boolean {
   );
 }
 
+function timeoutError(): Error {
+  const err = new Error('TimeoutError');
+  err.name = 'TimeoutError';
+  return err;
+}
+
+const TIMEOUT_ABORT = 'RankingsTimeout';
+
 /** Single attempt with timeout. React Query owns retries; 4xx is not retried there. */
 async function fetchWithTimeout(url: string, signal?: AbortSignal): Promise<Response> {
   if (signal?.aborted) {
@@ -26,7 +37,7 @@ async function fetchWithTimeout(url: string, signal?: AbortSignal): Promise<Resp
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(TIMEOUT_ABORT), REQUEST_TIMEOUT_MS);
   const onParentAbort = () => controller.abort(signal?.reason);
   signal?.addEventListener('abort', onParentAbort);
 
@@ -36,6 +47,11 @@ async function fetchWithTimeout(url: string, signal?: AbortSignal): Promise<Resp
       throw new ApiError(`HTTP ${response.status}`, response.status);
     }
     return response;
+  } catch (err) {
+    if (controller.signal.reason === TIMEOUT_ABORT) {
+      throw timeoutError();
+    }
+    throw err;
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener('abort', onParentAbort);

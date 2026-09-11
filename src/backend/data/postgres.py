@@ -40,7 +40,11 @@ class DatabaseUnavailable(RuntimeError):
 
 
 async def _configure_connection(conn: psycopg.AsyncConnection) -> None:
+    # Session SET must be committed: psycopg3 autocommit=False leaves INTRANS,
+    # and psycopg_pool discards non-IDLE connections after configure.
+    # Transaction-scoped SET would revert on commit; this SET must survive.
     await conn.execute("SET search_path TO app, stats, public")
+    await conn.commit()
 
 
 async def get_pool() -> AsyncConnectionPool:

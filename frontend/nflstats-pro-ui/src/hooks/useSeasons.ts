@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { RankingsApi } from '../api/rankingsApi';
+import { RankingsApi, shouldRetryRankingsQuery } from '../api/rankingsApi';
 
 /**
  * Fetches available season years for a position.
@@ -11,7 +11,7 @@ export function useSeasons(position: string) {
     queryFn: ({ signal }) => RankingsApi.fetchSeasons(position, signal),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    retry: 1,
+    retry: shouldRetryRankingsQuery,
     enabled: !!position,
   });
 }

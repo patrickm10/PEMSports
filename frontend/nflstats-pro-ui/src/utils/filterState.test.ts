@@ -19,6 +19,15 @@ describe('filterState', () => {
     expect(pickDefaultYear([2024, 2023], '')).toBe('2024');
   });
 
+  it('enables rankings year and week on the same render metadata arrives', () => {
+    const queryYear = pickDefaultYear(years, '');
+    const queryWeek = pickDefaultWeek(weeks, '');
+    expect(queryYear).toBe('2025');
+    expect(isValidYear(queryYear, years)).toBe(true);
+    expect(queryWeek).toBe('18');
+    expect(isValidWeek(queryWeek, weeks)).toBe(true);
+  });
+
   it('preserves a valid selected year across metadata refresh', () => {
     expect(pickDefaultYear(years, '2022')).toBe('2022');
   });
