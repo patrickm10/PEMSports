@@ -293,6 +293,75 @@ def _save_hourly_cache(stadium_name: str, df: pl.DataFrame) -> None:
     df.write_parquet(_hourly_cache_path(stadium_name))
 
 
+def _hourly_date_bounds(df: pl.DataFrame) -> tuple[str | None, str | None]:
+    if df.is_empty():
+        return None, None
+    times = df.get_column("hourly_time").cast(pl.String)
+    return times.min()[:10], times.max()[:10]
+
+
+def _cache_covers_range(cached: pl.DataFrame, start: str, end: str) -> bool:
+    min_d, max_d = _hourly_date_bounds(cached)
+    if min_d is None or max_d is None:
+        return False
+    return min_d <= start and max_d >= end
+
+
+def _day_before(iso: str) -> str:
+    return (datetime.strptime(iso, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def _day_after(iso: str) -> str:
+    return (datetime.strptime(iso, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def _ensure_stadium_name(df: pl.DataFrame, name: str) -> pl.DataFrame:
+    if "stadium_name" in df.columns:
+        return df
+    return df.with_columns(pl.lit(name).alias("stadium_name"))
+
+
+def _extend_hourly_cache(
+    name: str,
+    cached: pl.DataFrame,
+    start: str,
+    end: str,
+    lat: float,
+    lon: float,
+) -> pl.DataFrame:
+    """Merge cached hourly rows with any missing archive slices for [start, end]."""
+    cached = _ensure_stadium_name(cached, name)
+    if _cache_covers_range(cached, start, end):
+        return cached
+
+    min_d, max_d = _hourly_date_bounds(cached)
+    frames: list[pl.DataFrame] = [cached.drop("stadium_name") if "stadium_name" in cached.columns else cached]
+
+    if min_d and min_d > start:
+        gap_rows = fetch_archive_hourly(lat, lon, start, _day_before(min_d))
+        time.sleep(REQUEST_PAUSE_S)
+        if gap_rows:
+            frames.insert(0, pl.DataFrame(gap_rows))
+
+    if max_d and max_d < end:
+        gap_rows = fetch_archive_hourly(lat, lon, _day_after(max_d), end)
+        time.sleep(REQUEST_PAUSE_S)
+        if gap_rows:
+            frames.append(pl.DataFrame(gap_rows))
+
+    merged = pl.concat(frames, how="diagonal").unique(subset=["hourly_time"], keep="first")
+    merged = merged.with_columns(pl.lit(name).alias("stadium_name"))
+    _save_hourly_cache(name, merged)
+    logger.info(
+        "%s: extended cache to %d hourly rows (%s..%s)",
+        name,
+        len(merged),
+        start,
+        end,
+    )
+    return merged
+
+
 def build_hourly_index(
     venues: pl.DataFrame, years: list[int], coords: dict[str, tuple[float, float]]
 ) -> pl.DataFrame:
@@ -305,7 +374,12 @@ def build_hourly_index(
         name = str(row["stadium_name"])
         cached = _load_hourly_cache(name)
         if cached is not None:
-            logger.info("%s: loaded %d cached hourly rows", name, len(cached))
+            pair = coords.get(name)
+            if pair:
+                cached = _extend_hourly_cache(name, cached, start, end, pair[0], pair[1])
+            else:
+                cached = _ensure_stadium_name(cached, name)
+            logger.info("%s: using %d hourly rows (cache)", name, len(cached))
             frames.append(cached)
             continue
         pair = coords.get(name)
@@ -390,29 +464,11 @@ def main() -> None:
     logger.info("Matchups: %d rows, %d stadiums, years %s", len(matchups), len(venues), years)
 
     prev: pl.DataFrame | None = None
-    covered: set[str] = set()
     if OUTPUT_PATH.exists():
         prev = pl.read_csv(OUTPUT_PATH, infer_schema_length=0)
-        if "temp_C" in prev.columns and "stadium_name" in prev.columns:
-            covered = {
-                str(x)
-                for x in prev.group_by("stadium_name")
-                .agg(pl.col("temp_C").is_not_null().sum().alias("n"))
-                .filter(pl.col("n") > 0)
-                .get_column("stadium_name")
-                .to_list()
-            }
-            logger.info("Existing CSV covers %d stadiums; fetching gaps", len(covered))
 
     coords = resolve_coords(venues)
-    venues_fetch = (
-        venues.filter(~pl.col("stadium_name").is_in(list(covered))) if covered else venues
-    )
-    hourly = (
-        build_hourly_index(venues_fetch, years, coords)
-        if len(venues_fetch) > 0
-        else pl.DataFrame()
-    )
+    hourly = build_hourly_index(venues, years, coords)
     wx_cols = ["temp_C", "rel_humidity", "wind_kph", "precip_mm", "pressure_hpa"]
     if hourly.is_empty() and prev is None:
         logger.error("No hourly weather rows fetched")
