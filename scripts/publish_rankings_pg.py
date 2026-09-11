@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import os
 import sys
 from pathlib import Path
@@ -49,7 +50,8 @@ logger = logging.getLogger("publish_rankings_pg")
 
 def _pg_ident(name: str) -> str:
     cleaned = name.lower().replace('"', "")
-    if not cleaned.replace("_", "").isalnum():
+    allowed = set("abcdefghijklmnopqrstuvwxyz0123456789_-+/%")
+    if not cleaned or any(ch not in allowed for ch in cleaned):
         raise ValueError(f"Unsafe identifier: {name!r}")
     return cleaned
 
@@ -154,11 +156,33 @@ def _ensure_table(
         )
 
 
+def _coerce_copy_value(col: str, duck_type: str, value: Any) -> Any:
+    """DuckDB often emits year/week as 2025.0; Postgres INTEGER rejects that text."""
+    if value is None:
+        return None
+    target = _pg_type(col, duck_type)
+    if target not in {"INTEGER", "BIGINT"}:
+        return value
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+        return int(value)
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return None
+        return int(float(s)) if "." in s else int(s)
+    return int(value)
+
+
 def _copy_rows(
     pg: psycopg.Connection,
     table: str,
     columns: list[str],
     rows: Iterable[tuple[Any, ...]],
+    duck_types: list[str],
 ) -> int:
     ident = _pg_ident(table)
     col_list = ", ".join(_quote_ident(c) for c in columns)
@@ -166,7 +190,12 @@ def _copy_rows(
     with pg.cursor() as cur:
         with cur.copy(f"COPY stats.{ident} ({col_list}) FROM STDIN") as copy:
             for row in rows:
-                copy.write_row(row)
+                copy.write_row(
+                    tuple(
+                        _coerce_copy_value(col, dtype, val)
+                        for col, dtype, val in zip(columns, duck_types, row)
+                    )
+                )
                 count += 1
     return count
 
@@ -257,7 +286,12 @@ def publish(
 
             result = duck.execute(source_sql)
             raw_rows = result.fetchall()
-            n = _copy_rows(pg, table, cols, raw_rows) if raw_rows else 0
+            duck_types = [c[1] for c in schema]
+            n = (
+                _copy_rows(pg, table, cols, raw_rows, duck_types)
+                if raw_rows
+                else 0
+            )
             logger.info("Published %s (%s) → %d rows", table, mode, n)
             _log_refresh(
                 pg,
